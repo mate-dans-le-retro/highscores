@@ -33,3 +33,14 @@ Code, identifiers, routes, comments, docs, commit messages and pull requests are
 ## 2026-11-04: "tu" everywhere in the interface
 
 The interface speaks to players and volunteers with the informal "tu", on the public screen, the player form and the admin alike. The tone of voice is simple, fun and retro, like a bunch of friends in their forties playing on the console. It fits the event and the mockups. This departs from the design system, which uses "vous" for the association's website.
+
+## 2026-11-05: a mock data source behind `VITE_DATA_SOURCE=mock`
+
+The screens are built while the schema for events, masking and settings is still being written, and Docker is not available on every machine. Pages only import `src/lib/highscores.ts`, which reads from a `HighscoresSource`: the Supabase one by default, or a mock one that keeps fake data in `localStorage` when `VITE_DATA_SOURCE=mock`. The mock follows the target model (`src/lib/data/types.ts`); the Supabase source maps the current schema with defaults until the migration lands. Without the flag, nothing changes on preprod and production.
+
+## 2026-11-05: product rules for submissions and records
+
+- The photo is mandatory: it is the proof, the player and the score must both be on it.
+- "Un autre jeu": a player can submit a score for a game that is not in the list, with a free game name and no `game_id`. A volunteer then creates the game from it or links it to an existing one.
+- The record wall and the "NOUVEAU RECORD !" screen are needed for the first event: the model serves the all-time record and detects a new first place.
+- The eyebrow above a game name is the console (stable, on the game) plus an optional station label set per game and per event ("Super NES · Étage"). Each score keeps its event, so an old record shows with the label of its own event.

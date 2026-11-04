@@ -112,6 +112,7 @@ Read [docs/design-system/README.md](docs/design-system/README.md). The essential
 ## Environments
 
 - Local: Supabase CLI (Docker). Copy `.env.example` to `.env`, then fill in the URL and publishable key printed by `npx supabase start`.
+- Local without Supabase: put `VITE_DATA_SOURCE=mock` in `.env.local`; the pages then read fake data from `localStorage` (see docs/architecture.md, "Data sources").
 - Preprod and production: Supabase project in the MDLR organization, Vercel deployment of the MDLR team (see "Git and Vercel environments"). The Supabase variables are set by Vercel's Supabase integration, with the public `VITE_` prefix (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 - The repository is **public**: nothing sensitive in the code, seeds, tests or screenshots (no real player data).
 
