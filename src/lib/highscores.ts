@@ -16,6 +16,7 @@ export type {
   SubmissionInput,
 } from './data/types'
 export { findNewRecords } from './data/records'
+export { DEFAULT_SETTINGS } from './data/source'
 export { formatScore, formatStation } from './format'
 
 export const visibleGamesQuery = queryOptions({

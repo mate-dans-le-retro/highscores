@@ -4,25 +4,31 @@ import { useEffect, useState } from 'react'
 
 import { QrCode } from '#/components/qr-code'
 import {
+  DEFAULT_SETTINGS,
   formatScore,
   formatStation,
   leaderboardQuery,
+  settingsQuery,
   useHighscoresRealtime,
   visibleGamesQuery,
 } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
-
-/** How long each game stays on screen before the next one (screens guideline: 15 s). */
-const ROTATION_MS = 15_000
+import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 
 export const Route = createFileRoute('/')({
   staticData: { theme: 'scene' },
+  validateSearch: screenSearchSchema,
   component: PublicScreen,
 })
 
 function PublicScreen() {
   useHighscoresRealtime()
   const games = useQuery(visibleGamesQuery)
+  const settings = useQuery(settingsQuery)
+  const { rotationMs, rows } = screenOptions(
+    settings.data ?? DEFAULT_SETTINGS,
+    Route.useSearch(),
+  )
   const [index, setIndex] = useState(0)
   const count = games.data?.length ?? 0
 
@@ -30,10 +36,10 @@ function PublicScreen() {
     if (count < 2) return
     const timer = setInterval(
       () => setIndex((i) => (i + 1) % count),
-      ROTATION_MS,
+      rotationMs,
     )
     return () => clearInterval(timer)
-  }, [count])
+  }, [count, rotationMs])
 
   const game = games.data?.[index % Math.max(count, 1)]
 
@@ -56,7 +62,7 @@ function PublicScreen() {
           {games.isSuccess && !game && (
             <p className="text-scene-row">Aucun jeu affiché pour l'instant.</p>
           )}
-          {game && <GameLeaderboard game={game} />}
+          {game && <GameLeaderboard game={game} rows={rows} />}
         </div>
         <SubmitScorePanel />
       </div>
@@ -94,8 +100,14 @@ function SubmitScorePanel() {
   )
 }
 
-function GameLeaderboard({ game }: { game: DisplayedGame }) {
-  const rows = useQuery(leaderboardQuery(game.id))
+function GameLeaderboard({
+  game,
+  rows: limit,
+}: {
+  game: DisplayedGame
+  rows: number
+}) {
+  const rows = useQuery(leaderboardQuery(game.id, limit))
 
   return (
     <section className="flex flex-col gap-8">
