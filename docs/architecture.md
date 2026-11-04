@@ -65,16 +65,15 @@ Les tables `scores` et `games` sont dans la publication `supabase_realtime`. `us
 
 ## Variables d'environnement
 
-| Variable                                                | Où             | Rôle                                       |
-| ------------------------------------------------------- | -------------- | ------------------------------------------ |
-| `VITE_SUPABASE_URL`                                     | local (`.env`) | URL du projet Supabase                     |
-| `VITE_SUPABASE_PUBLISHABLE_KEY`                         | local (`.env`) | clé publique (RLS)                         |
-| `NEXT_PUBLIC_SUPABASE_URL`                              | Vercel         | posée par l'intégration Supabase de Vercel |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` (ou `_PUBLISHABLE_KEY`) | Vercel         | posée par l'intégration Supabase de Vercel |
+| Variable                        | Où               | Rôle                                                                             |
+| ------------------------------- | ---------------- | -------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | client + serveur | URL du projet Supabase                                                           |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | local (`.env`)   | clé publique (RLS)                                                               |
+| `VITE_SUPABASE_ANON_KEY`        | Vercel           | clé publique posée par l'intégration Supabase (lue si la précédente est absente) |
 
-Vite n'expose au navigateur que les préfixes `VITE_` et `NEXT_PUBLIC_` (`envPrefix` dans `vite.config.ts`). `src/lib/supabase.ts` prend les `VITE_*` en priorité, puis les `NEXT_PUBLIC_*`.
+Sur Vercel, ces variables viennent de l'intégration Supabase de la Marketplace, configurée avec le préfixe public `VITE_`. Seules les variables `VITE_*` arrivent dans le navigateur ; les lire par leur nom exact (`import.meta.env.VITE_SUPABASE_URL`), jamais via l'objet `import.meta.env` entier.
 
-Les futures clés secrètes (service role, Instagram, IA) iront dans des variables **sans** ces préfixes, lues uniquement dans des server functions. L'intégration Supabase pose déjà `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
+Les secrets (service role, Instagram, IA) restent dans des variables **sans** préfixe `VITE_`, lues uniquement dans des server functions. L'intégration pose déjà `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
 
 ## Déploiement
 
