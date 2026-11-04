@@ -20,3 +20,15 @@ export async function resizePhoto(photo: Blob, maxWidth = 800, quality = 0.7) {
     )
   })
 }
+
+/**
+ * The photo is the proof, so it is never refused: when the browser cannot
+ * decode it (HEIC outside Safari), the original file is kept as is.
+ */
+export async function preparePhoto(photo: Blob) {
+  try {
+    return await resizePhoto(photo)
+  } catch {
+    return photo
+  }
+}

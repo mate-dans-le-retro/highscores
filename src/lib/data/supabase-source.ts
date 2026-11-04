@@ -1,16 +1,19 @@
 import { getSupabase, photoUrl } from '../supabase'
+import { toPublicRow } from './anonymize'
 import { DEFAULT_SETTINGS } from './source'
 import type { HighscoresSource } from './source'
 import type { DisplayedGame, Game, LeaderboardRow } from './types'
 
 // The current schema covers a single event, without score types, station
-// labels, masking or settings: the new fields get defaults until the migration
-// lands.
+// labels, display consent or settings: the new fields get defaults until the
+// migration lands.
 
 type GameRow = Omit<Game, 'short_label' | 'score_type' | 'console'> & {
   machine: string | null
 }
-type LeaderboardViewRow = Omit<LeaderboardRow, 'event_id' | 'masked'>
+type LeaderboardViewRow = Omit<LeaderboardRow, 'event_id' | 'anonymous'> & {
+  display_on_screen?: boolean
+}
 
 const CURRENT_EVENT_ID = 'current'
 
@@ -29,11 +32,11 @@ const toGame = ({ machine, ...row }: GameRow): DisplayedGame => ({
   station_label: null,
 })
 
-const toRow = (row: LeaderboardViewRow): LeaderboardRow => ({
-  ...row,
-  event_id: CURRENT_EVENT_ID,
-  masked: false,
-})
+const toRow = ({
+  display_on_screen = true,
+  ...row
+}: LeaderboardViewRow): LeaderboardRow =>
+  toPublicRow({ ...row, event_id: CURRENT_EVENT_ID }, display_on_screen)
 
 async function listVisibleGames() {
   const { data, error } = await getSupabase()

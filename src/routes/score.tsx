@@ -132,7 +132,7 @@ function SubmitScore() {
             id="photo"
             className={fieldClass}
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             capture="environment"
             onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
             required

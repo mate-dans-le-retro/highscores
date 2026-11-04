@@ -1,4 +1,5 @@
-import { resizePhoto } from '../photo'
+import { toPublicRow } from '../anonymize'
+import { preparePhoto } from '../photo'
 import type { HighscoresSource } from '../source'
 import type {
   DisplayedGame,
@@ -16,9 +17,7 @@ import {
   writeState,
 } from './store'
 import type { MockState } from './store'
-
-/** Shown instead of the player's name when they did not agree to be on screen. */
-const MASKED_PLAYER_NAME = 'Joueur mystère'
+import { rankScores } from './ranking'
 
 function currentEventId(state: MockState) {
   const event = state.events.find((candidate) => !candidate.archived_at)
@@ -40,42 +39,36 @@ const visibleGames = (state: MockState): Array<DisplayedGame> =>
       station_label: stationLabel(state, game.id, currentEventId(state)),
     }))
 
-function toRow(score: Score, gameId: string, rank: number): LeaderboardRow {
-  const masked = !score.display_on_screen
-  return {
-    id: score.id,
-    game_id: gameId,
-    event_id: score.event_id,
-    player_name: masked ? MASKED_PLAYER_NAME : score.player_name,
-    score: score.score,
-    photo_path: masked ? null : score.photo_path,
-    masked,
-    created_at: score.created_at,
-    rank,
-  }
-}
+const toRow = (score: Score, gameId: string, rank: number) =>
+  toPublicRow(
+    {
+      id: score.id,
+      game_id: gameId,
+      event_id: score.event_id,
+      player_name: score.player_name,
+      score: score.score,
+      photo_path: score.photo_path,
+      created_at: score.created_at,
+      rank,
+    },
+    score.display_on_screen,
+  )
 
-/** Approved scores of a game, ranked like SQL rank(). All events when eventId is omitted. */
-function rankedRows(state: MockState, game: Game, eventId?: string) {
-  const sign = game.score_order === 'desc' ? -1 : 1
-  const scores = state.scores
-    .filter(
-      (score) =>
-        score.game_id === game.id &&
-        score.status === 'approved' &&
-        (!eventId || score.event_id === eventId),
-    )
-    .sort(
-      (a, b) =>
-        sign * (a.score - b.score) ||
-        Date.parse(a.created_at) - Date.parse(b.created_at),
-    )
-
-  let rank = 0
-  return scores.map((score, index) => {
-    if (index === 0 || score.score !== scores[index - 1].score) rank = index + 1
-    return toRow(score, game.id, rank)
-  })
+/** Approved scores of a game, ranked. All events when eventId is omitted. */
+function rankedRows(
+  state: MockState,
+  game: Game,
+  eventId?: string,
+): Array<LeaderboardRow> {
+  const scores = state.scores.filter(
+    (score) =>
+      score.game_id === game.id &&
+      score.status === 'approved' &&
+      (!eventId || score.event_id === eventId),
+  )
+  return rankScores(scores, game.score_order).map(({ entry, rank }) =>
+    toRow(entry, game.id, rank),
+  )
 }
 
 async function toDataUrl(blob: Blob) {
@@ -123,7 +116,7 @@ export const mockSource: HighscoresSource = {
     const customGameName = input.custom_game_name?.trim() || null
     if (!input.game_id === !customGameName)
       throw new Error('Pick a game from the list or type its name, not both')
-    const photoPath = await toDataUrl(await resizePhoto(input.photo))
+    const photoPath = await toDataUrl(await preparePhoto(input.photo))
 
     const state = readState()
     if (!state.settings.submissions_open)
@@ -134,7 +127,7 @@ export const mockSource: HighscoresSource = {
     )
       throw new Error('This game is not on display')
 
-    state.scores.push({
+    const submission: Score = {
       id: newId(),
       event_id: currentEventId(state),
       game_id: input.game_id,
@@ -151,8 +144,17 @@ export const mockSource: HighscoresSource = {
       source: 'player',
       created_at: new Date().toISOString(),
       reviewed_at: null,
-    })
-    writeState(state, 'scores')
+    }
+    state.scores.push(submission)
+    try {
+      writeState(state, 'scores')
+    } catch (error) {
+      // localStorage is full (an unconverted HEIC weighs several MB): keep
+      // the submission, without its photo, rather than losing it.
+      console.warn('Mock storage full, photo dropped', error)
+      submission.photo_path = null
+      writeState(state, 'scores')
+    }
   },
 
   photoUrl: (path) => path,

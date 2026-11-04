@@ -2,6 +2,7 @@
 // `supabase gen types` plus a mapping once the schema catches up.
 
 export type ScoreOrder = 'desc' | 'asc'
+/** To add a type, add it here and give it a formatter in src/lib/format.ts. */
 export type ScoreType = 'points' | 'time' | 'other'
 export type ScoreStatus = 'pending' | 'approved' | 'rejected'
 export type ScoreSource = 'player' | 'admin'
@@ -66,7 +67,10 @@ export interface Score {
   reviewed_at: string | null
 }
 
-/** Public row: masked scores already carry the neutral name and no photo. */
+/**
+ * Public row. An anonymous score (the player unticked the display) stays
+ * ranked, but comes with a fun nickname and without the photo.
+ */
 export interface LeaderboardRow {
   id: string
   game_id: string
@@ -74,7 +78,7 @@ export interface LeaderboardRow {
   player_name: string
   score: number
   photo_path: string | null
-  masked: boolean
+  anonymous: boolean
   created_at: string
   /** SQL rank(): ties share the place. */
   rank: number
@@ -100,7 +104,7 @@ export interface NewRecord {
   game: DisplayedGame
   record: LeaderboardRow
   previous: LeaderboardRow | null
-  /** The new record is also the best score ever ("TOUS LES TEMPS"). */
+  /** Beats the best existing score of every event ("TOUS LES TEMPS"). */
   all_time: boolean
 }
 
