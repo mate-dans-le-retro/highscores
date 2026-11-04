@@ -29,3 +29,7 @@ The public screen and the admin show photos without signing URLs. File names are
 ## 2026-11-04: everything in English except the interface
 
 Code, identifiers, routes, comments, docs, commit messages and pull requests are in English. The interface stays in French, for the players and volunteers.
+
+## 2026-11-04: "tu" everywhere in the interface
+
+The interface speaks to players and volunteers with the informal "tu", on the public screen, the player form and the admin alike. The tone of voice is simple, fun and retro, like a bunch of friends in their forties playing on the console. It fits the event and the mockups. This departs from the design system, which uses "vous" for the association's website.
