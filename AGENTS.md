@@ -118,12 +118,13 @@ Lire [docs/design-system/README.md](docs/design-system/README.md). L'essentiel :
 
 Même règle que les autres projets MDLR (`website`, `tournaments`) :
 
-| Branche | Environnement                                      | URL                                     |
-| ------- | -------------------------------------------------- | --------------------------------------- |
-| `main`  | **préprod** (preview Vercel attachée à la branche) | `highscores.preview.matedansleretro.fr` |
-| `prod`  | **production** (branche de production Vercel)      | `highscores.matedansleretro.fr`         |
-| autre   | preview Vercel de la PR                            | URL générée par Vercel                  |
+| Branche | Environnement                                      | URL                                 |
+| ------- | -------------------------------------------------- | ----------------------------------- |
+| `main`  | **préprod** (preview Vercel attachée à la branche) | `scores.preview.matedansleretro.fr` |
+| `prod`  | **production** (branche de production Vercel)      | `scores.matedansleretro.fr`         |
+| autre   | preview Vercel de la PR                            | URL générée par Vercel              |
 
+- Les anciens domaines `highscores.matedansleretro.fr` et `highscores.preview.matedansleretro.fr` redirigent vers les domaines `scores.*`.
 - Travailler sur une branche, ouvrir une PR vers `main`. Vérifier sur la préprod.
 - Mettre en production = faire avancer `prod` sur `main` (PR `main` → `prod`). Ne jamais pousser directement sur `prod`.
 - Messages de commit courts, à l'impératif.
