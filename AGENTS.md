@@ -70,7 +70,7 @@ docs/                product, architecture, decisions, design system
 ### Language and tone
 
 - **Everything in the repository is in English**: code, identifiers, file names, routes, comments, SQL, docs, commit messages, pull requests.
-- The only exception is **the user interface, which is in French**, for the players and volunteers. Use the formal "vous", in the association's "on" voice: warm and a little teasing, never salesy. One exclamation mark per idea, no more.
+- The only exception is **the user interface, which is in French**, for the players and volunteers. Use the informal "tu" everywhere, for players and volunteers alike (unlike the "vous" of the design system, see docs/decisions.md). Tone of voice: simple, fun and retro, like a bunch of friends in their forties playing on the console; the association speaks as "on", warm and a little teasing, never salesy, never corporate. One exclamation mark per idea, no more.
 - App titles in sentence case ("Gestion des jeux"), not uppercase.
 - No emoji in the interface (medals are `RankBadge`s, not 🥇).
 - Scores formatted the French way (`Intl.NumberFormat('fr-FR')`, spaces as thousands separators): use `formatScore()`.

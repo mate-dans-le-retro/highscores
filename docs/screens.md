@@ -55,7 +55,10 @@ The current schema (`games`, `scores`, `leaderboard`) covers one event. The mock
 - **Game score type**: points, time (formatted `1'32"48`) or other, on top of the existing `score_order`; and a short label for the initials thumbnail.
 - **Settings**: submissions open or closed, screen mode, durations, number of rows, Instagram mode and caption template.
 
+## Tone
+
+The player screens and the public screen use "tu", the admin uses "vous". We use "tu" everywhere, in a simple, fun and retro voice (see docs/decisions.md): the admin copy quoted above is to be rewritten that way when it is built.
+
 ## Open points
 
-- **"tu" or "vous"**: the player screens and the public screen use "tu", the admin uses "vous". `AGENTS.md` says "vous" everywhere.
 - **Projection rules**: the design system asks for a 15 s rotation and no looping animation; the mockups offer 30 s by default and loop confetti on "NOUVEAU RECORD !". Some secondary text on the wall is under 40px.

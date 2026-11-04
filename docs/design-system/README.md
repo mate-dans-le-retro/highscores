@@ -56,3 +56,4 @@ Each route declares its theme: `createFileRoute('/screen')({ staticData: { theme
 - A state color is always paired with a word.
 - Icons: Lucide only, 2px stroke, 20px in the admin, 24px in public, never in the pixel register.
 - No emoji in the interface, no copyrighted characters as icons.
+- Tone: this app says "tu" everywhere, unlike the "vous" of [foundations.md](foundations.md) (see [docs/decisions.md](../decisions.md)).
