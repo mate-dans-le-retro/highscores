@@ -5,11 +5,12 @@ import { useEffect, useState } from 'react'
 import { QrCode } from '#/components/qr-code'
 import {
   formatScore,
+  formatStation,
   leaderboardQuery,
   useHighscoresRealtime,
   visibleGamesQuery,
 } from '#/lib/highscores'
-import type { Game } from '#/lib/highscores'
+import type { DisplayedGame } from '#/lib/highscores'
 
 /** How long each game stays on screen before the next one (screens guideline: 15 s). */
 const ROTATION_MS = 15_000
@@ -93,7 +94,7 @@ function SubmitScorePanel() {
   )
 }
 
-function GameLeaderboard({ game }: { game: Game }) {
+function GameLeaderboard({ game }: { game: DisplayedGame }) {
   const rows = useQuery(leaderboardQuery(game.id))
 
   return (
@@ -102,8 +103,10 @@ function GameLeaderboard({ game }: { game: Game }) {
         <h2 className="font-display text-scene-pixel text-ink-accent">
           {game.name}
         </h2>
-        {game.machine && (
-          <p className="text-scene-meta text-ink-secondary">{game.machine}</p>
+        {(game.console || game.station_label) && (
+          <p className="text-scene-meta text-ink-secondary">
+            {formatStation(game.console, game.station_label)}
+          </p>
         )}
       </div>
       {rows.isSuccess && rows.data.length === 0 && (
@@ -120,7 +123,7 @@ function GameLeaderboard({ game }: { game: Game }) {
             <span className="font-display text-scene-pixel">{row.rank}</span>
             <span className="truncate">{row.player_name}</span>
             <span className="font-display text-scene-pixel">
-              {formatScore(row.score)}
+              {formatScore(row.score, game.score_type)}
             </span>
           </li>
         ))}
