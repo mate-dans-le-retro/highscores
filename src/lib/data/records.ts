@@ -15,20 +15,18 @@ export function findNewRecords(
 ): Array<NewRecord> {
   const beforeByGame = new Map(before.map((record) => [record.game.id, record]))
 
-  return after.flatMap(({ game, current, all_time }) => {
-    const previousRecord = beforeByGame.get(game.id)
-    if (!previousRecord || !current) return []
-    const previous = previousRecord.current
+  return after.flatMap(({ game, current }) => {
+    const previousRecords = beforeByGame.get(game.id)
+    if (!previousRecords || !current) return []
+    const previous = previousRecords.current
     if (current.id === previous?.id) return []
     if (previous && !isBetter(current.score, previous.score, game.score_order))
       return []
-    return [
-      {
-        game,
-        record: current,
-        previous,
-        all_time: all_time?.id === current.id,
-      },
-    ]
+    // "TOUS LES TEMPS" only when an existing record, from any event, is beaten.
+    const bestEver = previousRecords.all_time
+    const all_time =
+      bestEver !== null &&
+      isBetter(current.score, bestEver.score, game.score_order)
+    return [{ game, record: current, previous, all_time }]
   })
 }
