@@ -10,7 +10,7 @@ Highscores web app of **Mate dans le Rétro… Gaming** (MDLR), a retro gaming a
 - A player who beats a record **submits their score from their phone** (`/submit`, through a QR code): game, nickname, score, photo in front of the screen, Instagram consent.
 - MDLR volunteers have an **admin** (`/admin`): manage the games on display, approve or reject submissions, fix a score by hand.
 
-Product details are in [docs/product.md](docs/product.md), the architecture in [docs/architecture.md](docs/architecture.md), the decisions already made in [docs/decisions.md](docs/decisions.md). Read these three files before any non-trivial task.
+Product details are in [docs/product.md](docs/product.md), the screens from the reference mockups in [docs/screens.md](docs/screens.md), the architecture in [docs/architecture.md](docs/architecture.md), the decisions already made in [docs/decisions.md](docs/decisions.md). Read these three files before any non-trivial task.
 
 ## Stack
 
