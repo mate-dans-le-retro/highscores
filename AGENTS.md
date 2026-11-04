@@ -111,7 +111,7 @@ Lire [docs/design-system/README.md](docs/design-system/README.md). L'essentiel :
 ## Environnements
 
 - Local : Supabase CLI (Docker). Copier `.env.example` en `.env`, puis renseigner l'URL et la clé publishable affichées par `npx supabase start`.
-- Préprod et production : projet Supabase dans l'organisation MDLR, déploiement Vercel de l'équipe MDLR (voir « Git et environnements Vercel »). Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_PUBLISHABLE_KEY` sont posées dans Vercel.
+- Préprod et production : projet Supabase dans l'organisation MDLR, déploiement Vercel de l'équipe MDLR (voir « Git et environnements Vercel »). Les variables Supabase sont posées par l'intégration Supabase de Vercel, avec le préfixe public `VITE_` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 - Le dépôt est **public** : rien de sensible dans le code, les seeds, les tests ou les captures (pas de vraies données de joueurs).
 
 ## Git et environnements Vercel
