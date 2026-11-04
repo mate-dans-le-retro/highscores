@@ -65,13 +65,17 @@ Les tables `scores` et `games` sont dans la publication `supabase_realtime`. `us
 
 ## Variables d'environnement
 
-| Variable                        | Où               | Rôle                   |
-| ------------------------------- | ---------------- | ---------------------- |
-| `VITE_SUPABASE_URL`             | client + serveur | URL du projet Supabase |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client + serveur | clé publique (RLS)     |
+| Variable                                                | Où             | Rôle                                       |
+| ------------------------------------------------------- | -------------- | ------------------------------------------ |
+| `VITE_SUPABASE_URL`                                     | local (`.env`) | URL du projet Supabase                     |
+| `VITE_SUPABASE_PUBLISHABLE_KEY`                         | local (`.env`) | clé publique (RLS)                         |
+| `NEXT_PUBLIC_SUPABASE_URL`                              | Vercel         | posée par l'intégration Supabase de Vercel |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` (ou `_PUBLISHABLE_KEY`) | Vercel         | posée par l'intégration Supabase de Vercel |
 
-Les futures clés secrètes (service role, Instagram, IA) iront dans des variables **sans** préfixe `VITE_`, lues uniquement dans des server functions.
+Vite n'expose au navigateur que les préfixes `VITE_` et `NEXT_PUBLIC_` (`envPrefix` dans `vite.config.ts`). `src/lib/supabase.ts` prend les `VITE_*` en priorité, puis les `NEXT_PUBLIC_*`.
+
+Les futures clés secrètes (service role, Instagram, IA) iront dans des variables **sans** ces préfixes, lues uniquement dans des server functions. L'intégration Supabase pose déjà `SUPABASE_SERVICE_ROLE_KEY` côté serveur.
 
 ## Déploiement
 
-Vercel, équipe MDLR, branché sur le dépôt GitHub `mate-dans-le-retro/highscores`. La branche `main` est la préprod (`highscores.preview.matedansleretro.fr`), la branche `prod` est la production (`highscores.matedansleretro.fr`), comme pour `website` et `tournaments`. Nitro détecte l'environnement Vercel au build. Les migrations sont appliquées sur le projet Supabase MDLR avec `npx supabase db push` (ou l'intégration GitHub de Supabase).
+Vercel, équipe MDLR, branché sur le dépôt GitHub `mate-dans-le-retro/highscores`. La branche `main` est la préprod (`highscores.preview.matedansleretro.fr`), la branche `prod` est la production (`highscores.matedansleretro.fr`), comme pour `website` et `tournaments`. Nitro détecte l'environnement Vercel au build. La base Supabase vient de l'intégration Supabase de la Marketplace Vercel (onglet Storage du projet), comme pour `tournaments` : une seule base pour la préprod et la prod. Les migrations sont appliquées sur le projet Supabase MDLR avec `npx supabase db push` (ou l'intégration GitHub de Supabase).
