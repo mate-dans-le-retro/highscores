@@ -2,14 +2,16 @@
 
 The reference mockups are the "MDLR – Highscores" design canvas (https://claude.ai/artifact/1RCiKeMKxRwkV2Ru5XuFVV), built with the MDLR design system. This page sums up what they decide, screen by screen, and what that changes in the data model. The interface text quoted here stays in French, as it appears in the app.
 
-## Public screen (`/screen`, `scene` theme, 1920 × 1080)
+## Public screen (`/`, `scene` theme, 1920 × 1080)
+
+`/scores` redirects to `/`.
 
 Three views. Volunteers choose which ones run in the admin ("Écran et Instagram").
 
 **One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
 
 - "LE RECORD": the photo of the record holder, with "Julie · samedi à 14h32" under it.
-- "À TOI DE JOUER": the QR code to `/submit`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".
+- "À TOI DE JOUER": the QR code to `/score`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".
 
 **Record wall** ("Mur des records", "LES RECORDS"). A 3 × 2 grid of `PixelPanel`s, one per visible game: game name as label, record photo, gold cup, player and score. When the all-time record (previous events) differs from the current one, a smaller line with a gold star shows it ("★ Marc · 31 200").
 
@@ -17,7 +19,7 @@ Three views. Volunteers choose which ones run in the admin ("Écran et Instagram
 
 Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin).
 
-## Player form (`/submit`, `arcade` theme, phone)
+## Player form (`/score`, `arcade` theme, phone)
 
 Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and a three-segment progress bar.
 
