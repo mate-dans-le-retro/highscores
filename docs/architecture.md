@@ -59,7 +59,24 @@ curl -s "$A/rest/v1/scores?status=eq.pending" -H "apikey: $K"
 Pages only import `src/lib/highscores.ts` (TanStack Query options, `submitScore`, `useHighscoresRealtime`). Behind it, `src/lib/data/` holds the domain types and two implementations of `HighscoresSource`:
 
 - `supabase-source.ts` (default): the tables and views above, with defaults for the fields the schema does not have yet.
-- `mock/` (`VITE_DATA_SOURCE=mock`): seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`).
+- `mock/`: seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`).
+
+Which source runs (`src/lib/data/mode.ts`):
+
+1. `?mock=1` or `?mock=0` in the URL turns the mock on or off; the choice holds for the tab's session (sessionStorage), across navigation and reloads.
+2. Otherwise, `VITE_DATA_SOURCE=mock` (local `.env.local` only) turns it on.
+3. Otherwise, Supabase.
+
+Both sources anonymize the scores a player kept off screen (`src/lib/data/anonymize.ts`): the row keeps its rank and score, with a retro nickname and no photo. The real backend must also enforce it on the server side.
+
+## Public screen options
+
+The rotation and the number of rows come from the settings (15 s and 5 rows by default). Search params override them, validated and clamped with zod (`src/lib/screen-options.ts`):
+
+| Param      | Range    | Example         |
+| ---------- | -------- | --------------- |
+| `rotation` | 5 to 300 | `/?rotation=30` |
+| `rows`     | 1 to 10  | `/?rows=10`     |
 
 ## Realtime
 
@@ -74,7 +91,7 @@ The `scores` and `games` tables are in the `supabase_realtime` publication. `use
 
 | Variable                        | Where                | Role                                                                             |
 | ------------------------------- | -------------------- | -------------------------------------------------------------------------------- |
-| `VITE_DATA_SOURCE`              | local (`.env.local`) | `mock`: fake data in `localStorage`, no Supabase needed (see below)              |
+| `VITE_DATA_SOURCE`              | local (`.env.local`) | `mock`: fake data in `localStorage`, see "Data sources"                          |
 | `VITE_SUPABASE_URL`             | client + server      | Supabase project URL                                                             |
 | `VITE_SUPABASE_PUBLISHABLE_KEY` | local (`.env`)       | public key (RLS)                                                                 |
 | `VITE_SUPABASE_ANON_KEY`        | Vercel               | public key set by the Supabase integration (read if the previous one is missing) |
