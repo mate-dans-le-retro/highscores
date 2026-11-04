@@ -19,7 +19,7 @@ Le détail fonctionnel est dans [docs/produit.md](docs/produit.md), l'architectu
 - **Tailwind CSS v4** + **shadcn/ui** (style new-york, primitives Radix), thémés par le design system MDLR.
 - Icônes : **lucide-react** uniquement.
 - Hébergement : **Vercel** (adaptateur Nitro, preset détecté au build).
-- Gestionnaire de paquets : **pnpm**.
+- Gestionnaire de paquets : **pnpm 11** (version fixée par `packageManager` dans `package.json`). Par défaut, pnpm 11 refuse un paquet publié il y a moins de 24 h (`minimumReleaseAge`) : ne pas exiger une version sortie le jour même, et ne pas désactiver cette protection.
 
 ## Commandes
 
