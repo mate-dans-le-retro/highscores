@@ -1,0 +1,169 @@
+/* MDLR — preset Tailwind v4.
+ *
+ * Avec un bundler :
+ *     @import "tailwindcss";
+ *     @import "./tokens.css";      (généré par le système)
+ *     @import "./tailwind.css";    (ce fichier)
+ *
+ * Avec le CDN navigateur (@tailwindcss/browser@4), comme sur matedansleretro.fr :
+ *     coller le contenu de tokens.css dans une balise <style> ordinaire,
+ *     puis ce fichier dans <style type="text/tailwindcss">.
+ *
+ * `@theme inline` fait pointer les utilitaires sur les variables du système
+ * plutôt que d'en recopier la valeur : c'est ce qui permet à bg-surface-base
+ * de suivre data-theme="arcade | console | scene" sans recompiler.
+ */
+
+@theme inline {
+  /* --- Marque. `purple` et `pink` sont les alias des classes que le site
+         écrit déjà à la main dans styles.css : bg-purple, text-pink…
+         Une fois ce preset en place, ces règles peuvent être supprimées. --- */
+  --color-purple: var(--brand-purple);
+  --color-pink: var(--brand-pink);
+  --color-brand-purple: var(--brand-purple);
+  --color-brand-pink: var(--brand-pink);
+  --color-brand-slate: var(--brand-slate);
+
+  /* --- Surfaces --- */
+  --color-surface-base: var(--surface-base);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-accent: var(--surface-accent);
+  --color-surface-inverse: var(--surface-inverse);
+
+  /* --- Encres --- */
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-accent: var(--ink-accent);
+  --color-ink-on-accent: var(--ink-on-accent);
+  --color-ink-on-accent-large: var(--ink-on-accent-large);
+  --color-ink-inverse: var(--ink-inverse);
+
+  /* --- Traits et motif --- */
+  --color-line-subtle: var(--line-subtle);
+  --color-line-strong: var(--line-strong);
+  --color-line-accent: var(--line-accent);
+  --color-grid-dot: var(--grid-dot);
+  --color-grid-dot-bright: var(--grid-dot-bright);
+  --color-focus-ring: var(--focus-ring);
+
+  /* --- États. Ce sont les valeurs déjà employées par l'app Tournois ;
+         les utiliser par ces noms plutôt que par red-600 / green-100. --- */
+  --color-state-live-surface: var(--state-live-surface);
+  --color-state-live-ink: var(--state-live-ink);
+  --color-state-soon-surface: var(--state-soon-surface);
+  --color-state-soon-ink: var(--state-soon-ink);
+  --color-state-done-surface: var(--state-done-surface);
+  --color-state-done-ink: var(--state-done-ink);
+  --color-state-danger: var(--state-danger);
+  --color-state-pending-surface: var(--state-pending-surface);
+  --color-state-pending-ink: var(--state-pending-ink);
+
+  /* --- Rangs de podium et de classement --- */
+  --color-rank-gold: var(--rank-gold);
+  --color-rank-silver: var(--rank-silver);
+  --color-rank-bronze: var(--rank-bronze);
+
+  /* --- Familles --- */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  /* --- Échelle typographique. `text-h2` pose taille, interlignage et
+         graisse d'un coup. Les titres du site sont en majuscules :
+         ajouter `uppercase`, qui n'est pas porté par le token. --- */
+  --text-h1: 48px;
+  --text-h1--line-height: 56px;
+  --text-h1--font-weight: 800;
+  --text-h2: 32px;
+  --text-h2--line-height: 40px;
+  --text-h2--font-weight: 800;
+  --text-h3: 24px;
+  --text-h3--line-height: 32px;
+  --text-h3--font-weight: 800;
+  --text-h4: 20px;
+  --text-h4--line-height: 28px;
+  --text-h4--font-weight: 800;
+  --text-h5: 16px;
+  --text-h5--line-height: 24px;
+  --text-h5--font-weight: 800;
+  --text-h6: 14px;
+  --text-h6--line-height: 20px;
+  --text-h6--font-weight: 800;
+  --text-eyebrow: 13px;
+  --text-eyebrow--line-height: 16px;
+  --text-eyebrow--font-weight: 700;
+  --text-eyebrow--letter-spacing: 0.12em;
+
+  --text-body: 18px;
+  --text-body--line-height: 24px;
+  --text-body--font-weight: 400;
+  --text-body-ui: 16px;
+  --text-body-ui--line-height: 24px;
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 20px;
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
+  --text-numeric: 28px;
+  --text-numeric--line-height: 34px;
+  --text-numeric--font-weight: 800;
+
+  --text-arcade-hero: 40px;
+  --text-arcade-hero--line-height: 56px;
+  --text-arcade-title: 22px;
+  --text-arcade-title--line-height: 34px;
+  --text-arcade-name: 16px;
+  --text-arcade-name--line-height: 26px;
+  --text-arcade-label: 12px;
+  --text-arcade-label--line-height: 20px;
+  --text-arcade-label--letter-spacing: 0.04em;
+
+  --text-scene-hero: 96px;
+  --text-scene-hero--line-height: 100px;
+  --text-scene-hero--font-weight: 800;
+  --text-scene-row: 40px;
+  --text-scene-row--line-height: 56px;
+  --text-scene-row--font-weight: 600;
+  --text-scene-meta: 26px;
+  --text-scene-meta--line-height: 36px;
+  --text-scene-pixel: 28px;
+  --text-scene-pixel--line-height: 44px;
+
+  /* --- Grille de 4px : p-1 vaut 4px, p-6 vaut 24px, p-24 vaut 96px.
+         Toute l'échelle numérique de Tailwind tombe sur la maille pixel
+         de la marque, sans avoir à déclarer chaque palier. --- */
+  --spacing: 4px;
+
+  /* --- Rayons. radius-none pour le registre pixel, le reste pour les
+         interfaces de gestion. --- */
+  --radius-none: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* --- Ombres --- */
+  --shadow-pixel: var(--shadow-pixel);
+  --shadow-card: var(--shadow-card);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-focus: var(--shadow-focus);
+
+  /* --- Largeurs de composition relevées du site --- */
+  --container-column: 296px;
+  --container-thumb: 210px;
+  --container-prose: 428px;
+  --container-logo: 240px;
+}
+
+/* Réglages de rendu de texte repris de styles.css : ils font partie de la
+   façon dont Montserrat est composée dans la marque. */
+@layer base {
+  html {
+    font-optical-sizing: auto;
+    font-feature-settings: "liga" 1, "kern" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}

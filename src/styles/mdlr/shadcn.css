@@ -1,0 +1,90 @@
+/* MDLR : thème shadcn/ui.
+ *
+ * Les variables attendues par les composants shadcn (--background, --primary…)
+ * pointent sur les tokens MDLR. Comme les tokens changent avec data-theme
+ * (arcade, console, scene), les composants shadcn suivent le thème sans rien
+ * recompiler.
+ *
+ * Les rayons ne sont pas redéfinis ici : le preset MDLR (tailwind.css) fixe déjà
+ * rounded-md (champs), rounded-lg (boutons) et rounded-xl (cartes).
+ */
+
+:root {
+  --background: var(--surface-base);
+  --foreground: var(--ink-primary);
+  --card: var(--surface-raised);
+  --card-foreground: var(--ink-primary);
+  --popover: var(--surface-overlay);
+  --popover-foreground: var(--ink-primary);
+  --primary: var(--surface-accent);
+  --primary-foreground: var(--ink-on-accent);
+  --secondary: var(--surface-sunken);
+  --secondary-foreground: var(--ink-primary);
+  /* ink-muted disparaît en projection : on s'en tient à ink-secondary partout. */
+  --muted: var(--surface-sunken);
+  --muted-foreground: var(--ink-secondary);
+  /* Survol : on éclaircit la surface d'un cran plutôt que de changer de teinte. */
+  --accent: var(--surface-overlay);
+  --accent-foreground: var(--ink-primary);
+  --destructive: var(--state-danger);
+  --border: var(--line-subtle);
+  --input: var(--line-strong);
+  --ring: var(--focus-ring);
+  --chart-1: var(--brand-pink);
+  --chart-2: var(--rank-gold);
+  --chart-3: var(--rank-bronze);
+  --chart-4: var(--rank-silver);
+  --chart-5: var(--line-strong);
+  --sidebar: var(--surface-sunken);
+  --sidebar-foreground: var(--ink-primary);
+  --sidebar-primary: var(--surface-accent);
+  --sidebar-primary-foreground: var(--ink-on-accent);
+  --sidebar-accent: var(--surface-overlay);
+  --sidebar-accent-foreground: var(--ink-primary);
+  --sidebar-border: var(--line-subtle);
+  --sidebar-ring: var(--focus-ring);
+}
+
+/* arcade et scene sont les thèmes sombres : les variantes dark: de shadcn
+   s'appliquent à eux, quel que soit le réglage du système. */
+@custom-variant dark (&:where([data-theme="arcade"], [data-theme="arcade"] *, [data-theme="scene"], [data-theme="scene"] *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+}

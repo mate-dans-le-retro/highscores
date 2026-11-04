@@ -1,0 +1,16 @@
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+.output
+.nitro
+.tanstack
+src/routeTree.gen.ts
+src/components/ui
+src/styles/mdlr/tokens.css
+src/styles/mdlr/tailwind.css
+# Copies du design system MDLR, gardées telles quelles
+docs/design-system/fondamentaux.md
+docs/design-system/tokens.json
+docs/design-system/guidelines
+docs/design-system/composants
+docs/design-system/assets
