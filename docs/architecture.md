@@ -16,12 +16,12 @@ The app is a server-rendered TanStack Start app deployed on Vercel. Pages talk d
 
 ## Routes
 
-| Route     | Theme   | Role                              |
-| --------- | ------- | --------------------------------- |
-| `/`       | arcade  | Home, links to the three surfaces |
-| `/screen` | scene   | Projected public screen           |
-| `/submit` | arcade  | Player form (QR code)             |
-| `/admin`  | console | Volunteer admin                   |
+| Route     | Theme   | Role                                |
+| --------- | ------- | ----------------------------------- |
+| `/`       | scene   | Projected public screen             |
+| `/scores` | none    | Redirects to `/`                    |
+| `/score`  | arcade  | Player form (QR code on the screen) |
+| `/admin`  | console | Volunteer admin, reached by its URL |
 
 Each route declares its theme in `staticData.theme`; `__root.tsx` sets the value of the deepest route on `<html data-theme>`, from the server render on.
 

@@ -2,8 +2,8 @@
 
 The highscores app of [Mate dans le Rétro… Gaming](https://matedansleretro.fr): a public screen showing the best scores, a form for players to submit their record from their phone, and an admin for the volunteers.
 
-- `/screen`: the screen projected in the room
-- `/submit`: score submission (through a QR code)
+- `/`: the screen projected in the room (`/scores` redirects to it)
+- `/score`: score submission (through the QR code on the screen)
 - `/admin`: game management and score approval
 
 Stack: TanStack Start, Supabase, Tailwind CSS v4, shadcn/ui, deployed on Vercel. Details in [docs/](docs/) and [AGENTS.md](AGENTS.md).

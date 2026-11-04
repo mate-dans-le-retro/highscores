@@ -45,7 +45,7 @@ The interface text quoted in these pages (« À venir », « Démarrer le tourno
 
 ### Themes
 
-Each route declares its theme: `createFileRoute('/screen')({ staticData: { theme: 'scene' } })`. Values: `scene` (projected screen), `arcade` (phone, default), `console` (admin, light).
+Each route declares its theme: `createFileRoute('/')({ staticData: { theme: 'scene' } })`. Values: `scene` (projected screen), `arcade` (phone, default), `console` (admin, light).
 
 ## Rules to remember
 

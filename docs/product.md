@@ -10,17 +10,18 @@ First use: **Saturday 7 and Sunday 8 November 2026**.
 
 The reference mockups detail each screen: see [screens.md](screens.md).
 
-### 1. Public screen (`/screen`, `scene` theme)
+### 1. Public screen (`/`, `scene` theme; `/scores` redirects to it)
 
 - Projected or shown on a TV in the room, watched from afar, without a mouse.
 - Shows the leaderboard of one game at a time: game name and machine at the top, then rank, player, score. Ten rows max.
 - Rotates through the visible games every 15 seconds.
 - Updates by itself when a score is approved (Supabase Realtime). A new score can be highlighted for a few seconds (a passing pink row); that is the only movement allowed.
-- Ideas for later: the player's photo next to the record, a QR code to `/submit` always on screen, a podium of the top three.
+- Always shows a QR code to `/score` next to the leaderboard.
+- Ideas for later: the player's photo next to the record, a podium of the top three.
 
-### 2. Score submission (`/submit`, `arcade` theme)
+### 2. Score submission (`/score`, `arcade` theme)
 
-- Opened from a QR code stuck near the machines, on the player's phone.
+- Opened from the QR code on the public screen, on the player's phone.
 - The player picks the game, enters their nickname and score, takes a photo of themselves in front of the game's screen (proof), and ticks whether they accept an Instagram post.
 - The submission is sent with the **pending** status; it only shows on the public screen once a volunteer approves it.
 - Planned next step: the player takes the photo first, we **detect the game and the score** automatically (vision model, called from a server function), then they fix it if needed.

@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
-import { Route as ScreenRouteImport } from './routes/screen'
-import { Route as SubmitRouteImport } from './routes/submit'
+import { Route as ScoreRouteImport } from './routes/score'
+import { Route as ScoresRouteImport } from './routes/scores'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -24,49 +24,49 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ScreenRoute = ScreenRouteImport.update({
-  id: '/screen',
-  path: '/screen',
+const ScoreRoute = ScoreRouteImport.update({
+  id: '/score',
+  path: '/score',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SubmitRoute = SubmitRouteImport.update({
-  id: '/submit',
-  path: '/submit',
+const ScoresRoute = ScoresRouteImport.update({
+  id: '/scores',
+  path: '/scores',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/screen': typeof ScreenRoute
-  '/submit': typeof SubmitRoute
+  '/score': typeof ScoreRoute
+  '/scores': typeof ScoresRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/screen': typeof ScreenRoute
-  '/submit': typeof SubmitRoute
+  '/score': typeof ScoreRoute
+  '/scores': typeof ScoresRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
-  '/screen': typeof ScreenRoute
-  '/submit': typeof SubmitRoute
+  '/score': typeof ScoreRoute
+  '/scores': typeof ScoresRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/screen' | '/submit'
+  fullPaths: '/' | '/admin' | '/score' | '/scores'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/screen' | '/submit'
-  id: '__root__' | '/' | '/admin' | '/screen' | '/submit'
+  to: '/' | '/admin' | '/score' | '/scores'
+  id: '__root__' | '/' | '/admin' | '/score' | '/scores'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
-  ScreenRoute: typeof ScreenRoute
-  SubmitRoute: typeof SubmitRoute
+  ScoreRoute: typeof ScoreRoute
+  ScoresRoute: typeof ScoresRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -85,18 +85,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/screen': {
-      id: '/screen'
-      path: '/screen'
-      fullPath: '/screen'
-      preLoaderRoute: typeof ScreenRouteImport
+    '/score': {
+      id: '/score'
+      path: '/score'
+      fullPath: '/score'
+      preLoaderRoute: typeof ScoreRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/submit': {
-      id: '/submit'
-      path: '/submit'
-      fullPath: '/submit'
-      preLoaderRoute: typeof SubmitRouteImport
+    '/scores': {
+      id: '/scores'
+      path: '/scores'
+      fullPath: '/scores'
+      preLoaderRoute: typeof ScoresRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -105,8 +105,8 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
-  ScreenRoute: ScreenRoute,
-  SubmitRoute: SubmitRoute,
+  ScoreRoute: ScoreRoute,
+  ScoresRoute: ScoresRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
