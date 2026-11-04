@@ -8,6 +8,8 @@ First use: **Saturday 7 and Sunday 8 November 2026**.
 
 ## The three surfaces
 
+The reference mockups detail each screen: see [screens.md](screens.md).
+
 ### 1. Public screen (`/`, `scene` theme; `/scores` redirects to it)
 
 - Projected or shown on a TV in the room, watched from afar, without a mouse.
