@@ -6,8 +6,8 @@ Guide for any agent (Claude, Codex, Cursor…) or human working on this reposito
 
 Highscores web app of **Mate dans le Rétro… Gaming** (MDLR), a retro gaming association. First use: the event on **Saturday 7 and Sunday 8 November 2026**.
 
-- A **public screen** (`/screen`) projects the best scores of the selected games.
-- A player who beats a record **submits their score from their phone** (`/submit`, through a QR code): game, nickname, score, photo in front of the screen, Instagram consent.
+- A **public screen** (`/`) projects the best scores of the selected games.
+- A player who beats a record **submits their score from their phone** (`/score`, through the QR code on the public screen): game, nickname, score, photo in front of the screen, Instagram consent.
 - MDLR volunteers have an **admin** (`/admin`): manage the games on display, approve or reject submissions, fix a score by hand.
 
 Product details are in [docs/product.md](docs/product.md), the architecture in [docs/architecture.md](docs/architecture.md), the decisions already made in [docs/decisions.md](docs/decisions.md). Read these three files before any non-trivial task.
@@ -45,10 +45,11 @@ Before proposing a change: `npx tsc --noEmit`, `pnpm lint`, `pnpm check` and `pn
 src/
   routes/            pages (TanStack Router file-based routing)
     __root.tsx       HTML document, fonts, theme set on <html>
-    index.tsx        home (links to the three surfaces)
-    screen.tsx       public screen, scene theme
-    submit.tsx       player form, arcade theme
+    index.tsx        public screen, scene theme
+    scores.tsx       redirects to /
+    score.tsx        player form, arcade theme
     admin.tsx        volunteer admin, console theme
+  components/        app components (qr-code.tsx)
   components/ui/     shadcn components (copied code, see "shadcn/ui" below)
   lib/
     supabase.ts      browser Supabase client

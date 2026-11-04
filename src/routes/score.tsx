@@ -10,7 +10,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { visibleGamesQuery } from '#/lib/highscores'
 import { supabase } from '#/lib/supabase'
 
-export const Route = createFileRoute('/submit')({
+export const Route = createFileRoute('/score')({
   staticData: { theme: 'arcade' },
   component: SubmitScore,
 })
@@ -60,8 +60,8 @@ function SubmitScore() {
       <main className="mx-auto flex max-w-prose flex-col gap-6 px-4 py-12">
         <h1 className="font-display text-arcade-title">Bien reçu !</h1>
         <p className="text-body">
-          Un bénévole MDLR va vérifier votre photo, puis votre score apparaîtra
-          sur l'écran. Bravo !
+          Un bénévole MDLR vérifie ta photo, puis ton score s'affiche sur
+          l'écran. Bien joué !
         </p>
         <Button
           size="lg"
@@ -107,7 +107,7 @@ function SubmitScore() {
             onChange={(event) => setGameId(event.target.value)}
             required
           >
-            <NativeSelectOption value="">Choisissez un jeu</NativeSelectOption>
+            <NativeSelectOption value="">Choisis ton jeu</NativeSelectOption>
             {games.data?.map((game) => (
               <NativeSelectOption key={game.id} value={game.id}>
                 {game.name}
@@ -119,7 +119,7 @@ function SubmitScore() {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="player" className="text-arcade-label uppercase">
-            Votre pseudo
+            Ton pseudo
           </Label>
           <Input
             id="player"
@@ -134,7 +134,7 @@ function SubmitScore() {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="score" className="text-arcade-label uppercase">
-            Votre score
+            Ton score
           </Label>
           <Input
             id="score"
@@ -177,7 +177,7 @@ function SubmitScore() {
 
         {mutation.isError && (
           <p role="alert" className="text-body-sm text-ink-accent">
-            Oups, l'envoi a échoué. Vérifiez votre connexion et réessayez.
+            Oups, l'envoi a planté. Vérifie ta connexion et retente ta chance.
           </p>
         )}
 
