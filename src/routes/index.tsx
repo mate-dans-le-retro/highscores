@@ -31,6 +31,7 @@ import {
 import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
+import { useSubmitScoreUrl } from '#/lib/submit-url'
 import {
   DOUBLE_CLICK_MS,
   INITIAL_ROTATION,
@@ -475,17 +476,8 @@ function WallThumb({ active, page }: { active: boolean; page: number | null }) {
   )
 }
 
-/** Where a phone sends its score; the demo keeps the phone on the demo data. */
-function useSubmitUrl() {
-  const [submitUrl, setSubmitUrl] = useState<string | null>(null)
-  useEffect(() => {
-    setSubmitUrl(`${window.location.origin}/score${isMock ? '?mock=1' : ''}`)
-  }, [])
-  return submitUrl
-}
-
 function SubmitScorePanel() {
-  const submitUrl = useSubmitUrl()
+  const submitUrl = useSubmitScoreUrl(isMock)
 
   return (
     <PixelPanel label="À toi de jouer" className="shrink-0">
@@ -514,7 +506,7 @@ function SubmitScorePanel() {
 
 /** A game nobody has played yet: the QR code takes the whole table. */
 function EmptyGameInvite() {
-  const submitUrl = useSubmitUrl()
+  const submitUrl = useSubmitScoreUrl(isMock)
 
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center gap-16 px-12 pb-12">
