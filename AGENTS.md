@@ -20,6 +20,7 @@ Product details are in [docs/product.md](docs/product.md), the screens from the 
 - Icons: **lucide-react** only.
 - Hosting: **Vercel** (Nitro adapter, preset detected at build time).
 - Package manager: **pnpm 12** (version pinned by `packageManager` in `package.json`). By default, pnpm refuses a package published less than 24 hours ago (`minimumReleaseAge`): do not require a version released the same day, and do not turn this protection off.
+- Run tools through pnpm, never `npx`: `pnpm <bin>` or `pnpm exec <bin>` for a dependency of the project (`tsc`, the Supabase CLI), `pnpm dlx <package>` for a one-off tool (`shadcn`). pnpm settings live in `pnpm-workspace.yaml` (camelCase), not in an `.npmrc`.
 
 ## Commands
 
@@ -31,14 +32,14 @@ pnpm lint           # ESLint (@tanstack/eslint-config)
 pnpm check          # Prettier check
 pnpm format         # Prettier + ESLint --fix
 pnpm test           # Vitest (src/**/*.test.ts)
-npx tsc --noEmit    # type check
+pnpm typecheck      # type check (tsc --noEmit)
 
-npx supabase start  # local Supabase (Docker), applies migrations + seed
-npx supabase db reset   # replays migrations + seed on the local database
-npx supabase migration new <name>   # new migration
+pnpm supabase start  # local Supabase (Docker), applies migrations + seed
+pnpm supabase db reset   # replays migrations + seed on the local database
+pnpm supabase migration new <name>   # new migration
 ```
 
-Before proposing a change: `npx tsc --noEmit`, `pnpm lint`, `pnpm check`, `pnpm test` and `pnpm build` must pass.
+Before proposing a change: `pnpm typecheck`, `pnpm lint`, `pnpm check`, `pnpm test` and `pnpm build` must pass.
 
 ## Layout
 
@@ -107,13 +108,13 @@ Read [docs/design-system/README.md](docs/design-system/README.md). The essential
 - Components live in `src/components/ui/`; they can be modified, they are part of the code.
 - They take their colors from the shadcn variables (`--primary`, `--background`…) defined in `src/styles/mdlr/shadcn.css`, wired to the MDLR tokens. Do not add a default shadcn palette (neutral, zinc…).
 - The Tailwind `dark:` variant targets the dark themes `arcade` and `scene`, not the system setting.
-- Add a component: `npx shadcn@latest add <name>` (reads `components.json`). If the registry cannot be reached (restricted network), fetch the source from `https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<name>.tsx` and replace the `cn` import with `@/lib/utils`.
+- Add a component: `pnpm dlx shadcn@latest add <name>` (reads `components.json`). If the registry cannot be reached (restricted network), fetch the source from `https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<name>.tsx` and replace the `cn` import with `@/lib/utils`.
 - `src/components/ui/` is excluded from ESLint and Prettier to stay close to upstream.
 - Eventually, MDLR-specific components (ScoreTable, RankBadge, Podium, PixelPanel…) will be built here, then extracted into a library shared with the other MDLR projects.
 
 ## Environments
 
-- Local: Supabase CLI (Docker). Copy `.env.example` to `.env`, then fill in the URL and publishable key printed by `npx supabase start`.
+- Local: Supabase CLI (Docker). Copy `.env.example` to `.env`, then fill in the URL and publishable key printed by `pnpm supabase start`.
 - Local without Supabase: put `VITE_DATA_SOURCE=mock` in `.env.local`; the pages then read fake data from `localStorage` (see docs/architecture.md, "Data sources"). On a deployed preview, add `?mock=1` to the URL instead (`?mock=0` to go back); never set `VITE_DATA_SOURCE` on Vercel.
 - Preprod and production: Supabase project in the MDLR organization, Vercel deployment of the MDLR team (see "Git and Vercel environments"). The Supabase variables are set by Vercel's Supabase integration, with the public `VITE_` prefix (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 - The repository is **public**: nothing sensitive in the code, seeds, tests or screenshots (no real player data).
