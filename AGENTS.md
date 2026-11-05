@@ -6,11 +6,11 @@ Guide for any agent (Claude, Codex, Cursor…) or human working on this reposito
 
 Highscores web app of **Mate dans le Rétro… Gaming** (MDLR), a retro gaming association. First use: the event on **Saturday 7 and Sunday 8 November 2026**.
 
-- A **public screen** (`/screen`) projects the best scores of the selected games.
-- A player who beats a record **submits their score from their phone** (`/submit`, through a QR code): game, nickname, score, photo in front of the screen, Instagram consent.
+- A **public screen** (`/`) projects the best scores of the selected games.
+- A player who beats a record **submits their score from their phone** (`/score`, through the QR code on the public screen): game, nickname, score, photo in front of the screen, Instagram consent.
 - MDLR volunteers have an **admin** (`/admin`): manage the games on display, approve or reject submissions, fix a score by hand.
 
-Product details are in [docs/product.md](docs/product.md), the architecture in [docs/architecture.md](docs/architecture.md), the decisions already made in [docs/decisions.md](docs/decisions.md). Read these three files before any non-trivial task.
+Product details are in [docs/product.md](docs/product.md), the screens from the reference mockups in [docs/screens.md](docs/screens.md), the architecture in [docs/architecture.md](docs/architecture.md), the decisions already made in [docs/decisions.md](docs/decisions.md). Read these three files before any non-trivial task.
 
 ## Stack
 
@@ -20,6 +20,7 @@ Product details are in [docs/product.md](docs/product.md), the architecture in [
 - Icons: **lucide-react** only.
 - Hosting: **Vercel** (Nitro adapter, preset detected at build time).
 - Package manager: **pnpm 12** (version pinned by `packageManager` in `package.json`). By default, pnpm refuses a package published less than 24 hours ago (`minimumReleaseAge`): do not require a version released the same day, and do not turn this protection off.
+- Run tools through pnpm, never `npx`: `pnpm <bin>` or `pnpm exec <bin>` for a dependency of the project (`tsc`, the Supabase CLI), `pnpm dlx <package>` for a one-off tool (`shadcn`). pnpm settings live in `pnpm-workspace.yaml` (camelCase), not in an `.npmrc`.
 
 ## Commands
 
@@ -30,14 +31,19 @@ pnpm build          # production build (.output/)
 pnpm lint           # ESLint (@tanstack/eslint-config)
 pnpm check          # Prettier check
 pnpm format         # Prettier + ESLint --fix
-npx tsc --noEmit    # type check
+pnpm test           # Vitest (src/**/*.test.ts)
+pnpm typecheck      # type check (tsc --noEmit)
 
-npx supabase start  # local Supabase (Docker), applies migrations + seed
-npx supabase db reset   # replays migrations + seed on the local database
-npx supabase migration new <name>   # new migration
+pnpm vercel:login   # Vercel CLI login, once per machine
+pnpm vercel:link    # link the checkout to the Vercel project (.vercel/)
+pnpm env:pull       # Vercel development variables into .env.local, overwrites it
+
+pnpm supabase start  # local Supabase (Docker), applies migrations + seed
+pnpm supabase db reset   # replays migrations + seed on the local database
+pnpm supabase migration new <name>   # new migration
 ```
 
-Before proposing a change: `npx tsc --noEmit`, `pnpm lint`, `pnpm check` and `pnpm build` must pass.
+Before proposing a change: `pnpm typecheck`, `pnpm lint`, `pnpm check`, `pnpm test` and `pnpm build` must pass.
 
 ## Layout
 
@@ -45,10 +51,12 @@ Before proposing a change: `npx tsc --noEmit`, `pnpm lint`, `pnpm check` and `pn
 src/
   routes/            pages (TanStack Router file-based routing)
     __root.tsx       HTML document, fonts, theme set on <html>
-    index.tsx        home (links to the three surfaces)
-    screen.tsx       public screen, scene theme
-    submit.tsx       player form, arcade theme
-    admin.tsx        volunteer admin, console theme
+    index.tsx        public screen, scene theme
+    scores.tsx       redirects to /
+    score.tsx        player form, arcade theme
+    admin.tsx        volunteer admin layout (sign-in, tabs), console theme
+    admin/           admin pages: submissions, games, records, settings
+  components/        app components (qr-code.tsx)
   components/ui/     shadcn components (copied code, see "shadcn/ui" below)
   lib/
     supabase.ts      browser Supabase client
@@ -59,6 +67,7 @@ src/
 supabase/
   migrations/        versioned SQL schema (source of truth for the database)
   seed.sql           demo games for local development
+  scripts/           demo data for the remote database, run by hand (README.md)
   config.toml        local Supabase config (sign-ups closed)
 docs/                product, architecture, decisions, design system
 ```
@@ -70,7 +79,7 @@ docs/                product, architecture, decisions, design system
 ### Language and tone
 
 - **Everything in the repository is in English**: code, identifiers, file names, routes, comments, SQL, docs, commit messages, pull requests.
-- The only exception is **the user interface, which is in French**, for the players and volunteers. Use the formal "vous", in the association's "on" voice: warm and a little teasing, never salesy. One exclamation mark per idea, no more.
+- The only exception is **the user interface, which is in French**, for the players and volunteers. Use the informal "tu" everywhere, for players and volunteers alike (unlike the "vous" of the design system, see docs/decisions.md). Tone of voice: simple, fun and retro, like a bunch of friends in their forties playing on the console; the association speaks as "on", warm and a little teasing, never salesy, never corporate. One exclamation mark per idea, no more.
 - App titles in sentence case ("Gestion des jeux"), not uppercase.
 - No emoji in the interface (medals are `RankBadge`s, not 🥇).
 - Scores formatted the French way (`Intl.NumberFormat('fr-FR')`, spaces as thousands separators): use `formatScore()`.
@@ -88,6 +97,7 @@ docs/                product, architecture, decisions, design system
 - Every table has **RLS enabled** with explicit policies. The public (`anon`) only reads visible games and approved scores, and can only insert a `pending` submission.
 - Volunteers are the users listed in `public.admins`; check with `public.is_admin()` in policies.
 - After a schema change, test the policies locally with the publishable key (see docs/architecture.md).
+- A migration that adds a foreign key to `games`, `events` or `scores` must update `supabase/scripts/demo-clean.sql`, which refuses to run otherwise.
 
 ### MDLR design system
 
@@ -104,13 +114,16 @@ Read [docs/design-system/README.md](docs/design-system/README.md). The essential
 - Components live in `src/components/ui/`; they can be modified, they are part of the code.
 - They take their colors from the shadcn variables (`--primary`, `--background`…) defined in `src/styles/mdlr/shadcn.css`, wired to the MDLR tokens. Do not add a default shadcn palette (neutral, zinc…).
 - The Tailwind `dark:` variant targets the dark themes `arcade` and `scene`, not the system setting.
-- Add a component: `npx shadcn@latest add <name>` (reads `components.json`). If the registry cannot be reached (restricted network), fetch the source from `https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<name>.tsx` and replace the `cn` import with `@/lib/utils`.
+- Add a component: `pnpm dlx shadcn@latest add <name>` (reads `components.json`). If the registry cannot be reached (restricted network), fetch the source from `https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/v4/registry/new-york-v4/ui/<name>.tsx` and replace the `cn` import with `@/lib/utils`.
 - `src/components/ui/` is excluded from ESLint and Prettier to stay close to upstream.
 - Eventually, MDLR-specific components (ScoreTable, RankBadge, Podium, PixelPanel…) will be built here, then extracted into a library shared with the other MDLR projects.
 
 ## Environments
 
-- Local: Supabase CLI (Docker). Copy `.env.example` to `.env`, then fill in the URL and publishable key printed by `npx supabase start`.
+- Local: `pnpm vercel:login`, `pnpm vercel:link`, then `pnpm env:pull`, which writes the variables of the Vercel development environment into `.env.local`. `.env.local` belongs to Vercel and every pull overwrites it: personal settings go in `.env.development.local`, which wins over it in `pnpm dev`. Each checkout or worktree needs its own `.vercel/` and `.env.local` (link and pull again, or copy them). With the pulled variables, `pnpm dev` talks to the real Supabase project, shared by preprod and production.
+- Local without Supabase: put `VITE_DATA_SOURCE=mock` in `.env.development.local` (comment it out to go back to Supabase, then restart `pnpm dev`); the pages then read fake data from `localStorage` (see docs/architecture.md, "Data sources"). In the browser, or on a deployed preview, `?mock=1` and `?mock=0` switch the tab instead; never set `VITE_DATA_SOURCE` on Vercel. `/admin` always talks to Supabase.
+- Local Supabase (Docker): `pnpm supabase start`, then put the URL and publishable key it prints in `.env.development.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
+- Never commit an env file: `.gitignore` ignores every `.env*` file and `.vercel/`. The pull also brings server-only secrets of the integration (service role, Postgres URL); never copy them into a `VITE_` variable.
 - Preprod and production: Supabase project in the MDLR organization, Vercel deployment of the MDLR team (see "Git and Vercel environments"). The Supabase variables are set by Vercel's Supabase integration, with the public `VITE_` prefix (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 - The repository is **public**: nothing sensitive in the code, seeds, tests or screenshots (no real player data).
 

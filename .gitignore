@@ -3,7 +3,8 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
+.env*
+.vercel
 .nitro
 .tanstack
 .wrangler
@@ -11,3 +12,6 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+
+.vercel
+.env*

@@ -5,6 +5,7 @@ yarn.lock
 .nitro
 .tanstack
 src/routeTree.gen.ts
+supabase/.temp
 src/components/ui
 src/styles/mdlr/tokens.css
 src/styles/mdlr/tailwind.css
@@ -14,3 +15,7 @@ docs/design-system/tokens.json
 docs/design-system/guidelines
 docs/design-system/components
 docs/design-system/assets
+# Local agent handoffs (untracked); Prettier still walks them from the main checkout
+HANDOFF.cursor.md
+HANDOFF.claude.md
+
