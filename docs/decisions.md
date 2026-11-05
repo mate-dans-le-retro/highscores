@@ -89,8 +89,12 @@ A photo is never refused: some phones send `image/heif` or no type at all. The b
 
 ## 2026-11-05: an admin for the weekend, simple first
 
-- Volunteers sign in with an email and a password, created by hand in Supabase: no email links to configure before Saturday.
+- Volunteers sign in with an email and a password, created by hand in Supabase: no email links to configure before Saturday. Superseded by "Google sign-in for volunteers, sign-ups still closed" below, with email and password kept as a fallback.
 - The submissions queue refreshes every 10 seconds instead of listening to realtime: the public must not receive score rows, and a short delay is fine for a volunteer.
 - Games are reordered with up and down arrows, not by dragging rows as in the mockup: it works the same on a phone.
 - A free game name ("Un autre jeu") is either created as a new game from the submission, or linked to an existing game by picking it in the list.
 - Instagram: the admin shows the player's consent and handle, but does not publish yet.
+
+## 2026-11-05: Google sign-in for volunteers, sign-ups still closed
+
+Volunteers sign in with Google, so they have no password to remember. Sign-ups stay closed: we create each volunteer's user first, and their Google identity links to it through the email. With sign-ups open, any Google account could create a user. That user would have no rights, but we would have to check every policy against a signed-in stranger. Rights still come only from `public.admins`. Email and password stay as a fallback, in case Google fails on the venue network during the event.
