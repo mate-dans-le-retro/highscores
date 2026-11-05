@@ -20,3 +20,29 @@
     font-family: var(--font-sans);
   }
 }
+
+/* Regular pixel-square pattern (PixelGrid / .mdlr-pixelgrid). Theme-aware. */
+@layer components {
+  .mdlr-pixelgrid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-grid);
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--grid-dot) 0 0),
+      linear-gradient(var(--grid-dot-bright) 0 0);
+    background-size:
+      24px 24px,
+      24px 24px;
+    background-position:
+      0 0,
+      12px 12px;
+    background-repeat: repeat;
+    opacity: 0.55;
+  }
+
+  .mdlr-pixelgrid--over::before {
+    opacity: var(--opacity-grid);
+  }
+}
