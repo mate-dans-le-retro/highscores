@@ -99,14 +99,19 @@ export const seedGameEventSetups: Array<GameEventSetup> = [
   setup(CURRENT_EVENT, 'space-invaders', 'Arcade'),
 ]
 
-/** Varied player-photo placeholders (different fills / labels). */
-const demoPhoto = (label: string, fill: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"><rect width="800" height="600" fill="${fill}"/><text x="400" y="320" text-anchor="middle" font-family="monospace" font-size="48" fill="#fff">${label}</text></svg>`,
+/**
+ * Varied player-photo placeholders (different fills / labels). Some are
+ * portrait, like a phone held upright in front of the screen.
+ */
+const demoPhoto = (label: string, fill: string, portrait = false) => {
+  const [width, height] = portrait ? [600, 800] : [800, 600]
+  return `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="${width}" height="${height}" fill="${fill}"/><text x="${width / 2}" y="${height / 2 + 20}" text-anchor="middle" font-family="monospace" font-size="48" fill="#fff">${label}</text></svg>`,
   )}`
+}
 
 const PHOTO = {
-  julie: demoPhoto('Julie', '#ea4592'),
+  julie: demoPhoto('Julie', '#ea4592', true),
   marc: demoPhoto('Marc', '#5a3a8a'),
   sam: demoPhoto('Sam', '#2a9d8f'),
   ines: demoPhoto('Inès', '#e76f51'),
@@ -114,11 +119,11 @@ const PHOTO = {
   zoe: demoPhoto('Zoé', '#6a4c93'),
   lea: demoPhoto('Léa', '#f4a261'),
   paul: demoPhoto('Paul', '#bc4749'),
-  hugo: demoPhoto('Hugo', '#e9c46a'),
+  hugo: demoPhoto('Hugo', '#e9c46a', true),
   nora: demoPhoto('Nora', '#457b9d'),
   yanis: demoPhoto('Yanis', '#1d3557'),
   lina: demoPhoto('Lina', '#a8dadc'),
-  antoine: demoPhoto('Antoine', '#ff6b6b'),
+  antoine: demoPhoto('Antoine', '#ff6b6b', true),
   chloe: demoPhoto('Chloé', '#4ecdc4'),
   past: demoPhoto('2025', '#331655'),
   april: demoPhoto('Avril', '#7b2cbf'),

@@ -34,7 +34,7 @@ const EYES = [
 
 const SIZES = {
   sm: { art: 'size-20', caption: 'text-arcade-label' },
-  md: { art: 'size-32', caption: 'text-arcade-title' },
+  md: { art: 'size-32', caption: 'text-scene-pixel' },
   lg: { art: 'size-72', caption: 'text-scene-pixel' },
 } as const
 

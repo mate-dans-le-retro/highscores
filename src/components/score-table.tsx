@@ -38,21 +38,24 @@ function formatCell(score: number | string) {
   return new Intl.NumberFormat('fr-FR').format(score)
 }
 
-type Tone = 'fresh' | 'first' | 'dimmed' | 'plain'
+type Tone = 'fresh' | 'first' | 'first-past' | 'dimmed' | 'plain'
 
 function toneOf(row: ScoreTableRow, belowSeparator: boolean): Tone {
   if (row.fresh) return 'fresh'
-  if (row.rank === 1 && !belowSeparator) return 'first'
+  if (row.rank === 1 && !belowSeparator)
+    return row.dimmed ? 'first-past' : 'first'
   return row.dimmed ? 'dimmed' : 'plain'
 }
 
 /**
  * A score that just landed is pink for a while, then fades back; the best
- * score is white. Pink stays rare so a new score always catches the eye.
+ * score is white, faded like any past-event row when it comes from an older
+ * event. Pink stays rare so a new score always catches the eye.
  */
 const BAR: Record<Tone, string> = {
   fresh: 'bg-surface-accent text-ink-on-accent',
   first: 'bg-surface-inverse text-ink-inverse',
+  'first-past': 'bg-surface-inverse/50 text-ink-inverse',
   dimmed: 'bg-surface-overlay/50',
   plain: 'bg-surface-overlay',
 }
@@ -60,6 +63,7 @@ const BAR: Record<Tone, string> = {
 const META: Record<Tone, string> = {
   fresh: 'text-ink-on-accent',
   first: 'text-ink-inverse',
+  'first-past': 'text-ink-inverse',
   dimmed: 'text-ink-secondary',
   plain: 'text-ink-secondary',
 }
@@ -121,17 +125,20 @@ export function ScoreTable({
             const belowSeparator = separatorAt !== null && index >= separatorAt
             const tone = toneOf(row, belowSeparator)
             const name = `${row.player} — ${formatCell(row.score)}, ${placeLabel(row.rank)}`
-            const dimmedText = tone === 'dimmed' && 'opacity-60'
+            const dimmedText =
+              (tone === 'dimmed' || tone === 'first-past') && 'opacity-60'
+            // Name and date together are as tall as the cup (48px), so the
+            // three line up even when ten rows squeeze the bars.
             const content = (
               <>
                 <RankBadge rank={row.rank} size="md" plain={belowSeparator} />
                 <div className={cn('min-w-0', dimmedText)}>
-                  <p className="truncate font-display text-scene-pixel leading-8">
+                  <p className="truncate font-display text-scene-pixel leading-7">
                     {row.player}
                   </p>
                   {row.meta ? (
                     <p
-                      className={cn('truncate text-body leading-6', META[tone])}
+                      className={cn('truncate text-body leading-5', META[tone])}
                     >
                       {row.meta}
                     </p>
@@ -158,11 +165,11 @@ export function ScoreTable({
                   key="separator"
                   role="separator"
                   aria-label={separatorLabel ?? undefined}
-                  className="flex h-9 shrink-0 items-center gap-4 px-2"
+                  className="flex h-11 shrink-0 items-center gap-4 px-2"
                 >
                   <span className="flex-1 border-t-4 border-dashed border-line-strong/60" />
                   {separatorLabel ? (
-                    <span className="font-display text-arcade-title text-ink-accent">
+                    <span className="font-display text-scene-pixel text-ink-accent">
                       {pixelCaps(separatorLabel)}
                     </span>
                   ) : null}

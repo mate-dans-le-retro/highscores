@@ -1,3 +1,4 @@
+import { AllTimeBadge } from '#/components/all-time-badge'
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { RankBadge } from '#/components/rank-badge'
 import { formatScore, photoUrl, pixelCaps } from '#/lib/highscores'
@@ -46,7 +47,7 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
               <img
                 src={image}
                 alt=""
-                className="size-full object-cover"
+                className="size-full object-contain"
                 draggable={false}
               />
             ) : (
@@ -60,11 +61,7 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
             <p className="font-display text-scene-pixel text-ink-accent">
               {pixelCaps(game.name)}
             </p>
-            {all_time ? (
-              <span className="rounded-full bg-rank-gold px-4 py-1 text-h4 uppercase tracking-wide text-ink-on-accent">
-                Tous les temps
-              </span>
-            ) : null}
+            {all_time ? <AllTimeBadge /> : null}
           </div>
 
           <div className="flex items-center gap-6">

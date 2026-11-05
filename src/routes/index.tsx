@@ -205,7 +205,7 @@ function PublicScreen() {
           <header className="flex h-44 shrink-0 items-center justify-between gap-8 border-b-4 border-line-subtle bg-surface-sunken px-24">
             {showWall ? (
               <div className="flex flex-col gap-2">
-                <p className="font-display text-arcade-label text-ink-accent">
+                <p className="font-display text-scene-pixel text-ink-accent">
                   {pixelCaps('Highscores')}
                 </p>
                 <h1 className="text-scene-hero uppercase">Les records</h1>
@@ -504,7 +504,7 @@ function RecordPanel({
             <img
               src={image}
               alt=""
-              className="size-full object-cover"
+              className="size-full object-contain"
               draggable={false}
             />
           ) : (

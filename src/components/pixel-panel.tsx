@@ -45,7 +45,7 @@ export function PixelPanel({
       className={cn('flex min-h-0 flex-col gap-3', className)}
       {...props}
     >
-      <h2 className="self-start truncate bg-surface-sunken px-3 py-1 font-display text-arcade-title text-ink-accent max-w-full">
+      <h2 className="max-w-full self-start bg-surface-sunken px-3 py-1 font-display text-scene-pixel text-balance text-ink-accent">
         {pixelCaps(label)}
       </h2>
       {frame}
