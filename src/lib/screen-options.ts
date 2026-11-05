@@ -30,8 +30,14 @@ export function screenOptions(settings: Settings, search: ScreenSearch) {
     rows,
     search.minAllTime ?? settings.min_all_time_rows,
   )
+  const gameDurationMs = (search.rotation ?? settings.game_duration_s) * 1000
+  const wallDurationMs = (search.rotation ?? settings.wall_duration_s) * 1000
   return {
-    rotationMs: (search.rotation ?? settings.game_duration_s) * 1000,
+    /** Kept for callers that only care about the per-game duration. */
+    rotationMs: gameDurationMs,
+    gameDurationMs,
+    wallDurationMs,
+    screenMode: settings.screen_mode,
     rows,
     minAllTimeRows,
   }
