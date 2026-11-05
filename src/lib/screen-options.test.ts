@@ -39,9 +39,12 @@ describe('screenSearchSchema', () => {
 })
 
 describe('screenOptions', () => {
-  it('uses the settings by default: 15 s, 10 rows, 5 all-time min', () => {
+  it('uses the settings by default: 15 s game, 20 s wall, 10 rows, 5 all-time min', () => {
     expect(screenOptions(DEFAULT_SETTINGS, {})).toEqual({
       rotationMs: 15_000,
+      gameDurationMs: 15_000,
+      wallDurationMs: 20_000,
+      screenMode: 'game',
       rows: 10,
       minAllTimeRows: 5,
     })
@@ -56,6 +59,9 @@ describe('screenOptions', () => {
       }),
     ).toEqual({
       rotationMs: 30_000,
+      gameDurationMs: 30_000,
+      wallDurationMs: 30_000,
+      screenMode: 'game',
       rows: 8,
       minAllTimeRows: 3,
     })
@@ -66,6 +72,9 @@ describe('screenOptions', () => {
       screenOptions(DEFAULT_SETTINGS, { rows: 3, minAllTime: 10 }),
     ).toEqual({
       rotationMs: 15_000,
+      gameDurationMs: 15_000,
+      wallDurationMs: 20_000,
+      screenMode: 'game',
       rows: 3,
       minAllTimeRows: 3,
     })
@@ -74,12 +83,17 @@ describe('screenOptions', () => {
   it('follows settings changed in the admin', () => {
     const settings = {
       ...DEFAULT_SETTINGS,
+      screen_mode: 'both',
       game_duration_s: 60,
+      wall_duration_s: 30,
       rows_shown: 3,
       min_all_time_rows: 3,
     } as const
     expect(screenOptions(settings, {})).toEqual({
       rotationMs: 60_000,
+      gameDurationMs: 60_000,
+      wallDurationMs: 30_000,
+      screenMode: 'both',
       rows: 3,
       minAllTimeRows: 3,
     })

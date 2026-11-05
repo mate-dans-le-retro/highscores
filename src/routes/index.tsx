@@ -1,11 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { GameThumb } from '#/components/game-thumb'
 import { Logo } from '#/components/logo'
 import { PixelPanel } from '#/components/pixel-panel'
 import { QrCode } from '#/components/qr-code'
+import { RecordsWall } from '#/components/records-wall'
 import { ScoreTable } from '#/components/score-table'
 import type { ScoreTableRow } from '#/components/score-table'
 import {
@@ -27,6 +28,8 @@ import { cn } from '#/lib/utils'
 /** Last stretch of the rotation: fade the screen toward black. */
 const FADE_MS = 2_500
 
+type Slide = { kind: 'game'; game: DisplayedGame } | { kind: 'wall' }
+
 export const Route = createFileRoute('/')({
   staticData: { theme: 'scene' },
   validateSearch: screenSearchSchema,
@@ -38,43 +41,77 @@ function PublicScreen() {
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)
   const records = useQuery(recordsQuery)
-  const { rotationMs, rows, minAllTimeRows } = screenOptions(
-    settings.data ?? DEFAULT_SETTINGS,
-    Route.useSearch(),
-  )
+  const { gameDurationMs, wallDurationMs, screenMode, rows, minAllTimeRows } =
+    screenOptions(settings.data ?? DEFAULT_SETTINGS, Route.useSearch())
+
+  const slides = useMemo<Array<Slide>>(() => {
+    const list = games.data ?? []
+    if (screenMode === 'wall') return [{ kind: 'wall' }]
+    if (screenMode === 'game')
+      return list.map((game) => ({ kind: 'game' as const, game }))
+    return [
+      ...list.map((game) => ({ kind: 'game' as const, game })),
+      { kind: 'wall' as const },
+    ]
+  }, [games.data, screenMode])
+
   const [index, setIndex] = useState(0)
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
-  const count = games.data?.length ?? 0
+  const count = slides.length
+  const safeIndex = count === 0 ? 0 : index % count
+  const slide: Slide | undefined = count === 0 ? undefined : slides[safeIndex]
+  const durationMs =
+    slide && slide.kind === 'wall' ? wallDurationMs : gameDurationMs
+
+  useEffect(() => {
+    setIndex(0)
+  }, [screenMode, games.data?.length])
 
   useEffect(() => {
     setStartedAt(Date.now())
-  }, [index, rotationMs, count])
+  }, [safeIndex, durationMs, count])
 
   useEffect(() => {
     if (count < 2) return
     const tick = window.setInterval(() => {
       const t = Date.now()
       setNow(t)
-      if (t - startedAt >= rotationMs) {
+      if (t - startedAt >= durationMs) {
         setIndex((i) => (i + 1) % count)
       }
     }, 50)
     return () => window.clearInterval(tick)
-  }, [count, rotationMs, startedAt])
+  }, [count, durationMs, startedAt])
 
-  const game = games.data?.[index % Math.max(count, 1)]
+  // Keep the progress bar alive when there is a single slide (wall-only).
+  useEffect(() => {
+    if (count !== 1) return
+    const tick = window.setInterval(() => setNow(Date.now()), 50)
+    return () => window.clearInterval(tick)
+  }, [count])
+
+  useEffect(() => {
+    if (count !== 1) return
+    if (now - startedAt < durationMs) return
+    setStartedAt(Date.now())
+  }, [count, durationMs, now, startedAt])
+
   const progress =
-    count < 2 ? 0 : Math.min(1, Math.max(0, (now - startedAt) / rotationMs))
+    count === 0 ? 0 : Math.min(1, Math.max(0, (now - startedAt) / durationMs))
   const fade =
     count < 2
       ? 0
       : Math.min(
           1,
-          Math.max(0, (now - startedAt - (rotationMs - FADE_MS)) / FADE_MS),
+          Math.max(0, (now - startedAt - (durationMs - FADE_MS)) / FADE_MS),
         )
 
-  const record = records.data?.find((entry) => entry.game.id === game?.id)
+  const game = slide && slide.kind === 'game' ? slide.game : undefined
+  const record = game
+    ? records.data?.find((entry) => entry.game.id === game.id)
+    : undefined
+  const showWall = slide?.kind === 'wall'
 
   return (
     <main className="relative flex min-h-screen flex-col gap-10 overflow-hidden p-24 pt-28">
@@ -83,7 +120,6 @@ function PublicScreen() {
         className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
       />
 
-      {/* Rotation progress — top of the screen, light and visible. */}
       <div
         aria-hidden="true"
         className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
@@ -94,7 +130,6 @@ function PublicScreen() {
         />
       </div>
 
-      {/* Fade to black in the last seconds (no big countdown). */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-75"
@@ -102,58 +137,109 @@ function PublicScreen() {
       />
 
       <header className="flex items-start justify-between gap-8">
-        <h1 className="text-scene-hero uppercase">Highscores</h1>
+        {showWall ? (
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-arcade-label uppercase text-ink-accent">
+              Highscores
+            </p>
+            <h1 className="text-scene-hero uppercase">Les records</h1>
+          </div>
+        ) : (
+          <h1 className="text-scene-hero uppercase">Highscores</h1>
+        )}
         <Logo alt="" className="m-0 w-72 shrink-0" />
       </header>
 
-      <div className="flex flex-1 items-start gap-12">
-        <div className="min-w-0 flex-1">
-          {games.isPending && <p className="text-scene-row">Chargement…</p>}
-          {games.isError && (
-            <p className="text-scene-row">Impossible de charger les jeux.</p>
+      {showWall ? (
+        <div className="flex min-h-0 flex-1 flex-col">
+          {records.isPending && <p className="text-scene-row">Chargement…</p>}
+          {records.isError && (
+            <p className="text-scene-row">Impossible de charger les records.</p>
           )}
-          {games.isSuccess && !game && (
-            <p className="text-scene-row">Aucun jeu affiché pour l'instant.</p>
-          )}
-          {game && (
-            <GameLeaderboard
-              game={game}
-              rows={rows}
-              minAllTimeRows={minAllTimeRows}
-            />
-          )}
+          {records.isSuccess && <RecordsWall records={records.data} />}
         </div>
-        <aside className="flex w-144 shrink-0 flex-col gap-8">
-          {game && <RecordPanel game={game} record={record} />}
-          <SubmitScorePanel />
-        </aside>
-      </div>
+      ) : (
+        <div className="flex flex-1 items-start gap-12">
+          <div className="min-w-0 flex-1">
+            {games.isPending && <p className="text-scene-row">Chargement…</p>}
+            {games.isError && (
+              <p className="text-scene-row">Impossible de charger les jeux.</p>
+            )}
+            {games.isSuccess && !game && (
+              <p className="text-scene-row">
+                Aucun jeu affiché pour l&apos;instant.
+              </p>
+            )}
+            {game && (
+              <GameLeaderboard
+                game={game}
+                rows={rows}
+                minAllTimeRows={minAllTimeRows}
+              />
+            )}
+          </div>
+          <aside className="flex w-144 shrink-0 flex-col gap-8">
+            {game && <RecordPanel game={game} record={record} />}
+            <SubmitScorePanel />
+          </aside>
+        </div>
+      )}
 
-      {games.data && games.data.length > 0 ? (
+      {count > 0 ? (
         <nav
-          aria-label="Jeux en rotation"
+          aria-label="Écrans en rotation"
           className="flex flex-wrap items-center justify-center gap-4"
         >
-          {games.data.map((entry, i) => (
-            <button
-              key={entry.id}
-              type="button"
-              aria-current={i === index % count ? 'true' : undefined}
-              aria-label={entry.name}
-              onClick={() => setIndex(i)}
-              className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-            >
-              <GameThumb
-                name={entry.name}
-                shortLabel={entry.short_label}
-                coverPath={entry.cover_path}
-                active={i === index % count}
-              />
-            </button>
-          ))}
+          {slides.map((entry, i) =>
+            entry.kind === 'wall' ? (
+              <button
+                key="wall"
+                type="button"
+                aria-current={i === safeIndex ? 'true' : undefined}
+                aria-label="Mur des records"
+                onClick={() => setIndex(i)}
+                className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              >
+                <WallThumb active={i === safeIndex} />
+              </button>
+            ) : (
+              <button
+                key={entry.game.id}
+                type="button"
+                aria-current={i === safeIndex ? 'true' : undefined}
+                aria-label={entry.game.name}
+                onClick={() => setIndex(i)}
+                className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              >
+                <GameThumb
+                  name={entry.game.name}
+                  shortLabel={entry.game.short_label}
+                  coverPath={entry.game.cover_path}
+                  active={i === safeIndex}
+                />
+              </button>
+            ),
+          )}
         </nav>
       ) : null}
     </main>
+  )
+}
+
+/** Distinct mark for the records wall in the rotation pills. */
+function WallThumb({ active }: { active: boolean }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex size-14 shrink-0 items-center justify-center rounded-none border-4 bg-surface-overlay font-display text-arcade-label text-ink-primary',
+        active
+          ? 'border-line-accent shadow-pixel'
+          : 'border-line-strong opacity-70',
+      )}
+      title="Mur des records"
+    >
+      <span aria-hidden="true">★</span>
+    </span>
   )
 }
 
@@ -181,7 +267,7 @@ function SubmitScorePanel() {
             Un record à afficher ?
           </p>
           <p className="text-body-sm text-ink-secondary">
-            Scanne, prends ta photo, c'est parti !
+            Scanne, prends ta photo, c&apos;est parti !
           </p>
         </div>
       </div>
