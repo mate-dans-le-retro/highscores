@@ -24,7 +24,7 @@ export function PixelPanel({
   return (
     <div
       className={cn(
-        'rounded-none border-4 bg-surface-inverse text-ink-inverse shadow-pixel',
+        'flex flex-col rounded-none border-4 bg-surface-inverse text-ink-inverse shadow-pixel',
         tone === 'accent' ? 'border-line-accent' : 'border-line-strong',
         className,
       )}
@@ -35,7 +35,7 @@ export function PixelPanel({
           {label}
         </p>
       ) : null}
-      <div className="p-6">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col p-6">{children}</div>
     </div>
   )
 }

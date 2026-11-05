@@ -8,6 +8,7 @@ import { NewRecordScreen } from '#/components/new-record-screen'
 import { PixelPanel } from '#/components/pixel-panel'
 import { QrCode } from '#/components/qr-code'
 import { RecordsWall } from '#/components/records-wall'
+import { ScreenStage } from '#/components/screen-stage'
 import { ScoreTable } from '#/components/score-table'
 import type { ScoreTableRow } from '#/components/score-table'
 import {
@@ -147,117 +148,123 @@ function PublicScreen() {
   const showWall = slide?.kind === 'wall'
 
   return (
-    <main className="relative flex min-h-screen flex-col gap-10 overflow-hidden p-24 pt-28">
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
-      />
-
-      <div
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
-      >
+    <ScreenStage>
+      <main className="relative flex size-full flex-col overflow-hidden">
         <div
-          className="h-full bg-surface-accent transition-[width] duration-75 ease-linear"
-          style={{ width: `${progress * 100}%` }}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
         />
-      </div>
 
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-75"
-        style={{ opacity: fade * 0.92 }}
-      />
-
-      <header className="flex items-start justify-between gap-8">
-        {showWall ? (
-          <div className="flex flex-col gap-2">
-            <p className="font-display text-arcade-label uppercase text-ink-accent">
-              Highscores
-            </p>
-            <h1 className="text-scene-hero uppercase">Les records</h1>
-          </div>
-        ) : (
-          <h1 className="text-scene-hero uppercase">Highscores</h1>
-        )}
-        <Logo alt="" className="m-0 w-72 shrink-0" />
-      </header>
-
-      {showWall ? (
-        <div className="flex min-h-0 flex-1 flex-col">
-          {records.isPending && <p className="text-scene-row">Chargement…</p>}
-          {records.isError && (
-            <p className="text-scene-row">Impossible de charger les records.</p>
-          )}
-          {records.isSuccess && <RecordsWall records={records.data} />}
+        <div
+          aria-hidden="true"
+          className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
+        >
+          <div
+            className="h-full bg-surface-accent transition-[width] duration-75 ease-linear"
+            style={{ width: `${progress * 100}%` }}
+          />
         </div>
-      ) : (
-        <div className="flex flex-1 items-start gap-12">
-          <div className="min-w-0 flex-1">
-            {games.isPending && <p className="text-scene-row">Chargement…</p>}
-            {games.isError && (
-              <p className="text-scene-row">Impossible de charger les jeux.</p>
-            )}
-            {games.isSuccess && !game && (
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-75"
+          style={{ opacity: fade * 0.92 }}
+        />
+
+        <header className="flex h-44 shrink-0 items-center justify-between gap-8 border-b-4 border-line-subtle bg-surface-sunken px-24">
+          {showWall ? (
+            <div className="flex flex-col gap-2">
+              <p className="font-display text-arcade-label uppercase text-ink-accent">
+                Highscores
+              </p>
+              <h1 className="text-scene-hero uppercase">Les records</h1>
+            </div>
+          ) : (
+            <h1 className="text-scene-hero uppercase">Highscores</h1>
+          )}
+          <Logo alt="" className="m-0 w-60 shrink-0" />
+        </header>
+
+        {showWall ? (
+          <div className="flex min-h-0 flex-1 flex-col px-24 pt-10">
+            {records.isPending && <p className="text-scene-row">Chargement…</p>}
+            {records.isError && (
               <p className="text-scene-row">
-                Aucun jeu affiché pour l&apos;instant.
+                Impossible de charger les records.
               </p>
             )}
-            {game && (
-              <GameLeaderboard
-                game={game}
-                rows={rows}
-                minAllTimeRows={minAllTimeRows}
-              />
-            )}
+            {records.isSuccess && <RecordsWall records={records.data} />}
           </div>
-          <aside className="flex w-144 shrink-0 flex-col gap-8">
-            {game && <RecordPanel game={game} record={record} />}
-            <SubmitScorePanel />
-          </aside>
-        </div>
-      )}
-
-      {count > 0 ? (
-        <nav
-          aria-label="Écrans en rotation"
-          className="flex flex-wrap items-center justify-center gap-4"
-        >
-          {slides.map((entry, i) =>
-            entry.kind === 'wall' ? (
-              <button
-                key="wall"
-                type="button"
-                aria-current={i === safeIndex ? 'true' : undefined}
-                aria-label="Mur des records"
-                onClick={() => setIndex(i)}
-                className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-              >
-                <WallThumb active={i === safeIndex} />
-              </button>
-            ) : (
-              <button
-                key={entry.game.id}
-                type="button"
-                aria-current={i === safeIndex ? 'true' : undefined}
-                aria-label={entry.game.name}
-                onClick={() => setIndex(i)}
-                className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-              >
-                <GameThumb
-                  name={entry.game.name}
-                  shortLabel={entry.game.short_label}
-                  coverPath={entry.game.cover_path}
-                  active={i === safeIndex}
+        ) : (
+          <div className="flex min-h-0 flex-1 gap-12 px-24 pt-10">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+              {games.isPending && <p className="text-scene-row">Chargement…</p>}
+              {games.isError && (
+                <p className="text-scene-row">
+                  Impossible de charger les jeux.
+                </p>
+              )}
+              {games.isSuccess && !game && (
+                <p className="text-scene-row">
+                  Aucun jeu affiché pour l&apos;instant.
+                </p>
+              )}
+              {game && (
+                <GameLeaderboard
+                  game={game}
+                  rows={rows}
+                  minAllTimeRows={minAllTimeRows}
                 />
-              </button>
-            ),
-          )}
-        </nav>
-      ) : null}
+              )}
+            </div>
+            <aside className="flex min-h-0 w-136 shrink-0 flex-col gap-8">
+              {game && <RecordPanel game={game} record={record} />}
+              <SubmitScorePanel />
+            </aside>
+          </div>
+        )}
 
-      {celebration ? <NewRecordScreen entry={celebration} /> : null}
-    </main>
+        {count > 0 ? (
+          <nav
+            aria-label="Écrans en rotation"
+            className="flex h-28 shrink-0 items-center justify-center gap-4"
+          >
+            {slides.map((entry, i) =>
+              entry.kind === 'wall' ? (
+                <button
+                  key="wall"
+                  type="button"
+                  aria-current={i === safeIndex ? 'true' : undefined}
+                  aria-label="Mur des records"
+                  onClick={() => setIndex(i)}
+                  className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                >
+                  <WallThumb active={i === safeIndex} />
+                </button>
+              ) : (
+                <button
+                  key={entry.game.id}
+                  type="button"
+                  aria-current={i === safeIndex ? 'true' : undefined}
+                  aria-label={entry.game.name}
+                  onClick={() => setIndex(i)}
+                  className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+                >
+                  <GameThumb
+                    name={entry.game.name}
+                    shortLabel={entry.game.short_label}
+                    coverPath={entry.game.cover_path}
+                    active={i === safeIndex}
+                  />
+                </button>
+              ),
+            )}
+          </nav>
+        ) : null}
+
+        {celebration ? <NewRecordScreen entry={celebration} /> : null}
+      </main>
+    </ScreenStage>
   )
 }
 
@@ -292,16 +299,16 @@ function SubmitScorePanel() {
           <QrCode
             value={submitUrl}
             label="QR code pour envoyer ton score"
-            className="size-56 shrink-0 bg-surface-inverse"
+            className="size-44 shrink-0 bg-surface-inverse"
           />
         ) : (
-          <div className="size-56 shrink-0 bg-surface-base" />
+          <div className="size-44 shrink-0 bg-surface-base" />
         )}
         <div className="min-w-0 text-left">
           <p className="text-body font-extrabold text-ink-inverse">
             Un record à afficher ?
           </p>
-          <p className="text-body-sm text-ink-secondary">
+          <p className="text-body-sm text-ink-inverse/75">
             Scanne, prends ta photo, c&apos;est parti !
           </p>
         </div>
@@ -322,13 +329,9 @@ function RecordPanel({
   const when = current ? formatScoreWhen(current.created_at) : null
 
   return (
-    <PixelPanel label="LE RECORD">
-      <div className="flex flex-col gap-4">
-        <div
-          className={cn(
-            'flex aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base',
-          )}
-        >
+    <PixelPanel label="LE RECORD" className="min-h-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
           {image ? (
             <img
               src={image}
@@ -350,11 +353,11 @@ function RecordPanel({
           <p className="text-body-ui text-ink-inverse">
             <span className="font-extrabold">{current.player_name}</span>
             {when ? (
-              <span className="text-ink-secondary"> · {when}</span>
+              <span className="text-ink-inverse/75"> · {when}</span>
             ) : null}
           </p>
         ) : (
-          <p className="text-body-sm text-ink-secondary">
+          <p className="text-body-sm text-ink-inverse/75">
             Pas encore de record sur {game.name}.
           </p>
         )}
@@ -392,6 +395,7 @@ function GameLeaderboard({
       machine={formatStation(game.console, game.station_label) || null}
       rows={tableRows}
       separatorAt={board.data?.separator_at ?? null}
+      className="flex-1"
     />
   )
 }

@@ -18,7 +18,7 @@ export function RecordsWall({ records, className }: RecordsWallProps) {
   return (
     <div
       className={cn(
-        'grid flex-1 grid-cols-3 content-start gap-x-10 gap-y-12',
+        'grid min-h-0 flex-1 auto-rows-fr grid-cols-3 gap-x-10 gap-y-8',
         className,
       )}
     >
@@ -38,22 +38,18 @@ function RecordCard({ record }: { record: GameRecord }) {
   )
 
   return (
-    <article className="flex min-w-0 flex-col gap-3">
-      <h2 className="truncate text-scene-meta font-extrabold uppercase tracking-wide text-ink-primary">
+    <article className="flex min-h-0 min-w-0 flex-col gap-3">
+      <h2 className="truncate font-display text-arcade-label text-ink-primary uppercase">
         {game.name}
       </h2>
       <PixelPanel className="min-h-0 flex-1">
         {!main ? (
-          <p className="text-body-sm text-ink-secondary">
+          <p className="text-body-ui text-ink-inverse/75">
             Pas encore de record. À toi de jouer !
           </p>
         ) : (
-          <div className="flex items-stretch gap-5">
-            <div
-              className={cn(
-                'flex size-36 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base',
-              )}
-            >
+          <div className="flex min-h-0 flex-1 items-stretch gap-6">
+            <div className="flex aspect-square h-full shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
               {image ? (
                 <img
                   src={image}
@@ -69,16 +65,20 @@ function RecordCard({ record }: { record: GameRecord }) {
               )}
             </div>
             <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-              <RankBadge rank={1} size="sm" />
-              <p className="truncate text-h4 text-ink-inverse">
-                {main.player_name}
-              </p>
-              <p className="font-mono text-h5 text-ink-inverse">
+              <div className="flex min-w-0 items-center gap-3">
+                <RankBadge rank={1} size="sm" className="shrink-0" />
+                <p className="truncate font-display text-scene-pixel text-ink-inverse">
+                  {main.player_name}
+                </p>
+              </div>
+              <p className="font-display text-scene-pixel text-ink-inverse">
                 {formatScore(main.score, game.score_type)}
               </p>
               {showAllTimeLine && all_time ? (
-                <p className="truncate text-body-sm text-rank-gold">
-                  <span aria-hidden="true">★ </span>
+                <p className="truncate text-body-ui text-ink-inverse/75">
+                  <span aria-hidden="true" className="text-rank-gold">
+                    ★{' '}
+                  </span>
                   <span className="sr-only">Record tous les temps : </span>
                   {all_time.player_name}
                   {' · '}
@@ -86,7 +86,7 @@ function RecordCard({ record }: { record: GameRecord }) {
                 </p>
               ) : null}
               {!current && all_time ? (
-                <p className="truncate text-caption text-ink-secondary">
+                <p className="truncate text-body-ui text-ink-inverse/75">
                   {all_time.event_name ?? 'Tous les temps'}
                 </p>
               ) : null}
