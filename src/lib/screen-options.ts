@@ -13,19 +13,26 @@ const boundedInt = (min: number, max: number) =>
 
 /**
  * Search params of the public screen, to override the settings on the fly:
- * `/?rotation=30` (seconds per game) and `/?rows=10` (rows per leaderboard).
+ * `/?rotation=30`, `/?rows=10`, `/?minAllTime=5`.
  */
 export const screenSearchSchema = z.object({
   rotation: boundedInt(5, 300),
   // The design system allows ten rows at most on the projected screen.
   rows: boundedInt(1, 10),
+  minAllTime: boundedInt(1, 10),
 })
 
 export type ScreenSearch = z.infer<typeof screenSearchSchema>
 
 export function screenOptions(settings: Settings, search: ScreenSearch) {
+  const rows = search.rows ?? settings.rows_shown
+  const minAllTimeRows = Math.min(
+    rows,
+    search.minAllTime ?? settings.min_all_time_rows,
+  )
   return {
     rotationMs: (search.rotation ?? settings.game_duration_s) * 1000,
-    rows: search.rows ?? settings.rows_shown,
+    rows,
+    minAllTimeRows,
   }
 }

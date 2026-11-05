@@ -21,6 +21,12 @@ export const seedEvents: Array<EventEdition> = [
   { id: CURRENT_EVENT, name: 'Novembre 2026', archived_at: null },
 ]
 
+/** Placeholder cover so the mock can exercise the image path before real art. */
+const placeholderCover = (label: string, fill: string) =>
+  `data:image/svg+xml,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320"><rect width="320" height="320" fill="${fill}"/><text x="160" y="175" text-anchor="middle" font-family="monospace" font-size="64" fill="#fff">${label}</text></svg>`,
+  )}`
+
 function game(
   slug: string,
   name: string,
@@ -40,7 +46,8 @@ function game(
     score_unit: 'pts',
     visible: true,
     position,
-    cover_path: null,
+    // Most seeded games ship a placeholder cover; leave null to demo the trigramme fallback.
+    cover_path: placeholderCover(short_label, '#5a3a8a'),
     ...overrides,
   }
 }
@@ -50,7 +57,8 @@ export const seedGames: Array<Game> = [
   game('duck-hunt', 'Duck Hunt', 'DH', 'NES', 2),
   game('super-mario-bros', 'Super Mario Bros.', 'SMB', 'NES', 3),
   game('guitar-hero', 'Guitar Hero', 'GH', 'PS2', 4),
-  game('pac-man', 'Pac-Man', 'PAC', 'Arcade', 5),
+  // No cover on purpose: the UI must fall back to short_label ("PAC").
+  game('pac-man', 'Pac-Man', 'PAC', 'Arcade', 5, { cover_path: null }),
   game('mario-kart', 'Mario Kart', 'MK', 'Super NES', 6, {
     score_type: 'time',
     score_order: 'asc',

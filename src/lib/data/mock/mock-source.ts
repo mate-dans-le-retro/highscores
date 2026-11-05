@@ -1,5 +1,6 @@
 import { toPublicRow } from '../anonymize'
 import { preparePhoto } from '../photo'
+import { buildScreenLeaderboard } from '../screen-leaderboard'
 import type { HighscoresSource } from '../source'
 import type {
   DisplayedGame,
@@ -9,6 +10,15 @@ import type {
   ScoreStatus,
   Settings,
 } from '../types'
+import { rankScores } from '../ranking'
+import {
+  cachedMockPhotoUrl,
+  clearMockPhotos,
+  hydrateMockPhoto,
+  isMockPhotoPath,
+  mockPhotoPath,
+  saveMockPhoto,
+} from './photo-store'
 import {
   newId,
   readState,
@@ -17,7 +27,6 @@ import {
   writeState,
 } from './store'
 import type { MockState } from './store'
-import { rankScores } from './ranking'
 
 function currentEventId(state: MockState) {
   const event = state.events.find((candidate) => !candidate.archived_at)
@@ -29,6 +38,9 @@ const stationLabel = (state: MockState, gameId: string, eventId: string) =>
   state.game_event_setups.find(
     (setup) => setup.game_id === gameId && setup.event_id === eventId,
   )?.station_label ?? null
+
+const eventName = (state: MockState, eventId: string) =>
+  state.events.find(({ id }) => id === eventId)?.name ?? null
 
 const visibleGames = (state: MockState): Array<DisplayedGame> =>
   state.games
@@ -71,27 +83,40 @@ function rankedRows(
   )
 }
 
-async function toDataUrl(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error)
-    reader.readAsDataURL(blob)
-  })
+async function hydrateScorePhotos(state: MockState) {
+  await Promise.all(
+    state.scores.map(async (score) => {
+      if (isMockPhotoPath(score.photo_path))
+        await hydrateMockPhoto(score.photo_path)
+    }),
+  )
 }
 
 export const mockSource: HighscoresSource = {
   listVisibleGames: async () => visibleGames(readState()),
 
-  getLeaderboard: async (gameId, limit) => {
+  getLeaderboard: async (gameId, options = {}) => {
     const state = readState()
+    await hydrateScorePhotos(state)
     const game = visibleGames(state).find(({ id }) => id === gameId)
-    if (!game) return []
-    return rankedRows(state, game, currentEventId(state)).slice(0, limit)
+    if (!game) {
+      return { rows: [], separator_at: null, empty: true }
+    }
+    const rows = rankedRows(state, game).map((row) => ({
+      ...row,
+      event_name: eventName(state, row.event_id),
+    }))
+    return buildScreenLeaderboard(rows, game.score_order, {
+      rowsShown: options.rows ?? state.settings.rows_shown,
+      minAllTimeRows:
+        options.minAllTimeRows ?? state.settings.min_all_time_rows,
+      currentEventId: currentEventId(state),
+    })
   },
 
   listRecords: async () => {
     const state = readState()
+    await hydrateScorePhotos(state)
     const eventId = currentEventId(state)
     return visibleGames(state).map((game) => {
       const [current = null, runner_up = null] = rankedRows(
@@ -102,8 +127,7 @@ export const mockSource: HighscoresSource = {
       const best = rankedRows(state, game).at(0)
       const all_time = best && {
         ...best,
-        event_name:
-          state.events.find(({ id }) => id === best.event_id)?.name ?? null,
+        event_name: eventName(state, best.event_id),
         station_label: stationLabel(state, game.id, best.event_id),
       }
       return { game, current, runner_up, all_time: all_time ?? null }
@@ -116,7 +140,16 @@ export const mockSource: HighscoresSource = {
     const customGameName = input.custom_game_name?.trim() || null
     if (!input.game_id === !customGameName)
       throw new Error('Pick a game from the list or type its name, not both')
-    const photoPath = await toDataUrl(await preparePhoto(input.photo))
+
+    const prepared = await preparePhoto(input.photo)
+    const photoId = newId()
+    let photoPath: string | null = mockPhotoPath(photoId)
+    try {
+      await saveMockPhoto(photoId, prepared.proof, prepared.thumb)
+    } catch (error) {
+      console.warn('Mock photo store unavailable, photo dropped', error)
+      photoPath = null
+    }
 
     const state = readState()
     if (!state.settings.submissions_open)
@@ -146,18 +179,10 @@ export const mockSource: HighscoresSource = {
       reviewed_at: null,
     }
     state.scores.push(submission)
-    try {
-      writeState(state, 'scores')
-    } catch (error) {
-      // localStorage is full (an unconverted HEIC weighs several MB): keep
-      // the submission, without its photo, rather than losing it.
-      console.warn('Mock storage full, photo dropped', error)
-      submission.photo_path = null
-      writeState(state, 'scores')
-    }
+    writeState(state, 'scores')
   },
 
-  photoUrl: (path) => path,
+  photoUrl: (path) => cachedMockPhotoUrl(path, 'thumb') ?? path,
 
   subscribe: subscribeToStore,
 }
@@ -205,5 +230,8 @@ export const mockTools = {
     state.settings = { ...state.settings, ...settings }
     writeState(state, 'settings')
   },
-  reset: resetState,
+  reset: () => {
+    void clearMockPhotos()
+    resetState()
+  },
 }

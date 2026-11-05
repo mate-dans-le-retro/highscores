@@ -1,33 +1,47 @@
 import { describe, expect, it } from 'vitest'
 
-import { ANONYMOUS_NAMES } from '../anonymize'
+import { anonymousName } from '../anonymous-name'
 import { mockSource } from './mock-source'
 
 // Outside a browser, the store serves the seed without touching localStorage.
 
 describe('mockSource on the seed', () => {
-  it('ranks the leaderboard and anonymizes scores kept off screen', async () => {
-    const rows = await mockSource.getLeaderboard('g-tetris', 10)
-    expect(rows.map(({ rank }) => rank)).toEqual([1, 2, 3, 4, 5, 6])
-    const zoe = rows[5]
-    expect(zoe.anonymous).toBe(true)
-    expect(zoe.photo_path).toBeNull()
-    expect(ANONYMOUS_NAMES).toContain(zoe.player_name)
-    expect(JSON.stringify(rows)).not.toContain('Zoé')
+  it('builds a screen leaderboard and anonymizes scores kept off screen', async () => {
+    const board = await mockSource.getLeaderboard('g-tetris', { rows: 10 })
+    expect(board.empty).toBe(false)
+    expect(board.rows.map(({ rank }) => rank)).toEqual([1, 2, 3, 4, 5, 6])
+    const zoe = board.rows.at(5)
+    expect(zoe).toBeDefined()
+    expect(zoe!.anonymous).toBe(true)
+    expect(zoe!.photo_path).toBeNull()
+    expect(zoe!.player_name).toBe(
+      anonymousName({ playerName: 'Zoé', gameId: 'g-tetris' }),
+    )
+    expect(JSON.stringify(board.rows)).not.toContain('Zoé')
   })
 
   it('ranks times with the lowest first', async () => {
-    const rows = await mockSource.getLeaderboard('g-mario-kart', 10)
-    expect(rows.map(({ player_name }) => player_name)).toEqual([
+    const board = await mockSource.getLeaderboard('g-mario-kart', { rows: 10 })
+    expect(board.rows.map(({ player_name }) => player_name)).toEqual([
       'Yanis',
       'Lina',
     ])
   })
 
+  it('dims past-event rows and keeps current-event rows full in the all-time block', async () => {
+    const board = await mockSource.getLeaderboard('g-duck-hunt', { rows: 10 })
+    const marc = board.rows.find((row) => row.player_name === 'Marc')
+    const lea = board.rows.find((row) => row.player_name === 'Léa')
+    expect(marc?.dimmed).toBe(true)
+    expect(marc?.event_name).toBe("Weekend d'avril 2026")
+    expect(lea?.dimmed).toBe(false)
+    expect(board.separator_at).toBeNull()
+  })
+
   it('serves hidden games to nobody', async () => {
-    expect(await mockSource.getLeaderboard('g-street-fighter-2', 10)).toEqual(
-      [],
-    )
+    expect(
+      await mockSource.getLeaderboard('g-street-fighter-2', { rows: 10 }),
+    ).toEqual({ rows: [], separator_at: null, empty: true })
     const games = await mockSource.listVisibleGames()
     expect(games.map(({ slug }) => slug)).not.toContain('street-fighter-2')
   })
@@ -46,5 +60,14 @@ describe('mockSource on the seed', () => {
     const tetris = records.find(({ game }) => game.slug === 'tetris')
     expect(tetris?.current?.player_name).toBe('Julie')
     expect(tetris?.runner_up?.player_name).toBe('Marc')
+  })
+
+  it('exposes a cover image or leaves null for the trigramme fallback', async () => {
+    const games = await mockSource.listVisibleGames()
+    const tetris = games.find(({ slug }) => slug === 'tetris')
+    const pacMan = games.find(({ slug }) => slug === 'pac-man')
+    expect(tetris?.cover_path).toMatch(/^data:image\/svg\+xml/)
+    expect(pacMan?.cover_path).toBeNull()
+    expect(pacMan?.short_label).toBe('PAC')
   })
 })

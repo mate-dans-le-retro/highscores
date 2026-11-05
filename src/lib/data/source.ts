@@ -1,8 +1,8 @@
+import type { ScreenLeaderboard } from './screen-leaderboard'
 import type {
   ChangedTable,
   DisplayedGame,
   GameRecord,
-  LeaderboardRow,
   Settings,
   SubmissionInput,
 } from './types'
@@ -12,7 +12,15 @@ export const DEFAULT_SETTINGS: Settings = {
   screen_mode: 'game',
   game_duration_s: 15,
   wall_duration_s: 20,
-  rows_shown: 5,
+  rows_shown: 10,
+  min_all_time_rows: 5,
+}
+
+export interface LeaderboardQueryOptions {
+  /** N: total slots (`rows_shown`). */
+  rows?: number
+  /** M: floor for the all-time block (`min_all_time_rows`). */
+  minAllTimeRows?: number
 }
 
 /** Everything the public screen and the player form need, whatever the backend. */
@@ -20,8 +28,8 @@ export interface HighscoresSource {
   listVisibleGames: () => Promise<Array<DisplayedGame>>
   getLeaderboard: (
     gameId: string,
-    limit: number,
-  ) => Promise<Array<LeaderboardRow>>
+    options?: LeaderboardQueryOptions,
+  ) => Promise<ScreenLeaderboard>
   /** One entry per visible game, in display order. */
   listRecords: () => Promise<Array<GameRecord>>
   getSettings: () => Promise<Settings>

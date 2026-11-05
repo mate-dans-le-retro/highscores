@@ -1,7 +1,9 @@
 import { getSupabase, photoUrl } from '../supabase'
 import { toPublicRow } from './anonymize'
+import { preparePhoto } from './photo'
+import { buildScreenLeaderboard } from './screen-leaderboard'
 import { DEFAULT_SETTINGS } from './source'
-import type { HighscoresSource } from './source'
+import type { HighscoresSource, LeaderboardQueryOptions } from './source'
 import type { DisplayedGame, Game, LeaderboardRow } from './types'
 
 // The current schema covers a single event, without score types, station
@@ -51,15 +53,25 @@ async function listVisibleGames() {
 export const supabaseSource: HighscoresSource = {
   listVisibleGames,
 
-  getLeaderboard: async (gameId, limit) => {
+  getLeaderboard: async (gameId, options: LeaderboardQueryOptions = {}) => {
     const { data, error } = await getSupabase()
       .from('leaderboard')
       .select('*')
       .eq('game_id', gameId)
       .order('rank')
-      .limit(limit)
     if (error) throw error
-    return (data as Array<LeaderboardViewRow>).map(toRow)
+    const rows = (data as Array<LeaderboardViewRow>).map((row) => ({
+      ...toRow(row),
+      event_name: null as string | null,
+    }))
+    // Single-event schema: everything is "current", so the screen helper just
+    // returns the top N with no separator and no dimming.
+    return buildScreenLeaderboard(rows, 'desc', {
+      rowsShown: options.rows ?? DEFAULT_SETTINGS.rows_shown,
+      minAllTimeRows:
+        options.minAllTimeRows ?? DEFAULT_SETTINGS.min_all_time_rows,
+      currentEventId: CURRENT_EVENT_ID,
+    })
   },
 
   listRecords: async () => {
@@ -99,6 +111,7 @@ export const supabaseSource: HighscoresSource = {
     if (!input.game_id)
       throw new Error('Custom games need a schema migration first')
     const supabase = getSupabase()
+    const { proof } = await preparePhoto(input.photo)
     const extension =
       (input.photo instanceof File &&
         input.photo.name.split('.').pop()?.toLowerCase()) ||
@@ -107,7 +120,9 @@ export const supabaseSource: HighscoresSource = {
 
     const upload = await supabase.storage
       .from('photos')
-      .upload(photoPath, input.photo, { contentType: input.photo.type })
+      .upload(photoPath, proof, {
+        contentType: proof.type || input.photo.type || 'image/jpeg',
+      })
     if (upload.error) throw upload.error
 
     const { error } = await supabase.from('scores').insert({

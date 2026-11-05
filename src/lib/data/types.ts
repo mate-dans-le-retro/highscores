@@ -12,7 +12,10 @@ export interface Game {
   id: string
   slug: string
   name: string
-  /** Initials shown in the game tile: "TET", "DH". */
+  /**
+   * Trigramme shown in the game tile when there is no cover image: "TET", "DH".
+   * Legal/placeholder fallback only; prefer `cover_path` once real art lands.
+   */
   short_label: string
   /** Stable across events ("Super NES"). The eyebrow adds the station label. */
   console: string | null
@@ -21,6 +24,10 @@ export interface Game {
   score_unit: string | null
   visible: boolean
   position: number
+  /**
+   * Cover or character image for the game tile. null → show `short_label`.
+   * Mock: path under /public or a data URL; Supabase: path in the covers bucket.
+   */
   cover_path: string | null
 }
 
@@ -54,7 +61,10 @@ export interface Score {
   player_name: string
   /** Points, or milliseconds when the game's score_type is 'time'. */
   score: number
-  /** Mock: resized data URL. Supabase: path in the photos bucket. */
+  /**
+   * Mock: `mock-photo:{id}` in IndexedDB (proof + thumb).
+   * Supabase: path in the photos bucket.
+   */
   photo_path: string | null
   display_on_screen: boolean
   instagram_consent: boolean
@@ -113,7 +123,10 @@ export interface Settings {
   screen_mode: ScreenMode
   game_duration_s: 15 | 30 | 60
   wall_duration_s: 10 | 20 | 30
+  /** N: total rows on the public screen (default 10). */
   rows_shown: 3 | 5 | 10
+  /** M: all-time block never shrinks below this (default 5). */
+  min_all_time_rows: 3 | 5 | 10
 }
 
 /** Either game_id or custom_game_name is set, never both. */

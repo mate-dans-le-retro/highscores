@@ -15,7 +15,7 @@ import {
 } from './seed'
 
 /** Bump the version when the seed or the shape changes: the seed is reloaded. */
-const STORAGE_KEY = 'mdlr-highscores:mock:v1'
+const STORAGE_KEY = 'mdlr-highscores:mock:v2'
 
 const ALL_TABLES: Array<ChangedTable> = ['games', 'scores', 'settings']
 

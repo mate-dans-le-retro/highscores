@@ -1,10 +1,16 @@
+/** Proof kept for the admin (~2000 px) and thumbnail for the public screen (~800 px). */
+export interface PreparedPhoto {
+  proof: Blob
+  thumb: Blob
+}
+
 /**
- * Shrinks a phone photo before storing it: full-size pictures would fill the
- * mock's localStorage quickly, and weigh a lot on the venue's wifi.
+ * Shrinks a phone photo on its longest side. Full-size pictures weigh a lot on
+ * the venue's wifi, and would fill any browser storage quickly.
  */
-export async function resizePhoto(photo: Blob, maxWidth = 800, quality = 0.7) {
+export async function resizePhoto(photo: Blob, maxSize = 800, quality = 0.7) {
   const bitmap = await createImageBitmap(photo)
-  const scale = Math.min(1, maxWidth / bitmap.width)
+  const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height))
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(bitmap.width * scale)
   canvas.height = Math.round(bitmap.height * scale)
@@ -23,12 +29,16 @@ export async function resizePhoto(photo: Blob, maxWidth = 800, quality = 0.7) {
 
 /**
  * The photo is the proof, so it is never refused: when the browser cannot
- * decode it (HEIC outside Safari), the original file is kept as is.
+ * decode it (HEIC outside Safari), the original file is kept as both versions.
  */
-export async function preparePhoto(photo: Blob) {
+export async function preparePhoto(photo: Blob): Promise<PreparedPhoto> {
   try {
-    return await resizePhoto(photo)
+    const [proof, thumb] = await Promise.all([
+      resizePhoto(photo, 2000, 0.85),
+      resizePhoto(photo, 800, 0.7),
+    ])
+    return { proof, thumb }
   } catch {
-    return photo
+    return { proof: photo, thumb: photo }
   }
 }

@@ -25,7 +25,7 @@ function PublicScreen() {
   useHighscoresRealtime()
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)
-  const { rotationMs, rows } = screenOptions(
+  const { rotationMs, rows, minAllTimeRows } = screenOptions(
     settings.data ?? DEFAULT_SETTINGS,
     Route.useSearch(),
   )
@@ -62,7 +62,13 @@ function PublicScreen() {
           {games.isSuccess && !game && (
             <p className="text-scene-row">Aucun jeu affiché pour l'instant.</p>
           )}
-          {game && <GameLeaderboard game={game} rows={rows} />}
+          {game && (
+            <GameLeaderboard
+              game={game}
+              rows={rows}
+              minAllTimeRows={minAllTimeRows}
+            />
+          )}
         </div>
         <SubmitScorePanel />
       </div>
@@ -102,12 +108,16 @@ function SubmitScorePanel() {
 
 function GameLeaderboard({
   game,
-  rows: limit,
+  rows: rowsShown,
+  minAllTimeRows,
 }: {
   game: DisplayedGame
   rows: number
+  minAllTimeRows: number
 }) {
-  const rows = useQuery(leaderboardQuery(game.id, limit))
+  const board = useQuery(
+    leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
+  )
 
   return (
     <section className="flex flex-col gap-8">
@@ -121,22 +131,34 @@ function GameLeaderboard({
           </p>
         )}
       </div>
-      {rows.isSuccess && rows.data.length === 0 && (
+      {board.isSuccess && board.data.empty && (
         <p className="text-scene-row">
           Aucun score pour l'instant. À toi de jouer !
         </p>
       )}
       <ol className="flex flex-col">
-        {rows.data?.map((row) => (
-          <li
-            key={row.id}
-            className="grid grid-cols-[4ch_1fr_auto] items-center gap-8 text-scene-row"
-          >
-            <span className="font-display text-scene-pixel">{row.rank}</span>
-            <span className="truncate">{row.player_name}</span>
-            <span className="font-display text-scene-pixel">
-              {formatScore(row.score, game.score_type)}
-            </span>
+        {board.data?.rows.map((row, index) => (
+          <li key={row.id}>
+            {board.data.separator_at === index && (
+              <div
+                role="separator"
+                className="my-4 border-t-4 border-line-subtle"
+              />
+            )}
+            <div
+              className={`grid grid-cols-[4ch_1fr_auto] items-center gap-8 text-scene-row ${
+                row.dimmed ? 'opacity-60' : ''
+              }`}
+            >
+              <span className="font-display text-scene-pixel">{row.rank}</span>
+              <span className="truncate">
+                {row.player_name}
+                {row.dimmed && row.event_name ? ` · ${row.event_name}` : ''}
+              </span>
+              <span className="font-display text-scene-pixel">
+                {formatScore(row.score, game.score_type)}
+              </span>
+            </div>
           </li>
         ))}
       </ol>

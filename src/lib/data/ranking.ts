@@ -1,4 +1,4 @@
-import type { ScoreOrder } from '../types'
+import type { ScoreOrder } from './types'
 
 interface Rankable {
   score: number
