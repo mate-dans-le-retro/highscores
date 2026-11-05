@@ -118,7 +118,7 @@ Photos are prepared on the phone by `preparePhoto()` (`src/lib/data/photo.ts`): 
 
 On Vercel, these variables come from the Marketplace Supabase integration, configured with the public `VITE_` prefix. Only `VITE_*` variables reach the browser; read them by their exact name (`import.meta.env.VITE_SUPABASE_URL`), never through the whole `import.meta.env` object.
 
-Locally, the same variables come from Vercel through its CLI, a dev dependency: `pnpm vercel:login` once per machine, `pnpm vercel:link` once per checkout (it writes `.vercel/`; answer no when it offers to pull the development variables), then `pnpm env:pull`, which writes the variables of the Vercel **preview** environment for the `main` branch into `.env.local`: the variables preprod runs with. The Supabase integration may not have set them for the Vercel development environment. Variables marked "Sensitive" on Vercel come back empty.
+Locally, the same variables come from Vercel through its CLI, a dev dependency: `pnpm vercel:login` once per machine, `pnpm vercel:link` once per checkout (it writes `.vercel/`), then `pnpm env:pull`, which writes the variables of the Vercel **development** environment into `.env.local`. Variables marked "Sensitive" on Vercel never reach a local checkout.
 
 Vite loads, from lowest to highest priority, `.env`, `.env.local`, `.env.[mode]` and `.env.[mode].local` (`mode` is `development` for `pnpm dev`). Hence the split:
 
@@ -126,7 +126,7 @@ Vite loads, from lowest to highest priority, `.env`, `.env.local`, `.env.[mode]`
 - `.env.development.local` holds personal overrides for `pnpm dev` and wins over `.env.local`: `VITE_DATA_SOURCE=mock`, or the URL and key of a local Supabase. Since the code reads `VITE_SUPABASE_PUBLISHABLE_KEY` before `VITE_SUPABASE_ANON_KEY`, an override must set `VITE_SUPABASE_PUBLISHABLE_KEY`.
 - `.env` is no longer needed. If it defines `VITE_SUPABASE_PUBLISHABLE_KEY` (an old local Supabase key), that key wins over the pulled `VITE_SUPABASE_ANON_KEY` and the remote project answers 401: remove the line.
 
-With the pulled variables and no mock, `pnpm dev` reads and writes the real database, shared by preprod and production. The pull also brings the integration's server-only secrets (`SUPABASE_SERVICE_ROLE_KEY`, Postgres URLs…) into `.env.local`; no code reads them today, git ignores the file, and they must never be copied into a `VITE_` variable.
+With the pulled variables and no mock, `pnpm dev` reads and writes the real database, shared by preprod and production. The pull can also bring server-only secrets of the integration (`SUPABASE_SERVICE_ROLE_KEY`, Postgres URLs…) into `.env.local`; no code reads them today, git ignores the file, and they must never be copied into a `VITE_` variable.
 
 Secrets (service role, Instagram, AI) stay in variables **without** the `VITE_` prefix, read only in server functions. The integration already sets `SUPABASE_SERVICE_ROLE_KEY` on the server.
 

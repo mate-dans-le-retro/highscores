@@ -16,11 +16,9 @@ Requirements: Node 22+, pnpm, and a Vercel account in the MDLR team. The Vercel 
 pnpm install
 pnpm vercel:login           # once per machine
 pnpm vercel:link            # once per checkout: writes .vercel/
-pnpm env:pull               # writes .env.local with the preprod variables (Vercel preview, branch main)
+pnpm env:pull               # writes .env.local with the variables of the Vercel development environment
 pnpm dev                    # http://localhost:3000
 ```
-
-When `vercel:link` offers to pull the development environment variables into `.env.local`, answer no: `env:pull` does it, from the right environment.
 
 Vite reads, from lowest to highest priority, `.env`, `.env.local`, `.env.development` and `.env.development.local` (the last two only for `pnpm dev`). `.env.local` belongs to Vercel: every `env:pull` overwrites it. Put your own settings in `.env.development.local`, which wins over it:
 
@@ -32,7 +30,7 @@ VITE_DATA_SOURCE=mock
 
 With `VITE_DATA_SOURCE` commented out, `pnpm dev` talks to the real Supabase project, **shared by preprod and production**. Restart `pnpm dev` after any change to an env file. In the browser, `?mock=1` and `?mock=0` switch the current tab without restarting. `/admin` always talks to Supabase, even in mock mode.
 
-Without Vercel access, or with a local Supabase (`pnpm supabase start`, needs Docker), set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.development.local` instead (see `.env.example`).
+Without Vercel access, or with a local Supabase (`pnpm supabase start`, needs Docker), set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.development.local` instead.
 
 ## Check before pushing
 

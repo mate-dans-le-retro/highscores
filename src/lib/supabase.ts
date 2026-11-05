@@ -22,7 +22,7 @@ export function getSupabase() {
 
   if (!url || !publishableKey) {
     throw new Error(
-      'Missing Supabase config: run `pnpm env:pull`, or set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY (see README).',
+      'Missing Supabase config: run `pnpm env:pull`, or set VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in .env.development.local (see README).',
     )
   }
 

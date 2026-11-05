@@ -36,7 +36,7 @@ pnpm typecheck      # type check (tsc --noEmit)
 
 pnpm vercel:login   # Vercel CLI login, once per machine
 pnpm vercel:link    # link the checkout to the Vercel project (.vercel/)
-pnpm env:pull       # preprod variables (Vercel preview, branch main) into .env.local, overwrites it
+pnpm env:pull       # Vercel development variables into .env.local, overwrites it
 
 pnpm supabase start  # local Supabase (Docker), applies migrations + seed
 pnpm supabase db reset   # replays migrations + seed on the local database
@@ -118,10 +118,10 @@ Read [docs/design-system/README.md](docs/design-system/README.md). The essential
 
 ## Environments
 
-- Local: `pnpm vercel:login`, `pnpm vercel:link` (answer no when it offers to pull the development variables), then `pnpm env:pull`, which writes the preprod variables (Vercel preview environment, branch `main`) into `.env.local`. `.env.local` belongs to Vercel and every pull overwrites it: personal settings go in `.env.development.local`, which wins over it in `pnpm dev`. Each checkout or worktree needs its own `.vercel/` and `.env.local` (link and pull again, or copy them). With the pulled variables, `pnpm dev` talks to the real Supabase project, shared by preprod and production.
+- Local: `pnpm vercel:login`, `pnpm vercel:link`, then `pnpm env:pull`, which writes the variables of the Vercel development environment into `.env.local`. `.env.local` belongs to Vercel and every pull overwrites it: personal settings go in `.env.development.local`, which wins over it in `pnpm dev`. Each checkout or worktree needs its own `.vercel/` and `.env.local` (link and pull again, or copy them). With the pulled variables, `pnpm dev` talks to the real Supabase project, shared by preprod and production.
 - Local without Supabase: put `VITE_DATA_SOURCE=mock` in `.env.development.local` (comment it out to go back to Supabase, then restart `pnpm dev`); the pages then read fake data from `localStorage` (see docs/architecture.md, "Data sources"). In the browser, or on a deployed preview, `?mock=1` and `?mock=0` switch the tab instead; never set `VITE_DATA_SOURCE` on Vercel. `/admin` always talks to Supabase.
 - Local Supabase (Docker): `pnpm supabase start`, then put the URL and publishable key it prints in `.env.development.local` (`VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`).
-- Never commit an env file: `.gitignore` ignores every `.env*` but `.env.example`, and `.vercel/`. The pull also brings server-only secrets of the integration (service role, Postgres URL); never copy them into a `VITE_` variable.
+- Never commit an env file: `.gitignore` ignores every `.env*` file and `.vercel/`. The pull also brings server-only secrets of the integration (service role, Postgres URL); never copy them into a `VITE_` variable.
 - Preprod and production: Supabase project in the MDLR organization, Vercel deployment of the MDLR team (see "Git and Vercel environments"). The Supabase variables are set by Vercel's Supabase integration, with the public `VITE_` prefix (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 - The repository is **public**: nothing sensitive in the code, seeds, tests or screenshots (no real player data).
 
