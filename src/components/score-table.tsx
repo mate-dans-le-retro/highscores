@@ -127,8 +127,8 @@ export function ScoreTable({
             const name = `${row.player} — ${formatCell(row.score)}, ${placeLabel(row.rank)}`
             const dimmedText =
               (tone === 'dimmed' || tone === 'first-past') && 'opacity-60'
-            // Name and date together are as tall as the cup (48px), so the
-            // three line up even when ten rows squeeze the bars.
+            // Name and date stay centred on the cup (48px). With the gap they
+            // are 51px, the height of a bar when ten rows share the table.
             const content = (
               <>
                 <RankBadge rank={row.rank} size="md" plain={belowSeparator} />
@@ -138,7 +138,10 @@ export function ScoreTable({
                   </p>
                   {row.meta ? (
                     <p
-                      className={cn('truncate text-body leading-5', META[tone])}
+                      className={cn(
+                        'mt-0.75 truncate text-body leading-5',
+                        META[tone],
+                      )}
                     >
                       {row.meta}
                     </p>
