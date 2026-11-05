@@ -35,6 +35,8 @@ const FADE_MS = 300
 const NEW_RECORD_MS = 12_000
 /** The records wall shows 3×2 cards (mockup p.2); more games add a page. */
 const WALL_PAGE_SIZE = 6
+/** Reload the screen when the live connection stays lost this long. */
+const RECONNECT_RELOAD_MS = 60_000
 
 type Slide =
   { kind: 'game'; game: DisplayedGame } | { kind: 'wall'; page: number }
@@ -46,7 +48,7 @@ export const Route = createFileRoute('/')({
 })
 
 function PublicScreen() {
-  useHighscoresRealtime()
+  useHighscoresRealtime({ reloadAfterMs: RECONNECT_RELOAD_MS })
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)
   const records = useQuery(recordsQuery)

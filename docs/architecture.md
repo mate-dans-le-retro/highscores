@@ -97,6 +97,8 @@ The rotation and the number of rows come from the settings (15 s and 10 rows by 
 
 Only `change_signals` is in the `supabase_realtime` publication: triggers bump its `games`, `scores` or `settings` row when something the public screen shows changes (approved scores only). `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to it and invalidates the matching TanStack Query queries. No score row travels through realtime.
 
+The connection can drop on the venue wifi, and the signals sent meanwhile are lost. `keepSubscribed()` (`src/lib/data/realtime-connection.ts`) watches the channel status (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`) and the browser's `offline` and `online` events. It replaces a lost channel with a new one after 1 s, 2 s, 4 s and so on (30 s at most), or as soon as the browser is back online. When the connection comes back, the hook refetches every query to catch up. On the public screen, if the connection is still lost after 60 seconds, the page reloads, but only once the site answers a `HEAD` request: reloading while offline would leave the browser's error page on the projector. The mock source has no socket; it goes through the same path, so the browser's offline mode exercises it.
+
 ## Storage
 
 - `photos` (public, 10 MB max, any image type): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail).

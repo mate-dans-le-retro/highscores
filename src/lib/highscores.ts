@@ -5,6 +5,7 @@ import { isMock, source } from './data'
 import { mockTools } from './data/mock/mock-source'
 import type { LeaderboardQueryOptions } from './data/source'
 import type { ChangedTable, SubmissionInput } from './data/types'
+import { reloadWhenReachable } from './reload-when-reachable'
 
 export type {
   AllTimeRecord,
@@ -82,16 +83,44 @@ const invalidatedBy: Record<ChangedTable, Array<string>> = {
   settings: ['settings'],
 }
 
-/** Refreshes the queries as soon as a score, a game or a setting changes. */
-export function useHighscoresRealtime() {
+/**
+ * Refreshes the queries as soon as a score, a game or a setting changes.
+ * When the live connection comes back after a drop, refetches everything to
+ * catch up on the signals missed meanwhile. With `reloadAfterMs`, reloads the
+ * page if the connection stays lost that long.
+ */
+export function useHighscoresRealtime({
+  reloadAfterMs,
+}: { reloadAfterMs?: number } = {}) {
   const queryClient = useQueryClient()
 
-  useEffect(
-    () =>
-      source.subscribe((table) => {
+  useEffect(() => {
+    let lost = false
+    let cancelReload: (() => void) | null = null
+
+    const unsubscribe = source.subscribe(
+      (table) => {
         for (const key of invalidatedBy[table])
           void queryClient.invalidateQueries({ queryKey: [key] })
-      }),
-    [queryClient],
-  )
+      },
+      (status) => {
+        if (status === 'disconnected') {
+          lost = true
+          if (reloadAfterMs !== undefined && !cancelReload)
+            cancelReload = reloadWhenReachable({ delayMs: reloadAfterMs })
+          return
+        }
+        cancelReload?.()
+        cancelReload = null
+        if (!lost) return
+        lost = false
+        void queryClient.invalidateQueries()
+      },
+    )
+
+    return () => {
+      cancelReload?.()
+      unsubscribe()
+    }
+  }, [queryClient, reloadAfterMs])
 }
