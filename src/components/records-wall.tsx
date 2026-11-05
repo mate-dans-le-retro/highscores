@@ -1,9 +1,16 @@
+import { AllTimeBadge } from '#/components/all-time-badge'
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
 import { RankBadge } from '#/components/rank-badge'
-import { formatScore, photoUrl, pixelCaps } from '#/lib/highscores'
+import {
+  formatScore,
+  formatScoreWhen,
+  photoUrl,
+  pixelCaps,
+} from '#/lib/highscores'
 import type { GameRecord } from '#/lib/highscores'
 import { cn } from '#/lib/utils'
+import { wallCardView } from '#/lib/wall-card'
 import { wallCells } from '#/lib/wall-pages'
 
 type RecordsWallProps = {
@@ -28,9 +35,9 @@ const ROW_START: Record<number, string> = {
 
 /**
  * Projected "mur des records": one card per visible game (mockup p.2).
- * Main slot is the current-event 1st; a star line shows the all-time record
- * when it is a different score. Cards keep the same size on every page; the
- * rows of a partial page are centred.
+ * What each card says about the all-time record is in `wallCardView()`.
+ * Cards keep the same size on every page; the rows of a partial page are
+ * centred.
  */
 export function RecordsWall({ records, className }: RecordsWallProps) {
   const cells = wallCells(records.length)
@@ -63,16 +70,12 @@ function RecordCard({
   record: GameRecord
   className?: string
 }) {
-  const { game, current, all_time } = record
-  const main = current ?? all_time
-  const image = photoUrl(main?.photo_path ?? null)
-  const showAllTimeLine = Boolean(
-    current && all_time && all_time.id !== current.id,
-  )
+  const { game } = record
+  const view = wallCardView(record)
 
-  return (
-    <PixelPanel label={game.name} className={cn('min-w-0', className)}>
-      {!main ? (
+  if (view.kind === 'empty') {
+    return (
+      <PixelPanel label={game.name} className={cn('min-w-0', className)}>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
           <p className="font-display text-scene-pixel text-ink-inverse">
             {pixelCaps('À prendre !')}
@@ -81,14 +84,24 @@ function RecordCard({
             Pas encore de record sur ce jeu.
           </p>
         </div>
-      ) : (
+      </PixelPanel>
+    )
+  }
+
+  const { main, allTimeBadge, otherAllTime, origin } = view
+  const image = main.anonymous ? null : photoUrl(main.photo_path)
+
+  return (
+    <PixelPanel label={game.name} className={cn('min-w-0', className)}>
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        {allTimeBadge ? <AllTimeBadge className="w-full shrink-0" /> : null}
         <div className="flex min-h-0 flex-1 items-center gap-6">
           <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
             {image ? (
               <img
                 src={image}
                 alt=""
-                className="size-full object-cover"
+                className="size-full object-contain"
                 draggable={false}
               />
             ) : (
@@ -96,32 +109,39 @@ function RecordCard({
             )}
           </div>
           <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-            <RankBadge rank={1} size="sm" className="shrink-0" />
-            <p className="truncate font-display text-scene-pixel text-ink-inverse">
-              {main.player_name}
-            </p>
+            <div className="flex min-w-0 items-center gap-3">
+              <RankBadge rank={1} size="sm" className="shrink-0" />
+              <p className="truncate font-display text-scene-pixel text-ink-inverse">
+                {main.player_name}
+              </p>
+            </div>
             <p className="font-display text-scene-pixel text-ink-inverse">
               {formatScore(main.score, game.score_type)}
             </p>
-            {showAllTimeLine && all_time ? (
+            {otherAllTime ? (
               <p className="truncate text-h4 text-ink-inverse">
                 <span aria-hidden="true" className="text-rank-gold">
                   ★{' '}
                 </span>
                 <span className="sr-only">Record tous les temps : </span>
-                {all_time.player_name}
+                {otherAllTime.player_name}
                 {' · '}
-                {formatScore(all_time.score, game.score_type)}
+                {formatScore(otherAllTime.score, game.score_type)}
               </p>
             ) : null}
-            {!current && all_time ? (
-              <p className="truncate text-h4 text-ink-inverse">
-                {all_time.event_name ?? 'Tous les temps'}
-              </p>
+            {origin ? (
+              <div className="text-h4 text-ink-inverse">
+                {origin.event_name ? (
+                  <p className="truncate">{origin.event_name}</p>
+                ) : null}
+                <p className="truncate font-semibold">
+                  {formatScoreWhen(origin.created_at)}
+                </p>
+              </div>
             ) : null}
           </div>
         </div>
-      )}
+      </div>
     </PixelPanel>
   )
 }
