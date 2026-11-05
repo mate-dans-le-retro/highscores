@@ -1,8 +1,9 @@
 import { useMutation } from '@tanstack/react-query'
 import { Plus, Upload } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 
+import { CoverCropper } from '#/components/admin/cover-cropper'
 import { GameThumb } from '#/components/admin/game-thumb'
 import { Button } from '#/components/ui/button'
 import {
@@ -97,6 +98,11 @@ function GameForm({
   )
   const [visible, setVisible] = useState(game?.visible ?? true)
   const [cover, setCover] = useState<File | null>(null)
+  const [pendingCrop, setPendingCrop] = useState<{
+    src: string
+    name: string
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const label = shortLabel.trim() || defaultShortLabel(name)
   const coverPreview = useMemo(
@@ -108,6 +114,12 @@ function GameForm({
       if (coverPreview) URL.revokeObjectURL(coverPreview)
     },
     [coverPreview],
+  )
+  useEffect(
+    () => () => {
+      if (pendingCrop) URL.revokeObjectURL(pendingCrop.src)
+    },
+    [pendingCrop],
   )
   const preview = coverPreview ?? game?.cover_path ?? null
 
@@ -138,6 +150,38 @@ function GameForm({
   function submit(event: FormEvent) {
     event.preventDefault()
     if (name.trim()) save.mutate()
+  }
+
+  function pickCover(file: File | undefined) {
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (!file) return
+    setPendingCrop({ src: URL.createObjectURL(file), name: file.name })
+  }
+
+  function cancelCrop() {
+    setPendingCrop((current) => {
+      if (current) URL.revokeObjectURL(current.src)
+      return null
+    })
+  }
+
+  function confirmCrop(file: File) {
+    setPendingCrop((current) => {
+      if (current) URL.revokeObjectURL(current.src)
+      return null
+    })
+    setCover(file)
+  }
+
+  if (pendingCrop) {
+    return (
+      <CoverCropper
+        imageSrc={pendingCrop.src}
+        fileName={pendingCrop.name}
+        onConfirm={confirmCrop}
+        onCancel={cancelCrop}
+      />
+    )
   }
 
   return (
@@ -210,10 +254,11 @@ function GameForm({
               {cover ? cover.name : 'Ajouter une image'}
             </span>
             <input
+              ref={fileInputRef}
               type="file"
               accept="image/*"
               className="sr-only"
-              onChange={(event) => setCover(event.target.files?.[0] ?? null)}
+              onChange={(event) => pickCover(event.target.files?.[0])}
             />
           </label>
         </div>
