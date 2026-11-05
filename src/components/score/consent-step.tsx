@@ -173,7 +173,10 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
         </div>
 
         <div className="mt-5 flex flex-col gap-2">
-          <Label htmlFor="instagram-handle" className="text-body-ui">
+          <Label
+            htmlFor="instagram-handle"
+            className="block text-body-ui leading-snug"
+          >
             Ton compte Instagram, pour te taguer (facultatif)
           </Label>
           <Input

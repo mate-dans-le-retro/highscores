@@ -1,11 +1,16 @@
+import { useEffect, useState } from 'react'
+
 import { isMock } from '#/lib/data'
 
 /**
  * Fixed label so a mock screen is never mistaken for live data. On a phone it
  * is a thin strip along the bottom edge, so it never hides a whole button.
+ * Mock mode is only known in the browser, so it shows after hydration.
  */
 export function DemoWatermark() {
-  if (!isMock) return null
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+  if (!mounted || !isMock) return null
   return (
     <div
       aria-hidden="true"

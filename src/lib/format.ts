@@ -45,6 +45,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
   minute: '2-digit',
 })
 
+const weekdayFormatter = new Intl.DateTimeFormat('fr-FR', { weekday: 'long' })
+
+/** Under a week, the weekday is unambiguous and reads better: "samedi". */
+const WEEKDAY_WINDOW_MS = 6 * 24 * 3_600_000
+
 function sameCalendarDay(a: Date, b: Date) {
   return (
     a.getFullYear() === b.getFullYear() &&
@@ -55,7 +60,8 @@ function sameCalendarDay(a: Date, b: Date) {
 
 /**
  * Relative under 1 h ("il y a 12 min"), time alone the same day ("14h32"),
- * date + time otherwise ("7 nov. à 14h32").
+ * weekday + time within the week ("samedi à 14h32"), date + time otherwise
+ * ("11 avr. à 16h20").
  */
 export function formatScoreWhen(iso: string, now: Date = new Date()) {
   const then = new Date(iso)
@@ -75,6 +81,9 @@ export function formatScoreWhen(iso: string, now: Date = new Date()) {
     .replace(/ /g, '')
 
   if (sameCalendarDay(then, now)) return time
+  if (diffMs >= 0 && diffMs < WEEKDAY_WINDOW_MS) {
+    return `${weekdayFormatter.format(then)} à ${time}`
+  }
 
   const date = dateTimeFormatter
     .format(then)

@@ -32,8 +32,11 @@ import { cn } from '#/lib/utils'
 const FADE_MS = 2_500
 /** How long the "Nouveau record" takeover stays on screen. */
 const NEW_RECORD_MS = 12_000
+/** The records wall shows 3×2 cards (mockup p.2); more games add a page. */
+const WALL_PAGE_SIZE = 6
 
-type Slide = { kind: 'game'; game: DisplayedGame } | { kind: 'wall' }
+type Slide =
+  { kind: 'game'; game: DisplayedGame } | { kind: 'wall'; page: number }
 
 export const Route = createFileRoute('/')({
   staticData: { theme: 'scene' },
@@ -51,12 +54,16 @@ function PublicScreen() {
 
   const slides = useMemo<Array<Slide>>(() => {
     const list = games.data ?? []
-    if (screenMode === 'wall') return [{ kind: 'wall' }]
+    const wallPages = Array.from(
+      { length: Math.max(1, Math.ceil(list.length / WALL_PAGE_SIZE)) },
+      (_, page) => ({ kind: 'wall' as const, page }),
+    )
+    if (screenMode === 'wall') return wallPages
     if (screenMode === 'game')
       return list.map((game) => ({ kind: 'game' as const, game }))
     return [
       ...list.map((game) => ({ kind: 'game' as const, game })),
-      { kind: 'wall' as const },
+      ...wallPages,
     ]
   }, [games.data, screenMode])
 
@@ -145,7 +152,8 @@ function PublicScreen() {
   const record = game
     ? records.data?.find((entry) => entry.game.id === game.id)
     : undefined
-  const showWall = slide?.kind === 'wall'
+  const wallPage = slide && slide.kind === 'wall' ? slide.page : null
+  const showWall = wallPage !== null
 
   return (
     <ScreenStage>
@@ -193,7 +201,14 @@ function PublicScreen() {
                 Impossible de charger les records.
               </p>
             )}
-            {records.isSuccess && <RecordsWall records={records.data} />}
+            {records.isSuccess && (
+              <RecordsWall
+                records={records.data.slice(
+                  wallPage * WALL_PAGE_SIZE,
+                  (wallPage + 1) * WALL_PAGE_SIZE,
+                )}
+              />
+            )}
           </div>
         ) : (
           <div className="flex min-h-0 flex-1 gap-12 px-24 pt-10">
@@ -232,10 +247,14 @@ function PublicScreen() {
             {slides.map((entry, i) =>
               entry.kind === 'wall' ? (
                 <button
-                  key="wall"
+                  key={`wall-${entry.page}`}
                   type="button"
                   aria-current={i === safeIndex ? 'true' : undefined}
-                  aria-label="Mur des records"
+                  aria-label={
+                    entry.page === 0
+                      ? 'Mur des records'
+                      : `Mur des records, page ${entry.page + 1}`
+                  }
                   onClick={() => setIndex(i)}
                   className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
                 >
@@ -386,7 +405,9 @@ function GameLeaderboard({
       player: row.player_name,
       score: formatScore(row.score, game.score_type),
       dimmed: row.dimmed,
-      meta: rowMeta(row.created_at, row.dimmed, row.event_name),
+      // The mockup rows carry no date: only a past event's name, so that an
+      // all-time score below the line reads as such.
+      meta: row.dimmed && row.event_name ? row.event_name : undefined,
     })) ?? []
 
   return (
@@ -398,12 +419,4 @@ function GameLeaderboard({
       className="flex-1"
     />
   )
-}
-
-function rowMeta(createdAt: string, dimmed: boolean, eventName: string | null) {
-  const when = formatScoreWhen(createdAt)
-  if (dimmed && eventName) {
-    return [when, eventName].filter(Boolean).join(' · ')
-  }
-  return when || undefined
 }

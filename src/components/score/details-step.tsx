@@ -140,7 +140,7 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
         <div className="mt-6 flex flex-col gap-5">
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label className="text-arcade-label uppercase">Jeu</Label>
+              <Label className="text-body-sm leading-snug font-bold">Jeu</Label>
               {gameDetected && <DetectedTag />}
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -195,7 +195,10 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
 
           <div className="flex flex-col gap-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <Label htmlFor="score" className="text-arcade-label uppercase">
+              <Label
+                htmlFor="score"
+                className="text-body-sm leading-snug font-bold"
+              >
                 Score
               </Label>
               {scoreDetected && <DetectedTag />}
@@ -227,7 +230,10 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
           </div>
 
           <div className="flex flex-col gap-2">
-            <Label htmlFor="player" className="text-arcade-label uppercase">
+            <Label
+              htmlFor="player"
+              className="text-body-sm leading-snug font-bold"
+            >
               Ton nom ou pseudo
             </Label>
             <Input

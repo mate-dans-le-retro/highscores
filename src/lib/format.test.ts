@@ -55,9 +55,14 @@ describe('formatScoreWhen', () => {
     expect(label).toMatch(/^\d{1,2}h\d{2}$/)
   })
 
-  it('shows the date and the time otherwise', () => {
+  it('shows the weekday and the time within the week', () => {
     const label = formatScoreWhen('2026-11-05T14:32:00+01:00', now)
-    expect(label).toMatch(/nov/i)
+    expect(label).toMatch(/^jeudi à \d{1,2}h\d{2}$/)
+  })
+
+  it('shows the date and the time otherwise', () => {
+    const label = formatScoreWhen('2026-04-11T16:20:00+02:00', now)
+    expect(label).toMatch(/avr/i)
     expect(label).toMatch(/\d{1,2}h\d{2}/)
     expect(label).toContain('à')
   })
