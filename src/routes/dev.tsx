@@ -311,7 +311,7 @@ function SettingsSection() {
           </NativeSelect>
         </Field>
 
-        <Field label="Minimum all-time">
+        <Field label="Minimum de records absolus">
           <NativeSelect
             value={String(current.min_all_time_rows)}
             onChange={(event) =>

@@ -7,6 +7,7 @@ import { Logo } from '#/components/logo'
 import { NewRecordScreen } from '#/components/new-record-screen'
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
+import { PixelStar } from '#/components/pixel-star'
 import { QrCode } from '#/components/qr-code'
 import { RecordsWall } from '#/components/records-wall'
 import { ScreenStage } from '#/components/screen-stage'
@@ -30,6 +31,17 @@ import {
 import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
+import {
+  DOUBLE_CLICK_MS,
+  INITIAL_ROTATION,
+  advance,
+  afterCelebration,
+  clickPill,
+  progressShown,
+  resume,
+  settleClick,
+} from '#/lib/rotation-control'
+import type { RotationState } from '#/lib/rotation-control'
 import { cn } from '#/lib/utils'
 import { wallPages } from '#/lib/wall-pages'
 
@@ -79,9 +91,9 @@ function PublicScreen() {
     return [...wall, ...perGame]
   }, [games.data, screenMode])
 
-  const [index, setIndex] = useState(0)
-  /** Bumped to start the current slide over: its timers and bar restart. */
-  const [lap, setLap] = useState(0)
+  const [rotation, setRotation] = useState<RotationState>(INITIAL_ROTATION)
+  const { index, lap, held, pending } = rotation
+  const settleTimer = useRef<number | undefined>(undefined)
   const [fadedOut, setFadedOut] = useState(false)
   const [celebration, setCelebration] = useState<NewRecord | null>(null)
   const [celebrationQueue, setCelebrationQueue] = useState<Array<NewRecord>>([])
@@ -103,10 +115,22 @@ function PublicScreen() {
     slidesRef.current = slides
   }, [slides])
 
-  /** Shows a slide from the start, even the one already on screen. */
-  const showSlide = (i: number) => {
-    setIndex(i)
-    setLap((n) => n + 1)
+  useEffect(() => () => window.clearTimeout(settleTimer.current), [])
+
+  /** A click on a pill; a double click holds the slide (rotation-control.ts). */
+  const selectSlide = (i: number, clicks: number) => {
+    window.clearTimeout(settleTimer.current)
+    setRotation((state) => clickPill(state, i, clicks))
+    if (clicks >= 2) return
+    settleTimer.current = window.setTimeout(
+      () => setRotation(settleClick),
+      DOUBLE_CLICK_MS,
+    )
+  }
+
+  const resumeRotation = () => {
+    window.clearTimeout(settleTimer.current)
+    setRotation(resume)
   }
 
   useEffect(() => {
@@ -129,7 +153,7 @@ function PublicScreen() {
   }, [celebration, celebrationQueue])
 
   // After the takeover, the screen shows the game of the record, from the
-  // start of its time, with the new row in pink.
+  // start of its time, with the new row in pink; a held slide stays held.
   useEffect(() => {
     if (!celebration) return
     const timer = window.setTimeout(() => {
@@ -137,8 +161,7 @@ function PublicScreen() {
         (entry) =>
           entry.kind === 'game' && entry.game.id === celebration.game.id,
       )
-      if (target >= 0) setIndex(target)
-      setLap((n) => n + 1)
+      setRotation((state) => afterCelebration(state, target))
       setCelebrated({
         gameId: celebration.game.id,
         scoreId: celebration.record.id,
@@ -149,27 +172,27 @@ function PublicScreen() {
   }, [celebration])
 
   useEffect(() => {
-    setIndex(0)
+    setRotation((state) => ({ ...state, index: 0 }))
   }, [screenMode, games.data?.length])
 
   // Two timers per slide, so the screen only renders when something changes:
   // the progress bar animates on its own (see RotationProgress).
   useEffect(() => {
     setFadedOut(false)
-    if (paused || count === 0) return
+    if (paused || held || pending || count === 0) return
     const fade =
       count > 1
         ? window.setTimeout(() => setFadedOut(true), durationMs - FADE_MS)
         : undefined
-    const next = window.setTimeout(() => {
-      if (count > 1) setIndex((i) => (i + 1) % count)
-      else setLap((n) => n + 1)
-    }, durationMs)
+    const next = window.setTimeout(
+      () => setRotation((state) => advance(state, count)),
+      durationMs,
+    )
     return () => {
       window.clearTimeout(fade)
       window.clearTimeout(next)
     }
-  }, [safeIndex, lap, count, durationMs, paused])
+  }, [safeIndex, lap, count, durationMs, paused, held, pending])
 
   const game = slide && slide.kind === 'game' ? slide.game : undefined
   const record = game
@@ -188,9 +211,10 @@ function PublicScreen() {
         />
 
         <RotationProgress
-          key={`${safeIndex}-${lap}-${count}-${durationMs}-${paused}`}
+          key={`${safeIndex}-${lap}-${count}-${durationMs}`}
           durationMs={durationMs}
-          running={count > 0 && !paused}
+          shown={progressShown(rotation, count)}
+          frozen={paused}
         />
 
         <div
@@ -284,7 +308,9 @@ function PublicScreen() {
           <RotationPills
             slides={slides}
             current={safeIndex}
-            onSelect={showSlide}
+            held={held}
+            onSelect={selectSlide}
+            onResume={resumeRotation}
           />
         ) : null}
 
@@ -297,25 +323,28 @@ function PublicScreen() {
 /**
  * Rotation progress at the top of the stage. A CSS animation fills it over
  * `durationMs`, without re-rendering anything; remount it (new `key`) to
- * start over.
+ * start over. `frozen` stops it where it is.
  */
 function RotationProgress({
   durationMs,
-  running,
+  shown,
+  frozen,
 }: {
   durationMs: number
-  running: boolean
+  shown: boolean
+  frozen: boolean
 }) {
   return (
     <div
       aria-hidden="true"
       className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
     >
-      {running ? (
+      {shown ? (
         <div
           className="h-full origin-left bg-surface-accent"
           style={{
             animation: `mdlr-rotation-progress ${durationMs}ms linear forwards`,
+            animationPlayState: frozen ? 'paused' : 'running',
           }}
         />
       ) : null}
@@ -331,54 +360,97 @@ function RotationProgress({
 
 /**
  * Position in the rotation, 96px clear of the bottom edge (overscan). A
- * click shows that slide from the start of its time.
+ * click shows that slide from the start of its time; a double click holds
+ * it, and the next click resumes. The pause button sits beside the pills
+ * without moving them.
  */
 function RotationPills({
   slides,
   current,
+  held,
   onSelect,
+  onResume,
 }: {
   slides: Array<Slide>
   current: number
-  onSelect: (index: number) => void
+  held: boolean
+  onSelect: (index: number, clicks: number) => void
+  onResume: () => void
 }) {
   return (
     <nav
       aria-label="Écrans en rotation"
-      className="flex shrink-0 items-center justify-center gap-6 pt-6 pb-24"
+      className="flex shrink-0 justify-center pt-6 pb-24"
     >
-      {slides.map((entry, i) => (
-        <button
-          key={entry.kind === 'wall' ? `wall-${entry.page}` : entry.game.id}
-          type="button"
-          aria-current={i === current ? 'true' : undefined}
-          aria-label={
-            entry.kind === 'game'
-              ? entry.game.name
-              : entry.page === 0
-                ? 'Mur des records'
-                : `Mur des records, page ${entry.page + 1}`
-          }
-          onClick={() => onSelect(i)}
-          className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-        >
-          {entry.kind === 'wall' ? (
-            <WallThumb
-              active={i === current}
-              page={entry.pages > 1 ? entry.page + 1 : null}
-            />
-          ) : (
-            <GameThumb
-              name={entry.game.name}
-              shortLabel={entry.game.short_label}
-              coverPath={entry.game.cover_path}
-              active={i === current}
-              className="h-16 w-20 text-arcade-name"
-            />
-          )}
-        </button>
-      ))}
+      <div className="relative flex items-center gap-6">
+        {slides.map((entry, i) => (
+          <button
+            key={entry.kind === 'wall' ? `wall-${entry.page}` : entry.game.id}
+            type="button"
+            aria-current={i === current ? 'true' : undefined}
+            aria-label={
+              entry.kind === 'game'
+                ? entry.game.name
+                : entry.page === 0
+                  ? 'Mur des records'
+                  : `Mur des records, page ${entry.page + 1}`
+            }
+            onClick={(event) => onSelect(i, event.detail)}
+            className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+          >
+            {entry.kind === 'wall' ? (
+              <WallThumb
+                active={i === current}
+                page={entry.pages > 1 ? entry.page + 1 : null}
+              />
+            ) : (
+              <GameThumb
+                name={entry.game.name}
+                shortLabel={entry.game.short_label}
+                coverPath={entry.game.cover_path}
+                active={i === current}
+                className="h-16 w-20 text-arcade-name"
+              />
+            )}
+          </button>
+        ))}
+        {held ? <PauseButton onClick={onResume} /> : null}
+      </div>
     </nav>
+  )
+}
+
+/** Two bars on an 8-unit grid. */
+const PAUSE_BARS = [
+  [1, 1, 2, 6],
+  [5, 1, 2, 6],
+] as const
+
+/**
+ * Says the rotation is held; a click resumes it on the slide on screen.
+ * Still, not blinking: no looping animation on the projected screen.
+ */
+function PauseButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-label="Reprendre la rotation"
+      onClick={onClick}
+      className="absolute left-full ml-6 inline-flex h-16 cursor-pointer items-center gap-3 rounded-none border-4 border-line-accent bg-surface-sunken px-4 font-display text-arcade-name leading-none text-ink-accent hover:bg-surface-overlay focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+    >
+      <svg
+        viewBox="0 0 8 8"
+        aria-hidden="true"
+        focusable="false"
+        shapeRendering="crispEdges"
+        className="size-4 shrink-0 fill-current"
+      >
+        {PAUSE_BARS.map(([x, y, width, height]) => (
+          <rect key={x} x={x} y={y} width={width} height={height} />
+        ))}
+      </svg>
+      <span className="translate-y-px">{pixelCaps('Pause')}</span>
+    </button>
   )
 }
 
@@ -394,8 +466,10 @@ function WallThumb({ active, page }: { active: boolean; page: number | null }) {
       )}
       title="Mur des records"
     >
-      <span aria-hidden="true">
-        ★{page === null ? null : <span className="ml-1">{page}</span>}
+      <span aria-hidden="true" className="flex items-center gap-2 leading-none">
+        <PixelStar className="h-3.5 text-current" />
+        {/* Press Start 2P keeps a descender row under its digits. */}
+        {page === null ? null : <span className="translate-y-px">{page}</span>}
       </span>
     </span>
   )
@@ -495,7 +569,7 @@ function RecordPanel({
 
   return (
     <PixelPanel
-      label={current ? "Record de l'évènement" : 'Record de tous les temps'}
+      label={current ? 'Record évènement' : 'Record absolu'}
       className="min-h-0 flex-1"
     >
       <div className="flex min-h-0 flex-1 flex-col gap-4">

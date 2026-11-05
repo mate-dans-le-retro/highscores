@@ -48,7 +48,7 @@ describe('pixelCaps', () => {
   it('drops the accents the pixel font draws as lowercase', () => {
     expect(pixelCaps('NES · Étage')).toBe('NES · ETAGE')
     expect(pixelCaps('À toi de jouer')).toBe('A TOI DE JOUER')
-    expect(pixelCaps("Record de l'évènement")).toBe("RECORD DE L'EVENEMENT")
+    expect(pixelCaps('Record évènement')).toBe('RECORD EVENEMENT')
   })
 })
 

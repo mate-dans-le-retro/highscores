@@ -22,7 +22,7 @@ export function findNewRecords(
     if (current.id === previous?.id) return []
     if (previous && !isBetter(current.score, previous.score, game.score_order))
       return []
-    // "TOUS LES TEMPS" only when an existing record, from any event, is beaten.
+    // "RECORD ABSOLU" only when an existing record, from any event, is beaten.
     const bestEver = previousRecords.all_time
     const all_time =
       bestEver !== null &&
