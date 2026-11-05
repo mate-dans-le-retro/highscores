@@ -1,5 +1,4 @@
 import { toPublicRow } from '../anonymize'
-import { preparePhoto } from '../photo'
 import { keepSubscribed } from '../realtime-connection'
 import { buildScreenLeaderboard } from '../screen-leaderboard'
 import type { HighscoresSource } from '../source'
@@ -142,11 +141,10 @@ export const mockSource: HighscoresSource = {
     if (!input.game_id === !customGameName)
       throw new Error('Pick a game from the list or type its name, not both')
 
-    const prepared = await preparePhoto(input.photo)
     const photoId = newId()
     let photoPath: string | null = mockPhotoPath(photoId)
     try {
-      await saveMockPhoto(photoId, prepared.proof, prepared.thumb)
+      await saveMockPhoto(photoId, input.photo.proof, input.photo.thumb)
     } catch (error) {
       console.warn('Mock photo store unavailable, photo dropped', error)
       photoPath = null

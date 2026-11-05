@@ -3,15 +3,17 @@ import { useNavigate } from '@tanstack/react-router'
 import { Send } from 'lucide-react'
 import { useState } from 'react'
 
+import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import type { DraftPhoto } from '#/lib/draft-photo'
 import {
   isValidInstagramHandle,
   normalizeInstagramHandle,
 } from '#/lib/instagram-handle'
-import { dataUrlToBlob, writeScoreDraft } from '#/lib/score-draft'
+import { writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { formatScore, submitScore } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
@@ -21,6 +23,7 @@ import { cn } from '#/lib/utils'
 
 type ConsentStepProps = {
   draft: ScoreDraft
+  photo: DraftPhoto
   games: Array<DisplayedGame>
   onDraftChange: (draft: ScoreDraft) => void
 }
@@ -28,7 +31,12 @@ type ConsentStepProps = {
 const INSTAGRAM_HINT =
   "Le pseudo Instagram, c'est des lettres, chiffres, points ou _ (30 max)."
 
-export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
+export function ConsentStep({
+  draft,
+  photo,
+  games,
+  onDraftChange,
+}: ConsentStepProps) {
   const navigate = useNavigate({ from: '/score' })
   const [error, setError] = useState<string | null>(null)
   const [handleError, setHandleError] = useState<string | null>(null)
@@ -51,7 +59,7 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
   }
 
   async function handleSubmit() {
-    if (!draft.photoDataUrl || scoreValue === null) return
+    if (scoreValue === null) return
     if (draft.customGame && !draft.customGameName?.trim()) return
     if (!draft.customGame && !draft.gameId) return
 
@@ -71,7 +79,7 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
           : null,
         player_name: draft.playerName.trim(),
         score: scoreValue,
-        photo: dataUrlToBlob(draft.photoDataUrl),
+        photo: photo.photo,
         display_on_screen: draft.displayOnScreen,
         instagram_consent: draft.instagramConsent,
         instagram_handle: normalizeInstagramHandle(draft.instagramHandle),
@@ -100,13 +108,7 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
       <div className="rounded-xl border border-line-subtle bg-surface-raised p-4">
         <div className="mb-5 flex items-center gap-4 rounded-xl bg-surface-sunken p-3">
           <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-surface-overlay">
-            {draft.photoDataUrl && (
-              <img
-                src={draft.photoDataUrl}
-                alt=""
-                className="size-full object-cover"
-              />
-            )}
+            <DraftPhotoPreview url={photo.url} alt="" />
           </div>
           <div className="min-w-0 flex flex-col gap-1">
             <p className="truncate font-display text-arcade-name text-ink-primary">

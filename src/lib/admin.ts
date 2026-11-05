@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 import { getSupabase } from './supabase'
+import { isOriginalPhoto, photoFileType, preparePhoto } from './data/photo'
 import { isBetter } from './data/records'
 import { rankScores } from './data/ranking'
 import type {
@@ -352,20 +353,31 @@ export interface ManualScore {
 export async function addManualScore(input: ManualScore) {
   const supabase = getSupabase()
   let photoPath: string | null = null
+  let thumbPath: string | null = null
   if (input.photo) {
-    photoPath = `admin/${crypto.randomUUID()}.${extensionOf(input.photo)}`
-    const upload = await supabase.storage
-      .from('photos')
-      .upload(photoPath, input.photo, {
-        contentType: input.photo.type || 'image/jpeg',
-      })
-    if (upload.error) throw upload.error
+    const photo = await preparePhoto(input.photo)
+    const id = crypto.randomUUID()
+    photoPath = `admin/${id}.${photoFileType(photo.proof).extension}`
+    if (!isOriginalPhoto(photo))
+      thumbPath = `admin/${id}.thumb.${photoFileType(photo.thumb).extension}`
+    const uploads = await Promise.all([
+      supabase.storage.from('photos').upload(photoPath, photo.proof, {
+        contentType: photoFileType(photo.proof).contentType,
+      }),
+      thumbPath
+        ? supabase.storage.from('photos').upload(thumbPath, photo.thumb, {
+            contentType: photoFileType(photo.thumb).contentType,
+          })
+        : null,
+    ])
+    for (const upload of uploads) if (upload?.error) throw upload.error
   }
   const { error } = await supabase.from('scores').insert({
     game_id: input.game_id,
     player_name: input.player_name.trim(),
     score: input.score,
     photo_path: photoPath,
+    thumb_path: thumbPath,
     display_on_screen: input.display_on_screen,
     status: 'approved',
     source: 'admin',

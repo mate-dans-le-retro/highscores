@@ -1,6 +1,8 @@
 // Hand-written rows, in snake_case like Postgres. To be replaced by
 // `supabase gen types` plus a mapping once the schema catches up.
 
+import type { PreparedPhoto } from './photo'
+
 export type ScoreOrder = 'desc' | 'asc'
 /** To add a type, add it here and give it a formatter in src/lib/format.ts. */
 export type ScoreType = 'points' | 'time' | 'other'
@@ -137,7 +139,8 @@ export interface SubmissionInput {
   custom_game_name: string | null
   player_name: string
   score: number
-  photo: Blob
+  /** Already through preparePhoto() on the phone: the sources upload it as is. */
+  photo: PreparedPhoto
   display_on_screen: boolean
   instagram_consent: boolean
   instagram_handle: string | null

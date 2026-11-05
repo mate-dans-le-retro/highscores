@@ -7,6 +7,7 @@ import { DetailsStep } from '@/components/score/details-step'
 import { ScoreFlowShell } from '@/components/score/flow-shell'
 import { PhotoStep } from '@/components/score/photo-step'
 import { ThanksStep } from '@/components/score/thanks-step'
+import { useDraftPhoto } from '#/lib/draft-photo'
 import { readScoreDraft, writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { resolveScoreStep, scoreSearchSchema } from '#/lib/score-step'
@@ -24,6 +25,7 @@ function SubmitScore() {
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)
   const [draft, setDraft] = useState<ScoreDraft>(() => readScoreDraft())
+  const draftPhoto = useDraftPhoto(draft.photoId)
 
   const onDraftChange = useCallback((next: ScoreDraft) => {
     writeScoreDraft(next)
@@ -46,7 +48,10 @@ function SubmitScore() {
     )
   }
 
-  if ((step === 'details' || step === 'consent') && !draft.photoDataUrl) {
+  const photo = draftPhoto.photo
+  if ((step === 'details' || step === 'consent') && !photo) {
+    if (draftPhoto.loading)
+      return <ScoreFlowShell step={step}>{null}</ScoreFlowShell>
     return (
       <Navigate
         to="/score"
@@ -76,18 +81,24 @@ function SubmitScore() {
   return (
     <ScoreFlowShell step={step}>
       {step === 'photo' && (
-        <PhotoStep draft={draft} onDraftChange={onDraftChange} />
+        <PhotoStep
+          draft={draft}
+          photoUrl={photo?.url ?? null}
+          onDraftChange={onDraftChange}
+        />
       )}
-      {step === 'details' && (
+      {step === 'details' && photo && (
         <DetailsStep
           draft={draft}
+          photo={photo}
           games={games.data ?? []}
           onDraftChange={onDraftChange}
         />
       )}
-      {step === 'consent' && (
+      {step === 'consent' && photo && (
         <ConsentStep
           draft={draft}
+          photo={photo}
           games={games.data ?? []}
           onDraftChange={onDraftChange}
         />

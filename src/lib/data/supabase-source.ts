@@ -1,6 +1,6 @@
 import { getSupabase, photoUrl } from '../supabase'
 import { CHARACTERS_BY_GAME_ID, anonymousName } from './anonymous-name'
-import { preparePhoto } from './photo'
+import { isOriginalPhoto, photoFileType } from './photo'
 import { rankScores } from './ranking'
 import { keepSubscribed } from './realtime-connection'
 import { buildScreenLeaderboard } from './screen-leaderboard'
@@ -150,13 +150,6 @@ async function getSettings(): Promise<Settings> {
   return data
 }
 
-function extensionOf(photo: Blob) {
-  const fromName =
-    photo instanceof File ? photo.name.split('.').pop()?.toLowerCase() : null
-  if (photo.type === 'image/jpeg') return 'jpg'
-  return fromName && /^[a-z0-9]{1,5}$/.test(fromName) ? fromName : 'jpg'
-}
-
 /** "@julie.retro" → "julie.retro"; anything Instagram would refuse is dropped. */
 function instagramHandle(handle: string | null) {
   const clean = handle?.trim().replace(/^@/, '') ?? ''
@@ -212,16 +205,17 @@ export const supabaseSource: HighscoresSource = {
       throw new Error('Pick a game from the list or type its name, not both')
 
     const supabase = getSupabase()
-    const { proof, thumb } = await preparePhoto(input.photo)
+    const { proof, thumb } = input.photo
     const id = crypto.randomUUID()
-    const photoPath = `submissions/${id}.${extensionOf(proof)}`
-    const thumbPath =
-      thumb === proof ? null : `submissions/${id}.thumb.${extensionOf(thumb)}`
+    const photoPath = `submissions/${id}.${photoFileType(proof).extension}`
+    const thumbPath = isOriginalPhoto(input.photo)
+      ? null
+      : `submissions/${id}.thumb.${photoFileType(thumb).extension}`
 
     const upload = (path: string, file: Blob) =>
       supabase.storage.from('photos').upload(path, file, {
         // Some phones send no type at all: the bucket accepts any image.
-        contentType: file.type || input.photo.type || 'image/jpeg',
+        contentType: photoFileType(file).contentType,
       })
     const uploads = await Promise.all([
       upload(photoPath, proof),

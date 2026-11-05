@@ -27,12 +27,28 @@ describe('score draft', () => {
     const draft = emptyScoreDraft()
     draft.playerName = 'Julie'
     draft.scoreText = '128400'
-    draft.photoDataUrl = 'data:image/jpeg;base64,abc'
+    draft.photoId = 'photo-1'
     writeScoreDraft(draft, store)
     expect(readScoreDraft(store).playerName).toBe('Julie')
-    expect(readScoreDraft(store).photoDataUrl).toBe(
-      'data:image/jpeg;base64,abc',
-    )
+    expect(readScoreDraft(store).photoId).toBe('photo-1')
+  })
+
+  it('drops the v1 draft, which held the photo as a data URL', () => {
+    const store = memoryStore({
+      'mdlr-highscores:score-draft:v1': '{"photoDataUrl":"data:…"}',
+    })
+    expect(readScoreDraft(store)).toEqual(emptyScoreDraft())
+    expect(store.getItem('mdlr-highscores:score-draft:v1')).toBeNull()
+  })
+
+  it('does not throw when the storage is full', () => {
+    const store = {
+      ...memoryStore(),
+      setItem: () => {
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      },
+    }
+    expect(() => writeScoreDraft(emptyScoreDraft(), store)).not.toThrow()
   })
 
   it('keeps the nickname when resetting', () => {

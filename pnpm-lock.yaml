@@ -202,6 +202,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      heic-to:
+        specifier: 1.6.6
+        version: 1.6.6
       lucide-react:
         specifier: ^1.60.0
         version: 1.67.0(@types/react@19.3.0)(react@19.3.1)
@@ -2581,6 +2584,9 @@ packages:
   hashery@1.5.1:
     resolution: {integrity: sha512-iZyKG96/JwPz1N55vj2Ie2vXbhu440zfUfJvSwEqEbeLluk7NnapfGqa7LH0mOsnDxTF85Mx8/dyR6HfqcbmbQ==}
     engines: {node: '>=20'}
+
+  heic-to@1.6.6:
+    resolution: {integrity: sha512-PYpOtPFEzgPxIoGF4LQ+oBD8o/tMvcFDNynrNzK1fLXfE6mTe2W+AHOvBKc5MwnVak4/Pnb51g9CJAtWL5YGWA==}
 
   hookable@6.1.2:
     resolution: {integrity: sha512-+abwxtiEA52GCVIsQqut3S/uKTbUwYIp4Pe/vv+6py5XiXBCqMZHg6pA6Y5qhgLSEys0/cYuPbO0z1QFj5ZCmg==}
@@ -5735,6 +5741,8 @@ snapshots:
   hashery@1.5.1:
     dependencies:
       hookified: 1.15.1
+
+  heic-to@1.6.6: {}
 
   hookable@6.1.2: {}
 
