@@ -5,6 +5,7 @@ yarn.lock
 .nitro
 .tanstack
 src/routeTree.gen.ts
+supabase/.temp
 src/components/ui
 src/styles/mdlr/tokens.css
 src/styles/mdlr/tailwind.css
