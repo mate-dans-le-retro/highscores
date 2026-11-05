@@ -54,6 +54,30 @@ curl -s "$A/rest/v1/scores" -H "apikey: $K" -H "Content-Type: application/json" 
 curl -s "$A/rest/v1/scores?status=eq.pending" -H "apikey: $K"
 ```
 
+## Data sources
+
+Pages only import `src/lib/highscores.ts` (TanStack Query options, `submitScore`, `useHighscoresRealtime`). Behind it, `src/lib/data/` holds the domain types and two implementations of `HighscoresSource`:
+
+- `supabase-source.ts` (default): the tables and views above, with defaults for the fields the schema does not have yet.
+- `mock/`: seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. Photos (proof ~2000 px + thumb ~800 px) live in IndexedDB under `mock-photo:{id}`. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`), and the UI shows a "Données de démo" watermark.
+
+Which source runs (`src/lib/data/mode.ts`):
+
+1. `?mock=1` or `?mock=0` in the URL turns the mock on or off; the choice holds for the tab's session (sessionStorage), across navigation and reloads.
+2. Otherwise, `VITE_DATA_SOURCE=mock` (local `.env.local` only) turns it on.
+3. Otherwise, Supabase.
+
+Both sources anonymize the scores a player kept off screen (`src/lib/data/anonymize.ts`): the row keeps its rank and score, with a retro nickname and no photo. The real backend must also enforce it on the server side.
+
+## Public screen options
+
+The rotation and the number of rows come from the settings (15 s and 5 rows by default). Search params override them, validated and clamped with zod (`src/lib/screen-options.ts`):
+
+| Param      | Range    | Example         |
+| ---------- | -------- | --------------- |
+| `rotation` | 5 to 300 | `/?rotation=30` |
+| `rows`     | 1 to 10  | `/?rows=10`     |
+
 ## Realtime
 
 The `scores` and `games` tables are in the `supabase_realtime` publication. `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to changes and invalidates the matching TanStack Query queries; RLS filters what each client receives.
@@ -65,11 +89,12 @@ The `scores` and `games` tables are in the `supabase_realtime` publication. `use
 
 ## Environment variables
 
-| Variable                        | Where           | Role                                                                             |
-| ------------------------------- | --------------- | -------------------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | client + server | Supabase project URL                                                             |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | local (`.env`)  | public key (RLS)                                                                 |
-| `VITE_SUPABASE_ANON_KEY`        | Vercel          | public key set by the Supabase integration (read if the previous one is missing) |
+| Variable                        | Where                | Role                                                                             |
+| ------------------------------- | -------------------- | -------------------------------------------------------------------------------- |
+| `VITE_DATA_SOURCE`              | local (`.env.local`) | `mock`: fake data in `localStorage`, see "Data sources"                          |
+| `VITE_SUPABASE_URL`             | client + server      | Supabase project URL                                                             |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | local (`.env`)       | public key (RLS)                                                                 |
+| `VITE_SUPABASE_ANON_KEY`        | Vercel               | public key set by the Supabase integration (read if the previous one is missing) |
 
 On Vercel, these variables come from the Marketplace Supabase integration, configured with the public `VITE_` prefix. Only `VITE_*` variables reach the browser; read them by their exact name (`import.meta.env.VITE_SUPABASE_URL`), never through the whole `import.meta.env` object.
 

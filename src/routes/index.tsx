@@ -4,24 +4,31 @@ import { useEffect, useState } from 'react'
 
 import { QrCode } from '#/components/qr-code'
 import {
+  DEFAULT_SETTINGS,
   formatScore,
+  formatStation,
   leaderboardQuery,
+  settingsQuery,
   useHighscoresRealtime,
   visibleGamesQuery,
 } from '#/lib/highscores'
-import type { Game } from '#/lib/highscores'
-
-/** How long each game stays on screen before the next one (screens guideline: 15 s). */
-const ROTATION_MS = 15_000
+import type { DisplayedGame } from '#/lib/highscores'
+import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 
 export const Route = createFileRoute('/')({
   staticData: { theme: 'scene' },
+  validateSearch: screenSearchSchema,
   component: PublicScreen,
 })
 
 function PublicScreen() {
   useHighscoresRealtime()
   const games = useQuery(visibleGamesQuery)
+  const settings = useQuery(settingsQuery)
+  const { rotationMs, rows, minAllTimeRows } = screenOptions(
+    settings.data ?? DEFAULT_SETTINGS,
+    Route.useSearch(),
+  )
   const [index, setIndex] = useState(0)
   const count = games.data?.length ?? 0
 
@@ -29,10 +36,10 @@ function PublicScreen() {
     if (count < 2) return
     const timer = setInterval(
       () => setIndex((i) => (i + 1) % count),
-      ROTATION_MS,
+      rotationMs,
     )
     return () => clearInterval(timer)
-  }, [count])
+  }, [count, rotationMs])
 
   const game = games.data?.[index % Math.max(count, 1)]
 
@@ -55,7 +62,13 @@ function PublicScreen() {
           {games.isSuccess && !game && (
             <p className="text-scene-row">Aucun jeu affiché pour l'instant.</p>
           )}
-          {game && <GameLeaderboard game={game} />}
+          {game && (
+            <GameLeaderboard
+              game={game}
+              rows={rows}
+              minAllTimeRows={minAllTimeRows}
+            />
+          )}
         </div>
         <SubmitScorePanel />
       </div>
@@ -93,8 +106,18 @@ function SubmitScorePanel() {
   )
 }
 
-function GameLeaderboard({ game }: { game: Game }) {
-  const rows = useQuery(leaderboardQuery(game.id))
+function GameLeaderboard({
+  game,
+  rows: rowsShown,
+  minAllTimeRows,
+}: {
+  game: DisplayedGame
+  rows: number
+  minAllTimeRows: number
+}) {
+  const board = useQuery(
+    leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
+  )
 
   return (
     <section className="flex flex-col gap-8">
@@ -102,26 +125,40 @@ function GameLeaderboard({ game }: { game: Game }) {
         <h2 className="font-display text-scene-pixel text-ink-accent">
           {game.name}
         </h2>
-        {game.machine && (
-          <p className="text-scene-meta text-ink-secondary">{game.machine}</p>
+        {(game.console || game.station_label) && (
+          <p className="text-scene-meta text-ink-secondary">
+            {formatStation(game.console, game.station_label)}
+          </p>
         )}
       </div>
-      {rows.isSuccess && rows.data.length === 0 && (
+      {board.isSuccess && board.data.empty && (
         <p className="text-scene-row">
           Aucun score pour l'instant. À toi de jouer !
         </p>
       )}
       <ol className="flex flex-col">
-        {rows.data?.map((row) => (
-          <li
-            key={row.id}
-            className="grid grid-cols-[4ch_1fr_auto] items-center gap-8 text-scene-row"
-          >
-            <span className="font-display text-scene-pixel">{row.rank}</span>
-            <span className="truncate">{row.player_name}</span>
-            <span className="font-display text-scene-pixel">
-              {formatScore(row.score)}
-            </span>
+        {board.data?.rows.map((row, index) => (
+          <li key={row.id}>
+            {board.data.separator_at === index && (
+              <div
+                role="separator"
+                className="my-4 border-t-4 border-line-subtle"
+              />
+            )}
+            <div
+              className={`grid grid-cols-[4ch_1fr_auto] items-center gap-8 text-scene-row ${
+                row.dimmed ? 'opacity-60' : ''
+              }`}
+            >
+              <span className="font-display text-scene-pixel">{row.rank}</span>
+              <span className="truncate">
+                {row.player_name}
+                {row.dimmed && row.event_name ? ` · ${row.event_name}` : ''}
+              </span>
+              <span className="font-display text-scene-pixel">
+                {formatScore(row.score, game.score_type)}
+              </span>
+            </div>
           </li>
         ))}
       </ol>

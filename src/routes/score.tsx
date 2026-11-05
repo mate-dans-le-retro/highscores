@@ -7,41 +7,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { visibleGamesQuery } from '#/lib/highscores'
-import { supabase } from '#/lib/supabase'
+import { submitScore, visibleGamesQuery } from '#/lib/highscores'
 
 export const Route = createFileRoute('/score')({
   staticData: { theme: 'arcade' },
   component: SubmitScore,
 })
-
-interface Submission {
-  gameId: string
-  playerName: string
-  score: number
-  photo: File
-  instagramConsent: boolean
-}
-
-async function submitScore(submission: Submission) {
-  const extension =
-    submission.photo.name.split('.').pop()?.toLowerCase() || 'jpg'
-  const photoPath = `submissions/${crypto.randomUUID()}.${extension}`
-
-  const upload = await supabase.storage
-    .from('photos')
-    .upload(photoPath, submission.photo, { contentType: submission.photo.type })
-  if (upload.error) throw upload.error
-
-  const { error } = await supabase.from('scores').insert({
-    game_id: submission.gameId,
-    player_name: submission.playerName.trim(),
-    score: submission.score,
-    photo_path: photoPath,
-    instagram_consent: submission.instagramConsent,
-  })
-  if (error) throw error
-}
 
 const fieldClass = 'h-12 text-arcade-name'
 
@@ -88,11 +59,16 @@ function SubmitScore() {
           event.preventDefault()
           if (!canSubmit) return
           mutation.mutate({
-            gameId,
-            playerName,
+            game_id: gameId,
+            custom_game_name: null,
+            player_name: playerName.trim(),
             score: Number(score),
             photo,
-            instagramConsent,
+            display_on_screen: true,
+            instagram_consent: instagramConsent,
+            instagram_handle: null,
+            detected_game_id: null,
+            detected_score: null,
           })
         }}
       >
@@ -111,7 +87,7 @@ function SubmitScore() {
             {games.data?.map((game) => (
               <NativeSelectOption key={game.id} value={game.id}>
                 {game.name}
-                {game.machine ? ` (${game.machine})` : ''}
+                {game.console ? ` (${game.console})` : ''}
               </NativeSelectOption>
             ))}
           </NativeSelect>
@@ -156,7 +132,7 @@ function SubmitScore() {
             id="photo"
             className={fieldClass}
             type="file"
-            accept="image/*"
+            accept="image/*,.heic,.heif"
             capture="environment"
             onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
             required
