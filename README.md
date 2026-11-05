@@ -14,7 +14,7 @@ Requirements: Node 22+, pnpm, Docker (for local Supabase).
 
 ```bash
 pnpm install
-npx supabase start          # local database with the schema and demo games
+pnpm supabase start         # local database with the schema and demo games
 cp .env.example .env        # then paste the URL and publishable key it prints
 pnpm dev                    # http://localhost:3000
 ```
@@ -22,7 +22,7 @@ pnpm dev                    # http://localhost:3000
 ## Check before pushing
 
 ```bash
-npx tsc --noEmit && pnpm lint && pnpm check && pnpm build
+pnpm typecheck && pnpm lint && pnpm check && pnpm test && pnpm build
 ```
 
 ## Documentation
