@@ -179,17 +179,27 @@ export const MARIO_KART_CHARACTERS: ReadonlyArray<NamedCharacter> = [
   { name: 'Metal Mario', gender: 'm' },
 ]
 
-/** Default cast per game id; missing ids fall back to FALLBACK_CHARACTERS. */
-export const CHARACTERS_BY_GAME_ID: Readonly<
+/**
+ * Default cast per game slug (stable across sources). Mock game ids are
+ * `g-${slug}`; Supabase uses uuids and should look up by `game.slug`.
+ */
+export const CHARACTERS_BY_SLUG: Readonly<
   Record<string, ReadonlyArray<NamedCharacter>>
 > = {
-  'g-tetris': TETRIS_CHARACTERS,
-  'g-duck-hunt': DUCK_HUNT_CHARACTERS,
-  'g-super-mario-bros': MARIO_CHARACTERS,
-  'g-guitar-hero': GUITAR_HERO_CHARACTERS,
-  'g-pac-man': PAC_MAN_CHARACTERS,
-  'g-mario-kart': MARIO_KART_CHARACTERS,
+  tetris: TETRIS_CHARACTERS,
+  'duck-hunt': DUCK_HUNT_CHARACTERS,
+  'super-mario-bros': MARIO_CHARACTERS,
+  'guitar-hero': GUITAR_HERO_CHARACTERS,
+  'pac-man': PAC_MAN_CHARACTERS,
+  'mario-kart': MARIO_KART_CHARACTERS,
 }
+
+/** @deprecated Use CHARACTERS_BY_SLUG. Kept so stacked Claude branches keep compiling. */
+export const CHARACTERS_BY_GAME_ID: Readonly<
+  Record<string, ReadonlyArray<NamedCharacter>>
+> = Object.fromEntries(
+  Object.entries(CHARACTERS_BY_SLUG).map(([slug, cast]) => [`g-${slug}`, cast]),
+)
 
 export const QUALIFIERS: ReadonlyArray<GenderedWord> = [
   { m: 'anonyme', f: 'anonyme' },
@@ -266,12 +276,17 @@ function agree(word: GenderedWord, gender: Gender) {
   return gender === 'f' ? word.f : word.m
 }
 
+/** Strip the mock `g-` prefix so both slug and mock game id resolve. */
+export function gameSlugFromId(gameIdOrSlug: string) {
+  return gameIdOrSlug.startsWith('g-') ? gameIdOrSlug.slice(2) : gameIdOrSlug
+}
+
 function resolveCharacters(
-  gameId: string,
+  gameIdOrSlug: string,
   characters?: ReadonlyArray<NamedCharacter> | null,
 ): ReadonlyArray<NamedCharacter> {
   if (characters && characters.length > 0) return characters
-  return CHARACTERS_BY_GAME_ID[gameId] ?? FALLBACK_CHARACTERS
+  return CHARACTERS_BY_SLUG[gameSlugFromId(gameIdOrSlug)] ?? FALLBACK_CHARACTERS
 }
 
 /**

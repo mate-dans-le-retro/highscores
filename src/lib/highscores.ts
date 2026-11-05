@@ -22,7 +22,12 @@ export type {
   ScreenLeaderboardRow,
 } from './data/screen-leaderboard'
 export { buildScreenLeaderboard } from './data/screen-leaderboard'
-export { anonymousName, normalizePlayerName } from './data/anonymous-name'
+export {
+  anonymousName,
+  normalizePlayerName,
+  CHARACTERS_BY_SLUG,
+  gameSlugFromId,
+} from './data/anonymous-name'
 export { findNewRecords } from './data/records'
 export { DEFAULT_SETTINGS } from './data/source'
 export { formatScore, formatScoreWhen, formatStation } from './format'

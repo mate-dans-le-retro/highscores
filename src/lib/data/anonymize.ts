@@ -7,7 +7,9 @@ export {
   anonymousName,
   normalizePlayerName,
   FALLBACK_CHARACTERS,
+  CHARACTERS_BY_SLUG,
   CHARACTERS_BY_GAME_ID,
+  gameSlugFromId,
 } from './anonymous-name'
 
 /**
