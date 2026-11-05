@@ -1,5 +1,8 @@
 allowBuilds:
   esbuild: true
+  # Optional dependency of the Vercel CLI, only used by its experimental
+  # chip-sealed login; the CLI works without it.
+  koffi: false
   lightningcss: true
 packages:
   - .
