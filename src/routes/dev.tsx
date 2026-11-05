@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
+import { InstagramPreview } from '#/components/admin/instagram-preview'
 import { Button } from '#/components/ui/button'
 import { Label } from '#/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '#/components/ui/native-select'
@@ -83,6 +84,7 @@ function DevPanel() {
       </header>
 
       <PendingSection />
+      <InstagramPreview />
       <SettingsSection />
       <ResetSection />
     </main>

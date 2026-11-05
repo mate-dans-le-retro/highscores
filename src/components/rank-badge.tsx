@@ -1,3 +1,4 @@
+import { CUP } from '#/lib/pixel-art'
 import { cn } from '#/lib/utils'
 
 type RankBadgeSize = 'xs' | 'sm' | 'md' | 'lg'
@@ -38,20 +39,6 @@ const METALS = {
     number: 'text-rank-bronze',
   },
 } as const
-
-/** Cup on a 16-unit grid (x, y, width, height): bowl, handles, stem, base. */
-const CUP = [
-  [3, 2, 10, 2],
-  [4, 4, 8, 4],
-  [5, 8, 6, 1],
-  [1, 3, 1, 4],
-  [2, 7, 2, 1],
-  [14, 3, 1, 4],
-  [12, 7, 2, 1],
-  [7, 9, 2, 2],
-  [5, 11, 6, 1],
-  [4, 12, 8, 2],
-] as const
 
 function placeName(rank: number) {
   if (rank === 1) return '1re place'

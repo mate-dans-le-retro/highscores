@@ -36,6 +36,8 @@ Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "
 
 **Submissions.** Filters "À valider", "Validées", "Rejetées" with counts. Each card: photo, name, game, relative time, score, and tags ("Record battu", "1re place", "Instagram" or "Sans Instagram", "Masqué"). Detail panel: photo, "Lu sur la photo : Tetris · 128 400", editable game, score and display name, the current record ("Ce score prend la 1re place."), "Afficher sur l'écran public" (unchecked: the score stays ranked, but the name and photo are replaced by a neutral nickname and image), "Publier sur Instagram" (only if the player agreed), the Instagram caption, and the "Rejeter" / "Valider et afficher" actions. A switch "Envois ouverts" opens or closes submissions.
 
+Built (no mockup for it): a fourth filter "À publier" lists approved scores whose player agreed to Instagram and not posted yet. Its detail, also shown under an approved submission, has the visual with "Télécharger l'image" (PNG, or JPEG, or "Partager" on a phone), four short steps, the caption with "Copier la légende", the player's account with "Copier" (or "Pas de compte Instagram renseigné : publie sans taguer."), and "Marquer comme publié" / "Remettre à publier". `/dev` previews it with demo scores.
+
 **Games.** Table: drag handle (order), initials thumbnail, name, score type ("Points · le plus haut gagne", "Temps · le plus bas gagne"), number of records, best score, "Affiché"/"Masqué" switch, edit, "Records". Button "Ajouter un jeu".
 
 **Add a game** (dialog). Name, thumbnail (initials by default, or an uploaded image), score type "Points" / "Temps" / "Autre", "Le meilleur score est" "Le plus haut" / "Le plus bas", "Affiché" switch.
@@ -47,6 +49,8 @@ Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "
 ## Instagram visual (720 × 900, 4:5)
 
 "NOUVEAU RECORD" eyebrow, the photo in a pink frame, a panel with the cup, the game, the name and the score, then the logo and "@mate_dans_le_retro".
+
+Exported at 1080 × 1350. The photo frame is taller than on the mockup; the panel at the bottom also names the event. Headline by rank ("NOUVEAU RECORD !", "SUR LE PODIUM !", "BEAU SCORE !"), a gold "RECORD ABSOLU" tag on the score panel when it applies, and the masked bust with "INCOGNITO !" (or "SANS PHOTO") instead of the photo, as on the screen.
 
 ## What this adds to the data model
 

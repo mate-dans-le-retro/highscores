@@ -1,4 +1,5 @@
 import { pixelCaps } from '#/lib/highscores'
+import { BUST, EYES, MASK } from '#/lib/pixel-art'
 import { cn } from '#/lib/utils'
 
 type PhotoPlaceholderProps = {
@@ -7,30 +8,6 @@ type PhotoPlaceholderProps = {
   size?: 'sm' | 'md' | 'lg'
   className?: string
 }
-
-/** Player bust on a 16-unit grid (x, y, width, height): head, neck, shoulders. */
-const BUST = [
-  [6, 1, 4, 1],
-  [5, 2, 6, 1],
-  [4, 3, 8, 5],
-  [5, 8, 6, 1],
-  [6, 9, 4, 1],
-  [7, 10, 2, 1],
-  [4, 11, 8, 1],
-  [2, 12, 12, 3],
-] as const
-
-/** Bandit mask over the eyes, wider than the head; the eyes are cut out of it. */
-const MASK = [
-  [3, 4, 10, 2],
-  [13, 3, 1, 1],
-  [13, 6, 1, 1],
-] as const
-
-const EYES = [
-  [5, 5, 2, 1],
-  [9, 5, 2, 1],
-] as const
 
 const SIZES = {
   sm: { art: 'size-20', caption: 'text-arcade-label' },
