@@ -1,6 +1,10 @@
 import { displayablePhotoUrl } from './data/photo'
 import { pixelCaps } from './format'
-import { MDLR_INSTAGRAM, instagramHeadline } from './instagram-post'
+import {
+  MDLR_INSTAGRAM,
+  formatPostDate,
+  instagramHeadline,
+} from './instagram-post'
 import type { InstagramPost } from './instagram-post'
 import { BUST, CUP, EYES, MASK } from './pixel-art'
 import type { PixelRect } from './pixel-art'
@@ -588,25 +592,53 @@ export function drawInstagramVisual(
   }
   const footRight = M + inner - pad
   const footText = inner * 0.48
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'alphabetic'
-  if (post.eventName) {
-    fitFont(ctx, post.eventName, sansFont(800), 34, 22, footText)
-    ctx.fillStyle = tokens['ink-primary']
-    ctx.fillText(
-      ellipsize(ctx, post.eventName, footText),
-      footRight,
-      footTop + footHeight / 2 - 6,
-    )
-  }
-  const account = `@${MDLR_INSTAGRAM}`
-  fitFont(ctx, account, sansFont(600), 30, 18, footText)
-  ctx.fillStyle = tokens['ink-secondary']
-  ctx.fillText(
-    account,
-    footRight,
-    footTop + footHeight / 2 + (post.eventName ? 40 : 12),
+  // Event, when the score was sent, account: stacked, centred in the panel.
+  const footLines = [
+    { text: post.eventName, weight: 800, size: 34, color: 'ink-primary' },
+    {
+      text: formatPostDate(post.scoredAt),
+      weight: 600,
+      size: 28,
+      color: 'ink-primary',
+    },
+    {
+      text: `@${MDLR_INSTAGRAM}`,
+      weight: 600,
+      size: 28,
+      color: 'ink-secondary',
+    },
+  ] as const
+  const shown = footLines.flatMap((line) =>
+    line.text
+      ? [
+          {
+            ...line,
+            text: line.text,
+            size: fitFont(
+              ctx,
+              line.text,
+              sansFont(line.weight),
+              line.size,
+              18,
+              footText,
+            ),
+          },
+        ]
+      : [],
   )
+  const lineGap = 10
+  const footBlock =
+    shown.reduce((sum, line) => sum + line.size, 0) +
+    lineGap * (shown.length - 1)
+  let footY = footTop + (footHeight - footBlock) / 2
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'top'
+  for (const line of shown) {
+    ctx.font = sansFont(line.weight)(line.size)
+    ctx.fillStyle = tokens[line.color]
+    ctx.fillText(ellipsize(ctx, line.text, footText), footRight, footY)
+    footY += line.size + lineGap
+  }
   ctx.textAlign = 'left'
 }
 

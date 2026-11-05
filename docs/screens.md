@@ -50,7 +50,7 @@ Built (no mockup for it): a fourth filter "À publier" lists approved scores who
 
 "NOUVEAU RECORD" eyebrow, the photo in a pink frame, a panel with the cup, the game, the name and the score, then the logo and "@mate_dans_le_retro".
 
-Exported at 1080 × 1350. The photo frame is taller than on the mockup; the panel at the bottom also names the event. Headline by rank ("NOUVEAU RECORD !", "SUR LE PODIUM !", "BEAU SCORE !"), a gold "RECORD ABSOLU" tag on the score panel when it applies, and the masked bust with "INCOGNITO !" (or "SANS PHOTO") instead of the photo, as on the screen.
+Exported at 1080 × 1350. The photo frame is taller than on the mockup; the panel at the bottom also names the event and when the score was sent, in Paris time ("7 nov. 2026 à 14h32"). Headline by rank ("NOUVEAU RECORD !", "SUR LE PODIUM !", "BEAU SCORE !"), a gold "RECORD ABSOLU" tag on the score panel when it applies, and the masked bust with "INCOGNITO !" (or "SANS PHOTO") instead of the photo, as on the screen.
 
 ## What this adds to the data model
 
