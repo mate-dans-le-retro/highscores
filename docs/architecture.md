@@ -29,17 +29,23 @@ Each route declares its theme in `staticData.theme`; `__root.tsx` sets the value
 
 Defined in `supabase/migrations/`. Summary:
 
-- **`games`**: `slug`, `name`, `machine`, `score_order` (`desc` | `asc`), `score_unit`, `visible`, `position`, `cover_path`.
-- **`scores`**: a single lifecycle for submissions and admin entries. `game_id`, `player_name` (1 to 40 characters), `score` (bigint ≥ 0), `photo_path`, `instagram_consent`, `status` (`pending` | `approved` | `rejected`), `source` (`player` | `admin`), `rejection_reason`, `instagram_post_id`, `reviewed_at`, `reviewed_by`.
-- **`leaderboard`** (view, `security_invoker`): approved scores with their `rank` per game, following the game's score order.
+- **`events`**: one edition each (`name`, `archived_at`). Exactly one current event (`archived_at is null`), given by `public.current_event_id()`. `archive_current_event(name)` (volunteers only) archives it and opens the next one: archived scores still count for the all-time records.
+- **`games`**: `slug`, `name`, `console` (stable, "Super NES"), `short_label` (tile fallback, "TET"), `score_type` (`points` | `time` | `other`), `score_order` (`desc` | `asc`), `score_unit`, `visible`, `position`, `cover_path` (in the `covers` bucket).
+- **`game_event_setups`**: the station label of a game for one event ("Étage"), unique per event and game.
+- **`scores`**: a single lifecycle for submissions and admin entries. `event_id` (the current event by default), `game_id` or `custom_game_name` (exactly one: a free game name waits for a volunteer to create or link the game; an approved score always has a game), `player_name` (1 to 40 characters), `score` (bigint ≥ 0; milliseconds for a time, 1'32"48 = 92480), `photo_path` (proof) and `thumb_path` (thumbnail), `display_on_screen`, `instagram_consent`, `instagram_handle`, `detected_game_id` and `detected_score` (read from the photo), `status` (`pending` | `approved` | `rejected`), `source` (`player` | `admin`), `rejection_reason`, `instagram_post_id`, `reviewed_at`, `reviewed_by`.
+- **`settings`**: a single row. `submissions_open`, `screen_mode` (`game` | `wall` | `both`), `game_duration_s`, `wall_duration_s`, `rows_shown`, `min_all_time_rows`, and the Instagram options (`instagram_enabled`, `instagram_mode`, `instagram_caption`).
+- **`displayed_games`** (view, `security_invoker`): visible games with their station label for the current event.
+- **`public_scores()`** (function, security definer): approved scores of visible games, every event, with `event_name`, `is_current_event` and `station_label`. A score kept off screen comes without name and photo, with `anonymous_seed` instead (see docs/decisions.md).
+- **`change_signals`**: one row per topic (`games`, `scores`, `settings`), bumped by triggers for realtime.
 - **`admins`**: volunteers' `user_id`. `public.is_admin()` is used in every policy.
+- **`private.secrets`** (schema not exposed by the API): the key of the anonymous seeds.
 
 ## Security (RLS)
 
-| Who                      | games               | scores                                                                                                            | storage                                                                     |
-| ------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Public (`anon`)          | reads visible games | reads approved scores of visible games; only inserts a `pending` submission, `source = player`, on a visible game | uploads a photo to `photos/submissions/`, cannot list or overwrite anything |
-| Volunteer (`is_admin()`) | everything          | everything                                                                                                        | everything on `photos` and `covers`                                         |
+| Who                      | games, events, settings | scores                                                                                                                                                                                                                                          | storage                                                                                        |
+| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Public (`anon`)          | reads (visible games)   | no read: `public_scores()` only. Inserts a `pending` submission, `source = player`, with its photo, in the current event, while submissions are open, on a visible game or a free game name. 30 player submissions per minute at most, in total | uploads to `photos/submissions/` while submissions are open, cannot list or overwrite anything |
+| Volunteer (`is_admin()`) | everything              | everything                                                                                                                                                                                                                                      | everything on `photos` and `covers`                                                            |
 
 Auth sign-ups are closed (`enable_signup = false`). To add a volunteer: invite them from the Supabase dashboard, then insert their `user_id` into `public.admins`.
 
@@ -49,16 +55,18 @@ Check the policies locally after any change, for example:
 K=<local publishable key>; A=http://127.0.0.1:54321
 # must fail (401): a visitor cannot approve their own score
 curl -s "$A/rest/v1/scores" -H "apikey: $K" -H "Content-Type: application/json" \
-  -d '{"game_id":"<id>","player_name":"Cheater","score":1,"status":"approved"}'
-# must return []: pending submissions are invisible
-curl -s "$A/rest/v1/scores?status=eq.pending" -H "apikey: $K"
+  -d '{"game_id":"<id>","player_name":"Cheater","score":1,"status":"approved","photo_path":"submissions/x.jpg"}'
+# must return []: the public reads no score row
+curl -s "$A/rest/v1/scores" -H "apikey: $K"
+# anonymous rows: player_name and photo_path null, anonymous_seed set
+curl -s "$A/rest/v1/rpc/public_scores?anonymous=is.true" -H "apikey: $K"
 ```
 
 ## Data sources
 
 Pages only import `src/lib/highscores.ts` (TanStack Query options, `submitScore`, `useHighscoresRealtime`). Behind it, `src/lib/data/` holds the domain types and two implementations of `HighscoresSource`:
 
-- `supabase-source.ts` (default): the tables and views above, with defaults for the fields the schema does not have yet.
+- `supabase-source.ts` (default): `displayed_games`, `settings` and `public_scores()`; it ranks and lays out the rows with the same helpers as the mock, and turns each `anonymous_seed` into a nickname.
 - `mock/`: seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. Photos (proof ~2000 px + thumb ~800 px) live in IndexedDB under `mock-photo:{id}`. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`), and the UI shows a "Données de démo" watermark.
 
 Which source runs (`src/lib/data/mode.ts`):
@@ -67,11 +75,11 @@ Which source runs (`src/lib/data/mode.ts`):
 2. Otherwise, `VITE_DATA_SOURCE=mock` (local `.env.local` only) turns it on.
 3. Otherwise, Supabase.
 
-Both sources anonymize the scores a player kept off screen (`src/lib/data/anonymize.ts`): the row keeps its rank and score, with a retro nickname and no photo. The real backend must also enforce it on the server side.
+Both sources anonymize the scores a player kept off screen: the row keeps its rank and score, with a retro nickname and no photo. With Supabase, the database already hides the name and the photo; the browser only builds the nickname from the seed.
 
 ## Public screen options
 
-The rotation and the number of rows come from the settings (15 s and 5 rows by default). Search params override them, validated and clamped with zod (`src/lib/screen-options.ts`):
+The rotation and the number of rows come from the settings (15 s and 10 rows by default). Search params override them, validated and clamped with zod (`src/lib/screen-options.ts`):
 
 | Param      | Range    | Example         |
 | ---------- | -------- | --------------- |
@@ -80,11 +88,11 @@ The rotation and the number of rows come from the settings (15 s and 5 rows by d
 
 ## Realtime
 
-The `scores` and `games` tables are in the `supabase_realtime` publication. `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to changes and invalidates the matching TanStack Query queries; RLS filters what each client receives.
+Only `change_signals` is in the `supabase_realtime` publication: triggers bump its `games`, `scores` or `settings` row when something the public screen shows changes (approved scores only). `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to it and invalidates the matching TanStack Query queries. No score row travels through realtime.
 
 ## Storage
 
-- `photos` (public, 10 MB max, jpeg/png/webp/heic): player photos under `submissions/<uuid>.<ext>`.
+- `photos` (public, 10 MB max, any image type): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail).
 - `covers` (public, 5 MB max): game covers, managed from the admin.
 
 ## Environment variables
