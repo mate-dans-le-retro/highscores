@@ -24,6 +24,7 @@ import {
   useHighscoresRealtime,
   visibleGamesQuery,
 } from '#/lib/highscores'
+import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { cn } from '#/lib/utils'
@@ -67,9 +68,10 @@ function PublicScreen() {
     if (screenMode === 'wall') return wallPages
     if (screenMode === 'game')
       return list.map((game) => ({ kind: 'game' as const, game }))
+    // "Alterner les deux": the wall first, then each game (docs/screens.md).
     return [
-      ...list.map((game) => ({ kind: 'game' as const, game })),
       ...wallPages,
+      ...list.map((game) => ({ kind: 'game' as const, game })),
     ]
   }, [games.data, screenMode])
 
@@ -412,6 +414,7 @@ function GameLeaderboard({
   const board = useQuery(
     leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
   )
+  const fresh = useFreshScores(game.id, board.data?.rows)
 
   const tableRows: Array<ScoreTableRow> =
     board.data?.rows.map((row) => ({
@@ -420,6 +423,7 @@ function GameLeaderboard({
       player: row.player_name,
       score: formatScore(row.score, game.score_type),
       dimmed: row.dimmed,
+      fresh: fresh.has(row.id),
       meta: [formatScoreWhen(row.created_at), row.dimmed && row.event_name]
         .filter(Boolean)
         .join(' · '),
@@ -434,4 +438,30 @@ function GameLeaderboard({
       className="flex-1"
     />
   )
+}
+
+/** Score ids already on screen, per game, for as long as the screen runs. */
+const seenScores = new Map<string, Set<string>>()
+
+/**
+ * Ids of the scores approved since the screen last showed this game. They
+ * stay highlighted for FRESH_MS (the passing pink row of the spec).
+ */
+function useFreshScores(
+  gameId: string,
+  rows: ReadonlyArray<{ id: string; created_at: string }> | undefined,
+) {
+  const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set())
+
+  useEffect(() => {
+    if (!rows) return
+    const result = findFreshScores(seenScores.get(gameId), rows)
+    seenScores.set(gameId, result.seen)
+    if (result.fresh.length === 0) return
+    setFresh(new Set(result.fresh))
+    const timer = window.setTimeout(() => setFresh(new Set()), FRESH_MS)
+    return () => window.clearTimeout(timer)
+  }, [gameId, rows])
+
+  return fresh
 }
