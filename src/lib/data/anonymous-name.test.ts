@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  CHARACTERS_BY_SLUG,
   FALLBACK_CHARACTERS,
   QUALIFIERS,
   TETRIS_CHARACTERS,
@@ -62,6 +63,22 @@ describe('anonymousName', () => {
     })
     expect(
       TETRIS_CHARACTERS.some(({ name: character }) => name.includes(character)),
+    ).toBe(true)
+  })
+
+  it('resolves the cast from a mock g- id via CHARACTERS_BY_SLUG', () => {
+    expect(CHARACTERS_BY_SLUG.tetris).toBe(TETRIS_CHARACTERS)
+    const fromId = anonymousName({ playerName: 'Zoé', gameId: 'g-tetris' })
+    const fromSlugCast = anonymousName({
+      playerName: 'Zoé',
+      gameId: 'g-tetris',
+      characters: CHARACTERS_BY_SLUG.tetris,
+    })
+    expect(fromId).toBe(fromSlugCast)
+    expect(
+      TETRIS_CHARACTERS.some(({ name: character }) =>
+        fromId.includes(character),
+      ),
     ).toBe(true)
   })
 
