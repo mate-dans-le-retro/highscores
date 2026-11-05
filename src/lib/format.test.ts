@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatScore, formatScoreWhen, formatStation } from './format'
+import {
+  formatScore,
+  formatScoreWhen,
+  formatStation,
+  pixelCaps,
+} from './format'
 
 // Intl uses a narrow no-break space as the French thousands separator.
 const nbsp = '\u202f'
@@ -32,6 +37,18 @@ describe('formatStation', () => {
     expect(formatStation('Super NES', null)).toBe('Super NES')
     expect(formatStation(null, 'Étage')).toBe('Étage')
     expect(formatStation(null, null)).toBe('')
+  })
+
+  it('says a station named like its console once', () => {
+    expect(formatStation('Arcade', 'arcade')).toBe('Arcade')
+  })
+})
+
+describe('pixelCaps', () => {
+  it('drops the accents the pixel font draws as lowercase', () => {
+    expect(pixelCaps('NES · Étage')).toBe('NES · ETAGE')
+    expect(pixelCaps('À toi de jouer')).toBe('A TOI DE JOUER')
+    expect(pixelCaps("Record de l'évènement")).toBe("RECORD DE L'EVENEMENT")
   })
 })
 

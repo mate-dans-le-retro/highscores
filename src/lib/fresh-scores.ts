@@ -1,5 +1,8 @@
-/** A score approved while the screen runs stays highlighted this long. */
-export const FRESH_MS = 10_000
+/**
+ * A score approved while the screen runs stays highlighted this long, on
+ * screen: the time under a "Nouveau record" takeover does not count.
+ */
+export const FRESH_MS = 30_000
 
 /**
  * Only recent submissions count as fresh, so that an older score moving into

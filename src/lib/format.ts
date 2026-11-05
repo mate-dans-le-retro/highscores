@@ -20,12 +20,28 @@ const formatters: Record<ScoreType, (score: number) => string> = {
   other: formatPoints,
 }
 
-/** Eyebrow above a game name: "Super NES · Étage", or the console alone. */
+/**
+ * Eyebrow above a game name: "Super NES · Étage", or the console alone.
+ * A station named like its console is said once ("Arcade", not "Arcade · Arcade").
+ */
 export function formatStation(
   gameConsole: string | null,
   stationLabel: string | null,
 ) {
-  return [gameConsole, stationLabel].filter(Boolean).join(' · ')
+  const same =
+    gameConsole &&
+    stationLabel &&
+    gameConsole.trim().toLocaleLowerCase('fr') ===
+      stationLabel.trim().toLocaleLowerCase('fr')
+  return [gameConsole, same ? null : stationLabel].filter(Boolean).join(' · ')
+}
+
+/**
+ * Text for the pixel font in capitals. Press Start 2P draws É, È and À as
+ * small lowercase letters, so capitals in that font go without accents.
+ */
+export function pixelCaps(text: string) {
+  return text.normalize('NFD').replace(/\p{M}/gu, '').toUpperCase()
 }
 
 /** Points the French way ("128 400"), times as 1'32"48. */

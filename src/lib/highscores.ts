@@ -31,7 +31,12 @@ export {
 } from './data/anonymous-name'
 export { findNewRecords } from './data/records'
 export { DEFAULT_SETTINGS } from './data/source'
-export { formatScore, formatScoreWhen, formatStation } from './format'
+export {
+  formatScore,
+  formatScoreWhen,
+  formatStation,
+  pixelCaps,
+} from './format'
 export { isMock }
 export type { MockPendingScore } from './data/mock/mock-source'
 export { mockTools }

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { GameThumb } from '#/components/game-thumb'
 import { Logo } from '#/components/logo'
 import { NewRecordScreen } from '#/components/new-record-screen'
+import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
 import { QrCode } from '#/components/qr-code'
 import { RecordsWall } from '#/components/records-wall'
@@ -17,8 +18,10 @@ import {
   formatScore,
   formatScoreWhen,
   formatStation,
+  isMock,
   leaderboardQuery,
   photoUrl,
+  pixelCaps,
   recordsQuery,
   settingsQuery,
   useHighscoresRealtime,
@@ -28,18 +31,18 @@ import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { cn } from '#/lib/utils'
+import { wallPages } from '#/lib/wall-pages'
 
 /** Brief dip to black when the screen changes: out, then back in on the new one. */
 const FADE_MS = 300
 /** How long the "Nouveau record" takeover stays on screen. */
 const NEW_RECORD_MS = 12_000
-/** The records wall shows 3×2 cards (mockup p.2); more games add a page. */
-const WALL_PAGE_SIZE = 6
 /** Reload the screen when the live connection stays lost this long. */
 const RECONNECT_RELOAD_MS = 60_000
 
 type Slide =
-  { kind: 'game'; game: DisplayedGame } | { kind: 'wall'; page: number }
+  | { kind: 'game'; game: DisplayedGame }
+  | { kind: 'wall'; page: number; pages: number }
 
 export const Route = createFileRoute('/')({
   staticData: { theme: 'scene' },
@@ -63,33 +66,48 @@ function PublicScreen() {
 
   const slides = useMemo<Array<Slide>>(() => {
     const list = games.data ?? []
-    const wallPages = Array.from(
-      { length: Math.max(1, Math.ceil(list.length / WALL_PAGE_SIZE)) },
-      (_, page) => ({ kind: 'wall' as const, page }),
-    )
-    if (screenMode === 'wall') return wallPages
-    if (screenMode === 'game')
-      return list.map((game) => ({ kind: 'game' as const, game }))
+    const pages = wallPages(list).length
+    const wall = Array.from({ length: pages }, (_, page) => ({
+      kind: 'wall' as const,
+      page,
+      pages,
+    }))
+    const perGame = list.map((game) => ({ kind: 'game' as const, game }))
+    if (screenMode === 'wall') return wall
+    if (screenMode === 'game') return perGame
     // "Alterner les deux": the wall first, then each game (docs/screens.md).
-    return [
-      ...wallPages,
-      ...list.map((game) => ({ kind: 'game' as const, game })),
-    ]
+    return [...wall, ...perGame]
   }, [games.data, screenMode])
 
   const [index, setIndex] = useState(0)
-  /** Bumped when a lone slide starts over, to restart its timers and bar. */
+  /** Bumped to start the current slide over: its timers and bar restart. */
   const [lap, setLap] = useState(0)
   const [fadedOut, setFadedOut] = useState(false)
   const [celebration, setCelebration] = useState<NewRecord | null>(null)
   const [celebrationQueue, setCelebrationQueue] = useState<Array<NewRecord>>([])
+  /** Last celebrated score: its row turns pink when the takeover ends. */
+  const [celebrated, setCelebrated] = useState<{
+    gameId: string
+    scoreId: string
+  } | null>(null)
   const previousRecords = useRef<Array<GameRecord> | null>(null)
+  const slidesRef = useRef(slides)
   const count = slides.length
   const safeIndex = count === 0 ? 0 : index % count
   const slide: Slide | undefined = count === 0 ? undefined : slides[safeIndex]
   const durationMs =
     slide && slide.kind === 'wall' ? wallDurationMs : gameDurationMs
   const paused = celebration !== null
+
+  useEffect(() => {
+    slidesRef.current = slides
+  }, [slides])
+
+  /** Shows a slide from the start, even the one already on screen. */
+  const showSlide = (i: number) => {
+    setIndex(i)
+    setLap((n) => n + 1)
+  }
 
   useEffect(() => {
     if (!records.data) return
@@ -110,9 +128,23 @@ function PublicScreen() {
     setCelebrationQueue(rest)
   }, [celebration, celebrationQueue])
 
+  // After the takeover, the screen shows the game of the record, from the
+  // start of its time, with the new row in pink.
   useEffect(() => {
     if (!celebration) return
-    const timer = window.setTimeout(() => setCelebration(null), NEW_RECORD_MS)
+    const timer = window.setTimeout(() => {
+      const target = slidesRef.current.findIndex(
+        (entry) =>
+          entry.kind === 'game' && entry.game.id === celebration.game.id,
+      )
+      if (target >= 0) setIndex(target)
+      setLap((n) => n + 1)
+      setCelebrated({
+        gameId: celebration.game.id,
+        scoreId: celebration.record.id,
+      })
+      setCelebration(null)
+    }, NEW_RECORD_MS)
     return () => window.clearTimeout(timer)
   }, [celebration])
 
@@ -143,6 +175,7 @@ function PublicScreen() {
   const record = game
     ? records.data?.find((entry) => entry.game.id === game.id)
     : undefined
+  const emptyGame = Boolean(record && !record.all_time)
   const wallPage = slide && slide.kind === 'wall' ? slide.page : null
   const showWall = wallPage !== null
 
@@ -172,8 +205,8 @@ function PublicScreen() {
           <header className="flex h-44 shrink-0 items-center justify-between gap-8 border-b-4 border-line-subtle bg-surface-sunken px-24">
             {showWall ? (
               <div className="flex flex-col gap-2">
-                <p className="font-display text-arcade-label uppercase text-ink-accent">
-                  Highscores
+                <p className="font-display text-scene-pixel text-ink-accent">
+                  {pixelCaps('Highscores')}
                 </p>
                 <h1 className="text-scene-hero uppercase">Les records</h1>
               </div>
@@ -187,10 +220,15 @@ function PublicScreen() {
         {showWall ? (
           <div
             className={cn(
-              'flex min-h-0 flex-1 flex-col px-24',
+              'flex min-h-0 flex-1 flex-col gap-6 px-24',
               showHeader ? 'pt-10' : 'pt-24',
             )}
           >
+            {showHeader ? null : (
+              <h1 className="shrink-0 font-display text-scene-pixel text-ink-accent">
+                {pixelCaps('Les records')}
+              </h1>
+            )}
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
             {records.isError && (
               <p className="text-scene-row">
@@ -198,12 +236,7 @@ function PublicScreen() {
               </p>
             )}
             {records.isSuccess && (
-              <RecordsWall
-                records={records.data.slice(
-                  wallPage * WALL_PAGE_SIZE,
-                  (wallPage + 1) * WALL_PAGE_SIZE,
-                )}
-              />
+              <RecordsWall records={wallPages(records.data)[wallPage] ?? []} />
             )}
           </div>
         ) : (
@@ -227,59 +260,32 @@ function PublicScreen() {
               )}
               {game && (
                 <GameLeaderboard
+                  key={game.id}
                   game={game}
                   rows={rows}
                   minAllTimeRows={minAllTimeRows}
+                  paused={paused}
+                  celebratedId={
+                    celebrated?.gameId === game.id ? celebrated.scoreId : null
+                  }
                 />
               )}
             </div>
-            <aside className="flex min-h-0 w-136 shrink-0 flex-col gap-8">
-              {game && <RecordPanel game={game} record={record} />}
-              <SubmitScorePanel />
-            </aside>
+            {emptyGame ? null : (
+              <aside className="flex min-h-0 w-140 shrink-0 flex-col gap-8">
+                {game && <RecordPanel game={game} record={record} />}
+                <SubmitScorePanel />
+              </aside>
+            )}
           </div>
         )}
 
         {count > 0 ? (
-          <nav
-            aria-label="Écrans en rotation"
-            className="flex h-28 shrink-0 items-center justify-center gap-4"
-          >
-            {slides.map((entry, i) =>
-              entry.kind === 'wall' ? (
-                <button
-                  key={`wall-${entry.page}`}
-                  type="button"
-                  aria-current={i === safeIndex ? 'true' : undefined}
-                  aria-label={
-                    entry.page === 0
-                      ? 'Mur des records'
-                      : `Mur des records, page ${entry.page + 1}`
-                  }
-                  onClick={() => setIndex(i)}
-                  className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-                >
-                  <WallThumb active={i === safeIndex} />
-                </button>
-              ) : (
-                <button
-                  key={entry.game.id}
-                  type="button"
-                  aria-current={i === safeIndex ? 'true' : undefined}
-                  aria-label={entry.game.name}
-                  onClick={() => setIndex(i)}
-                  className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-                >
-                  <GameThumb
-                    name={entry.game.name}
-                    shortLabel={entry.game.short_label}
-                    coverPath={entry.game.cover_path}
-                    active={i === safeIndex}
-                  />
-                </button>
-              ),
-            )}
-          </nav>
+          <RotationPills
+            slides={slides}
+            current={safeIndex}
+            onSelect={showSlide}
+          />
         ) : null}
 
         {celebration ? <NewRecordScreen entry={celebration} /> : null}
@@ -323,32 +329,92 @@ function RotationProgress({
   )
 }
 
+/**
+ * Position in the rotation, 96px clear of the bottom edge (overscan). A
+ * click shows that slide from the start of its time.
+ */
+function RotationPills({
+  slides,
+  current,
+  onSelect,
+}: {
+  slides: Array<Slide>
+  current: number
+  onSelect: (index: number) => void
+}) {
+  return (
+    <nav
+      aria-label="Écrans en rotation"
+      className="flex shrink-0 items-center justify-center gap-6 pt-6 pb-24"
+    >
+      {slides.map((entry, i) => (
+        <button
+          key={entry.kind === 'wall' ? `wall-${entry.page}` : entry.game.id}
+          type="button"
+          aria-current={i === current ? 'true' : undefined}
+          aria-label={
+            entry.kind === 'game'
+              ? entry.game.name
+              : entry.page === 0
+                ? 'Mur des records'
+                : `Mur des records, page ${entry.page + 1}`
+          }
+          onClick={() => onSelect(i)}
+          className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        >
+          {entry.kind === 'wall' ? (
+            <WallThumb
+              active={i === current}
+              page={entry.pages > 1 ? entry.page + 1 : null}
+            />
+          ) : (
+            <GameThumb
+              name={entry.game.name}
+              shortLabel={entry.game.short_label}
+              coverPath={entry.game.cover_path}
+              active={i === current}
+              className="h-16 w-20 text-arcade-name"
+            />
+          )}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 /** Distinct mark for the records wall in the rotation pills. */
-function WallThumb({ active }: { active: boolean }) {
+function WallThumb({ active, page }: { active: boolean; page: number | null }) {
   return (
     <span
       className={cn(
-        'inline-flex size-14 shrink-0 items-center justify-center rounded-none border-4 bg-surface-overlay font-display text-arcade-label text-ink-primary',
+        'inline-flex h-16 w-20 shrink-0 items-center justify-center rounded-none border-4 bg-surface-overlay font-display text-arcade-name text-ink-primary',
         active
           ? 'border-line-accent shadow-pixel'
           : 'border-line-strong opacity-70',
       )}
       title="Mur des records"
     >
-      <span aria-hidden="true">★</span>
+      <span aria-hidden="true">
+        ★{page === null ? null : <span className="ml-1">{page}</span>}
+      </span>
     </span>
   )
 }
 
-function SubmitScorePanel() {
+/** Where a phone sends its score; the demo keeps the phone on the demo data. */
+function useSubmitUrl() {
   const [submitUrl, setSubmitUrl] = useState<string | null>(null)
-
   useEffect(() => {
-    setSubmitUrl(`${window.location.origin}/score`)
+    setSubmitUrl(`${window.location.origin}/score${isMock ? '?mock=1' : ''}`)
   }, [])
+  return submitUrl
+}
+
+function SubmitScorePanel() {
+  const submitUrl = useSubmitUrl()
 
   return (
-    <PixelPanel label="À TOI DE JOUER">
+    <PixelPanel label="À toi de jouer" className="shrink-0">
       <div className="flex items-center gap-6">
         {submitUrl ? (
           <QrCode
@@ -359,11 +425,11 @@ function SubmitScorePanel() {
         ) : (
           <div className="size-44 shrink-0 bg-surface-base" />
         )}
-        <div className="min-w-0 text-left">
-          <p className="text-body font-extrabold text-ink-inverse">
+        <div className="flex min-w-0 flex-col gap-2 text-left">
+          <p className="text-scene-meta font-extrabold text-ink-inverse">
             Un record à afficher ?
           </p>
-          <p className="text-body-sm text-ink-inverse/75">
+          <p className="text-h4 font-semibold text-ink-inverse">
             Scanne, prends ta photo, c&apos;est parti !
           </p>
         </div>
@@ -372,6 +438,43 @@ function SubmitScorePanel() {
   )
 }
 
+/** A game nobody has played yet: the QR code takes the whole table. */
+function EmptyGameInvite() {
+  const submitUrl = useSubmitUrl()
+
+  return (
+    <div className="flex min-h-0 flex-1 items-center justify-center gap-16 px-12 pb-12">
+      <div className="shrink-0 rounded-none border-4 border-line-accent bg-surface-inverse p-4 shadow-pixel">
+        {submitUrl ? (
+          <QrCode
+            value={submitUrl}
+            label="QR code pour envoyer ton score"
+            className="size-96"
+          />
+        ) : (
+          <div className="size-96" />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-6">
+        <p className="font-display text-scene-pixel text-ink-accent">
+          {pixelCaps('À prendre !')}
+        </p>
+        <p className="text-scene-row">
+          Personne n&apos;a encore posé de score.
+        </p>
+        <p className="text-scene-meta text-ink-secondary">
+          Scanne, prends ta photo devant l&apos;écran, et le premier record est
+          à toi !
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The record of the current event, or the all-time record (with its date and
+ * event) when nobody has scored yet this time.
+ */
 function RecordPanel({
   game,
   record,
@@ -379,43 +482,48 @@ function RecordPanel({
   game: DisplayedGame
   record: GameRecord | undefined
 }) {
-  const current = record?.current
-  const image = photoUrl(current?.photo_path ?? null)
-  const when = current ? formatScoreWhen(current.created_at) : null
+  const current = record?.current ?? null
+  const allTime = record?.all_time ?? null
+  const shown = current ?? allTime
+  if (!shown) return null
+
+  const image = shown.anonymous ? null : photoUrl(shown.photo_path)
+  const when = formatScoreWhen(shown.created_at)
+  const meta = current
+    ? when
+    : [when, allTime?.event_name].filter(Boolean).join(' · ')
 
   return (
-    <PixelPanel label="LE RECORD" className="min-h-0 flex-1">
+    <PixelPanel
+      label={current ? "Record de l'évènement" : 'Record de tous les temps'}
+      className="min-h-0 flex-1"
+    >
       <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div className="flex min-h-0 w-full flex-1 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
           {image ? (
             <img
               src={image}
               alt=""
-              className="size-full object-cover"
+              className="size-full object-contain"
               draggable={false}
             />
           ) : (
-            <div className="flex flex-col items-center gap-3 text-ink-secondary">
-              <span
-                aria-hidden="true"
-                className="size-12 border-4 border-line-subtle bg-surface-overlay"
-              />
-              <p className="text-body-sm">Photo du record</p>
-            </div>
+            <PhotoPlaceholder anonymous={shown.anonymous} size="md" />
           )}
         </div>
-        {current ? (
-          <p className="text-body-ui text-ink-inverse">
-            <span className="font-extrabold">{current.player_name}</span>
-            {when ? (
-              <span className="text-ink-inverse/75"> · {when}</span>
-            ) : null}
+        <div className="flex shrink-0 items-baseline justify-between gap-4 text-ink-inverse">
+          <p className="min-w-0 truncate text-scene-meta font-extrabold">
+            {shown.player_name}
           </p>
-        ) : (
-          <p className="text-body-sm text-ink-inverse/75">
-            Pas encore de record sur {game.name}.
+          <p className="shrink-0 font-display text-scene-pixel">
+            {formatScore(shown.score, game.score_type)}
           </p>
-        )}
+        </div>
+        {meta ? (
+          <p className="shrink-0 truncate text-h4 font-semibold text-ink-inverse">
+            {meta}
+          </p>
+        ) : null}
       </div>
     </PixelPanel>
   )
@@ -425,15 +533,20 @@ function GameLeaderboard({
   game,
   rows: rowsShown,
   minAllTimeRows,
+  paused,
+  celebratedId,
 }: {
   game: DisplayedGame
   rows: number
   minAllTimeRows: number
+  paused: boolean
+  celebratedId: string | null
 }) {
   const board = useQuery(
     leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
   )
-  const fresh = useFreshScores(game.id, board.data?.rows)
+  const fresh = useFreshScores(game.id, board.data?.rows, paused, celebratedId)
+  const separatorAt = board.data?.separator_at ?? null
 
   const tableRows: Array<ScoreTableRow> =
     board.data?.rows.map((row) => ({
@@ -453,7 +566,13 @@ function GameLeaderboard({
       game={game.name}
       machine={formatStation(game.console, game.station_label) || null}
       rows={tableRows}
-      separatorAt={board.data?.separator_at ?? null}
+      separatorAt={separatorAt}
+      separatorLabel={
+        separatorAt === null
+          ? null
+          : (board.data?.rows[separatorAt]?.event_name ?? null)
+      }
+      empty={board.data?.empty ? <EmptyGameInvite /> : undefined}
       className="flex-1"
     />
   )
@@ -461,14 +580,19 @@ function GameLeaderboard({
 
 /** Score ids already on screen, per game, for as long as the screen runs. */
 const seenScores = new Map<string, Set<string>>()
+/** Celebrated scores already highlighted once. */
+const highlightedRecords = new Set<string>()
 
 /**
- * Ids of the scores approved since the screen last showed this game. They
- * stay highlighted for FRESH_MS (the passing pink row of the spec).
+ * Ids of the scores approved since the screen last showed this game, plus
+ * the record just celebrated. They stay highlighted for FRESH_MS of screen
+ * time: the clock waits while a takeover covers the table.
  */
 function useFreshScores(
   gameId: string,
   rows: ReadonlyArray<{ id: string; created_at: string }> | undefined,
+  paused: boolean,
+  celebratedId: string | null,
 ) {
   const [fresh, setFresh] = useState<ReadonlySet<string>>(() => new Set())
 
@@ -476,11 +600,24 @@ function useFreshScores(
     if (!rows) return
     const result = findFreshScores(seenScores.get(gameId), rows)
     seenScores.set(gameId, result.seen)
-    if (result.fresh.length === 0) return
-    setFresh(new Set(result.fresh))
+    const ids = result.fresh
+    if (
+      celebratedId &&
+      !highlightedRecords.has(celebratedId) &&
+      rows.some((row) => row.id === celebratedId)
+    ) {
+      highlightedRecords.add(celebratedId)
+      ids.push(celebratedId)
+    }
+    if (ids.length === 0) return
+    setFresh((previous) => new Set([...previous, ...ids]))
+  }, [gameId, rows, celebratedId])
+
+  useEffect(() => {
+    if (paused || fresh.size === 0) return
     const timer = window.setTimeout(() => setFresh(new Set()), FRESH_MS)
     return () => window.clearTimeout(timer)
-  }, [gameId, rows])
+  }, [fresh, paused])
 
   return fresh
 }

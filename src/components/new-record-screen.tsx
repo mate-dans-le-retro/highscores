@@ -1,5 +1,7 @@
+import { AllTimeBadge } from '#/components/all-time-badge'
+import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { RankBadge } from '#/components/rank-badge'
-import { formatScore, photoUrl } from '#/lib/highscores'
+import { formatScore, photoUrl, pixelCaps } from '#/lib/highscores'
 import type { NewRecord } from '#/lib/highscores'
 import { cn } from '#/lib/utils'
 
@@ -8,13 +10,16 @@ type NewRecordScreenProps = {
   className?: string
 }
 
+/** Past this length, the name drops to the smaller pixel size to fit two lines. */
+const LONG_NAME = 16
+
 /**
  * Full-screen takeover when a validated score takes 1st place (mockup p.3).
  * Looping confetti is allowed here despite the design-system rule for scene.
  */
 export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
   const { game, record, previous, all_time } = entry
-  const image = photoUrl(record.photo_path)
+  const image = record.anonymous ? null : photoUrl(record.photo_path)
 
   return (
     <div
@@ -31,41 +36,44 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
       />
       <Confetti />
 
-      <h1 className="relative z-10 font-display text-scene-hero text-ink-accent uppercase">
-        Nouveau record !
+      <h1 className="relative z-10 font-display text-scene-hero text-brand-pink">
+        {pixelCaps('Nouveau record !')}
       </h1>
 
       <div className="relative z-10 mt-14 flex min-h-0 flex-1 items-start gap-16">
-        <div className="flex aspect-square h-full shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-strong bg-surface-sunken shadow-pixel">
-          {image ? (
-            <img
-              src={image}
-              alt=""
-              className="size-full object-cover"
-              draggable={false}
-            />
-          ) : (
-            <p className="text-scene-meta text-ink-secondary">
-              Photo de {record.player_name}
-            </p>
-          )}
+        <div className="aspect-square h-full shrink-0 rounded-none border-4 border-line-accent shadow-pixel">
+          <div className="flex size-full items-center justify-center overflow-hidden border-4 border-line-strong bg-surface-sunken">
+            {image ? (
+              <img
+                src={image}
+                alt=""
+                className="size-full object-contain"
+                draggable={false}
+              />
+            ) : (
+              <PhotoPlaceholder anonymous={record.anonymous} size="lg" />
+            )}
+          </div>
         </div>
 
         <div className="mt-16 flex min-w-0 flex-1 flex-col gap-8 rounded-none border-4 border-line-subtle bg-surface-sunken p-12 shadow-pixel">
           <div className="flex flex-wrap items-center gap-4">
-            <p className="font-display text-arcade-title uppercase text-ink-accent">
-              {game.name}
+            <p className="font-display text-scene-pixel text-ink-accent">
+              {pixelCaps(game.name)}
             </p>
-            {all_time ? (
-              <span className="rounded-full bg-rank-gold px-4 py-1 text-caption font-extrabold uppercase tracking-wide text-ink-on-accent">
-                Tous les temps
-              </span>
-            ) : null}
+            {all_time ? <AllTimeBadge /> : null}
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <RankBadge rank={1} size="lg" />
-            <p className="truncate font-display text-scene-row text-ink-primary">
+            <p
+              className={cn(
+                'line-clamp-2 min-w-0 font-display text-ink-primary',
+                record.player_name.length > LONG_NAME
+                  ? 'text-scene-pixel'
+                  : 'text-scene-row',
+              )}
+            >
               {record.player_name}
             </p>
           </div>
