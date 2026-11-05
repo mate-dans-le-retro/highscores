@@ -29,6 +29,7 @@ export {
   CHARACTERS_BY_SLUG,
   gameSlugFromId,
 } from './data/anonymous-name'
+export { displayedPlayerName } from './data/anonymize'
 export { findNewRecords } from './data/records'
 export { DEFAULT_SETTINGS } from './data/source'
 export {

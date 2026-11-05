@@ -18,6 +18,20 @@ describe('mockSource on the seed', () => {
     expect(JSON.stringify(board.rows)).not.toContain('Zoé')
   })
 
+  it('names a score sent without a name after its id, photo included', async () => {
+    const board = await mockSource.getLeaderboard('g-super-mario-bros', {
+      rows: 10,
+    })
+    const nameless = board.rows.find(
+      ({ player_name }) => !['Paul', 'Camille'].includes(player_name),
+    )
+    expect(nameless?.anonymous).toBe(false)
+    expect(nameless?.photo_path).not.toBeNull()
+    expect(nameless?.player_name).toBe(
+      anonymousName({ playerName: nameless!.id, gameId: 'g-super-mario-bros' }),
+    )
+  })
+
   it('ranks times with the lowest first', async () => {
     const board = await mockSource.getLeaderboard('g-mario-kart', { rows: 10 })
     expect(board.rows.map(({ player_name }) => player_name)).toEqual([

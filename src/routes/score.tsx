@@ -63,11 +63,10 @@ function SubmitScore() {
 
   if (step === 'consent') {
     const scoreFilled = draft.scoreText.trim().length > 0
-    const nameFilled = draft.playerName.trim().length > 0
     const gameFilled = draft.customGame
       ? (draft.customGameName?.trim().length ?? 0) > 0
       : Boolean(draft.gameId)
-    if (!scoreFilled || !nameFilled || !gameFilled) {
+    if (!scoreFilled || !gameFilled) {
       return (
         <Navigate
           to="/score"
@@ -86,6 +85,15 @@ function SubmitScore() {
           photoUrl={photo?.url ?? null}
           onDraftChange={onDraftChange}
         />
+      )}
+      {step === 'details' && games.isError && (
+        <p
+          role="alert"
+          className="mb-4 rounded-xl border border-line-accent bg-surface-raised px-4 py-3 text-body-sm text-ink-primary"
+        >
+          On n'arrive pas à charger la liste des jeux. Vérifie ta connexion,
+          puis recharge la page.
+        </p>
       )}
       {step === 'details' && photo && (
         <DetailsStep

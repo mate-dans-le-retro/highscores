@@ -1,5 +1,7 @@
+import { randomUuid } from '../random-uuid'
 import { getSupabase, photoUrl } from '../supabase'
-import { CHARACTERS_BY_GAME_ID, anonymousName } from './anonymous-name'
+import { CHARACTERS_BY_SLUG } from './anonymous-name'
+import { displayedPlayerName } from './anonymize'
 import { isOriginalPhoto, photoFileType } from './photo'
 import { rankScores } from './ranking'
 import { keepSubscribed } from './realtime-connection'
@@ -57,35 +59,28 @@ const toGame = (row: DisplayedGame): DisplayedGame => ({
   station_label: row.station_label,
 })
 
-/** Builds the public row; anonymous rows get their nickname from the seed. */
+/**
+ * Builds the public row. The seed of an anonymous row already hides the name:
+ * the nickname is stable per player and per game, like in the mock. A score
+ * sent without a name (no seed either) gets a nickname seeded by its id.
+ */
 function toRow(row: PublicScoreRow, game: DisplayedGame): LeaderboardRow {
-  const base = {
+  return {
     id: row.id,
     game_id: row.game_id,
     event_id: row.event_id,
     score: row.score,
     created_at: row.created_at,
     rank: 0,
-  }
-  if (!row.anonymous) {
-    return {
-      ...base,
-      player_name: row.player_name ?? '',
-      photo_path: row.photo_path,
-      anonymous: false,
-    }
-  }
-  return {
-    ...base,
-    // The seed already hides the name: the nickname is stable per player and
-    // per game, like in the mock. The cast follows the game's slug.
-    player_name: anonymousName({
-      playerName: row.anonymous_seed ?? row.id,
+    player_name: displayedPlayerName({
+      scoreId: row.id,
+      playerName: row.anonymous ? row.anonymous_seed : row.player_name,
+      displayOnScreen: !row.anonymous,
       gameId: row.game_id,
-      characters: CHARACTERS_BY_GAME_ID[`g-${game.slug}`] ?? null,
+      characters: CHARACTERS_BY_SLUG[game.slug] ?? null,
     }),
-    photo_path: null,
-    anonymous: true,
+    photo_path: row.anonymous ? null : row.photo_path,
+    anonymous: row.anonymous,
   }
 }
 
@@ -206,11 +201,13 @@ export const supabaseSource: HighscoresSource = {
 
     const supabase = getSupabase()
     const { proof, thumb } = input.photo
-    const id = crypto.randomUUID()
-    const photoPath = `submissions/${id}.${photoFileType(proof).extension}`
+    // A new name on each try: a retry after a failed insert must not collide
+    // with the photo uploaded the first time.
+    const fileId = randomUuid()
+    const photoPath = `submissions/${fileId}.${photoFileType(proof).extension}`
     const thumbPath = isOriginalPhoto(input.photo)
       ? null
-      : `submissions/${id}.thumb.${photoFileType(thumb).extension}`
+      : `submissions/${fileId}.thumb.${photoFileType(thumb).extension}`
 
     const upload = (path: string, file: Blob) =>
       supabase.storage.from('photos').upload(path, file, {
@@ -224,9 +221,10 @@ export const supabaseSource: HighscoresSource = {
     for (const result of uploads) if (result?.error) throw result.error
 
     const { error } = await supabase.from('scores').insert({
+      id: input.id,
       game_id: input.game_id,
       custom_game_name: input.game_id ? null : customGameName,
-      player_name: input.player_name.trim(),
+      player_name: input.player_name?.trim() || null,
       score: input.score,
       photo_path: photoPath,
       thumb_path: thumbPath,
@@ -236,7 +234,8 @@ export const supabaseSource: HighscoresSource = {
       detected_game_id: input.detected_game_id,
       detected_score: input.detected_score,
     })
-    if (error) throw error
+    // 23505 on the id: the first try went through, only its answer got lost.
+    if (error && error.code !== '23505') throw error
   },
 
   photoUrl,

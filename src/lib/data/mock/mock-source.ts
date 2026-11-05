@@ -151,6 +151,7 @@ export const mockSource: HighscoresSource = {
     }
 
     const state = readState()
+    if (state.scores.some(({ id }) => id === input.id)) return
     if (!state.settings.submissions_open)
       throw new Error('Submissions are closed')
     if (
@@ -160,11 +161,11 @@ export const mockSource: HighscoresSource = {
       throw new Error('This game is not on display')
 
     const submission: Score = {
-      id: newId(),
+      id: input.id,
       event_id: currentEventId(state),
       game_id: input.game_id,
       custom_game_name: customGameName,
-      player_name: input.player_name.trim(),
+      player_name: input.player_name?.trim() || null,
       score: input.score,
       photo_path: photoPath,
       display_on_screen: input.display_on_screen,
@@ -241,7 +242,7 @@ export type MockPendingScore = {
   game_id: string | null
   game_name: string | null
   custom_game_name: string | null
-  player_name: string
+  player_name: string | null
   score: number
   score_type: Game['score_type']
   photo_path: string | null

@@ -54,7 +54,7 @@ export function SubmissionDetail({
   const [scoreText, setScoreText] = useState(
     formatScore(submission.score, game?.score_type),
   )
-  const [playerName, setPlayerName] = useState(submission.player_name)
+  const [playerName, setPlayerName] = useState(submission.player_name ?? '')
   const [displayOnScreen, setDisplayOnScreen] = useState(
     submission.display_on_screen,
   )
@@ -93,15 +93,15 @@ export function SubmissionDetail({
     onSuccess: invalidate,
   })
   const busy = approve.isPending || reject.isPending || reopen.isPending
-  const canApprove =
-    Boolean(game) && score !== null && playerName.trim().length > 0
+  const canApprove = Boolean(game) && score !== null
 
   return (
     <article className="flex flex-col gap-6 rounded-xl bg-surface-raised p-4 shadow-card md:p-6">
       <header className="flex flex-wrap items-center gap-3">
         {game && <GameThumb game={game} />}
         <h2 className="text-h5">
-          {submission.player_name} · {game?.name ?? submission.custom_game_name}
+          {submission.player_name ?? 'Sans nom'} ·{' '}
+          {game?.name ?? submission.custom_game_name}
         </h2>
         <span className="rounded-full bg-surface-accent px-2.5 py-0.5 text-caption font-semibold text-ink-on-accent">
           {statusLabels[submission.status]}
@@ -123,7 +123,7 @@ export function SubmissionDetail({
               {photoSrc ? (
                 <img
                   src={photoSrc}
-                  alt={`Photo envoyée par ${submission.player_name}`}
+                  alt={`Photo envoyée par ${submission.player_name ?? 'un joueur sans nom'}`}
                   className="max-h-[560px] w-full object-contain"
                 />
               ) : (
@@ -233,6 +233,7 @@ export function SubmissionDetail({
               id="review-name"
               maxLength={40}
               value={playerName}
+              placeholder="Vide : nom inventé à l'affichage"
               disabled={!pending}
               onChange={(event) => setPlayerName(event.target.value)}
             />
@@ -247,7 +248,9 @@ export function SubmissionDetail({
                 <p className="text-caption text-ink-secondary">Record actuel</p>
                 {record ? (
                   <p className="font-display text-sm">
-                    <span className="block truncate">{record.player_name}</span>
+                    <span className="block truncate">
+                      {record.player_name ?? 'Sans nom'}
+                    </span>
                     <span className="block text-ink-accent">
                       {formatScore(record.score, game.score_type)}
                     </span>

@@ -25,13 +25,20 @@ export function GameTile({
       onClick={onSelect}
       aria-pressed={selected}
       className={cn(
-        'relative flex min-h-16 items-center gap-2.5 rounded-xl border-2 bg-surface-raised px-2.5 py-2 text-left transition-colors',
+        'flex min-h-16 items-center gap-2.5 rounded-xl border-2 bg-surface-raised px-2.5 py-2 text-left transition-colors',
         selected
           ? 'border-line-accent'
           : 'border-line-subtle hover:border-line-strong',
       )}
     >
-      <span className="inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-inverse font-display text-arcade-label text-ink-inverse">
+      <span
+        className={cn(
+          'inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md font-display text-arcade-label',
+          selected && !coverPath
+            ? 'bg-surface-accent text-ink-on-accent'
+            : 'bg-surface-inverse text-ink-inverse',
+        )}
+      >
         {coverPath ? (
           <img
             src={coverPath}
@@ -47,10 +54,7 @@ export function GameTile({
         {keepHyphenatedWords(name)}
       </span>
       {selected && (
-        <Check
-          className="absolute right-2 bottom-2 size-5 text-ink-accent"
-          aria-hidden="true"
-        />
+        <Check className="size-5 shrink-0 text-ink-accent" aria-hidden="true" />
       )}
     </button>
   )

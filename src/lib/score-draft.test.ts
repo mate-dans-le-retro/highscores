@@ -7,6 +7,7 @@ import {
   resetScoreDraftKeepName,
   writeScoreDraft,
 } from './score-draft'
+import type { ScoreDraft } from './score-draft'
 
 function memoryStore(initial: Record<string, string> = {}) {
   const data = { ...initial }
@@ -21,6 +22,9 @@ function memoryStore(initial: Record<string, string> = {}) {
   }
 }
 
+/** An empty draft, whatever its (random) submission id. */
+const withoutId = ({ submissionId: _id, ...rest }: ScoreDraft) => rest
+
 describe('score draft', () => {
   it('round-trips through session storage', () => {
     const store = memoryStore()
@@ -29,15 +33,22 @@ describe('score draft', () => {
     draft.scoreText = '128400'
     draft.photoId = 'photo-1'
     writeScoreDraft(draft, store)
-    expect(readScoreDraft(store).playerName).toBe('Julie')
-    expect(readScoreDraft(store).photoId).toBe('photo-1')
+    expect(readScoreDraft(store)).toEqual(draft)
+  })
+
+  it('gives each new draft its own submission id', () => {
+    expect(emptyScoreDraft().submissionId).not.toBe(
+      emptyScoreDraft().submissionId,
+    )
   })
 
   it('drops the v1 draft, which held the photo as a data URL', () => {
     const store = memoryStore({
       'mdlr-highscores:score-draft:v1': '{"photoDataUrl":"data:…"}',
     })
-    expect(readScoreDraft(store)).toEqual(emptyScoreDraft())
+    expect(withoutId(readScoreDraft(store))).toEqual(
+      withoutId(emptyScoreDraft()),
+    )
     expect(store.getItem('mdlr-highscores:score-draft:v1')).toBeNull()
   })
 
@@ -51,7 +62,7 @@ describe('score draft', () => {
     expect(() => writeScoreDraft(emptyScoreDraft(), store)).not.toThrow()
   })
 
-  it('keeps the nickname when resetting', () => {
+  it('keeps the nickname but not the submission id when resetting', () => {
     const store = memoryStore()
     const draft = emptyScoreDraft()
     draft.playerName = 'Julie'
@@ -59,13 +70,18 @@ describe('score draft', () => {
     const next = resetScoreDraftKeepName(draft, store)
     expect(next.playerName).toBe('Julie')
     expect(next.scoreText).toBe('')
+    expect(next.submissionId).not.toBe(draft.submissionId)
     expect(readScoreDraft(store).playerName).toBe('Julie')
   })
 
   it('clears a broken payload', () => {
-    const store = memoryStore({ 'mdlr-highscores:score-draft:v1': '{nope' })
-    expect(readScoreDraft(store)).toEqual(emptyScoreDraft())
+    const store = memoryStore({ 'mdlr-highscores:score-draft:v2': '{nope' })
+    expect(withoutId(readScoreDraft(store))).toEqual(
+      withoutId(emptyScoreDraft()),
+    )
     clearScoreDraft(store)
-    expect(readScoreDraft(store)).toEqual(emptyScoreDraft())
+    expect(withoutId(readScoreDraft(store))).toEqual(
+      withoutId(emptyScoreDraft()),
+    )
   })
 })

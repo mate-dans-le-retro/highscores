@@ -2,6 +2,7 @@ import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
+import { randomUuid } from './random-uuid'
 import { getSupabase } from './supabase'
 import { isOriginalPhoto, photoFileType, preparePhoto } from './data/photo'
 import { isBetter } from './data/records'
@@ -282,7 +283,8 @@ export function placeFor(
 export interface ScoreReview {
   game_id: string
   score: number
-  player_name: string
+  /** Empty: the screen shows a nickname seeded by the score id. */
+  player_name: string | null
   display_on_screen: boolean
 }
 
@@ -291,7 +293,7 @@ export async function approveScore(id: string, review: ScoreReview) {
     .from('scores')
     .update({
       ...review,
-      player_name: review.player_name.trim(),
+      player_name: review.player_name?.trim() || null,
       custom_game_name: null,
       status: 'approved',
       rejection_reason: null,
@@ -356,7 +358,7 @@ export async function addManualScore(input: ManualScore) {
   let thumbPath: string | null = null
   if (input.photo) {
     const photo = await preparePhoto(input.photo)
-    const id = crypto.randomUUID()
+    const id = randomUuid()
     photoPath = `admin/${id}.${photoFileType(photo.proof).extension}`
     if (!isOriginalPhoto(photo))
       thumbPath = `admin/${id}.thumb.${photoFileType(photo.thumb).extension}`
@@ -434,7 +436,7 @@ function extensionOf(file: Blob) {
 }
 
 async function uploadCover(gameSlug: string, cover: File) {
-  const path = `${gameSlug}-${crypto.randomUUID().slice(0, 8)}.${extensionOf(cover)}`
+  const path = `${gameSlug}-${randomUuid().slice(0, 8)}.${extensionOf(cover)}`
   const { error } = await getSupabase()
     .storage.from('covers')
     .upload(path, cover, { contentType: cover.type || 'image/png' })
@@ -462,7 +464,7 @@ async function setStationLabel(gameId: string, label: string | null) {
 /** Creates a game at the end of the list; returns its id. */
 export async function createGame(input: GameInput) {
   const supabase = getSupabase()
-  const slug = `${slugify(input.name)}-${crypto.randomUUID().slice(0, 4)}`
+  const slug = `${slugify(input.name)}-${randomUuid().slice(0, 4)}`
   const { data: last } = await supabase
     .from('games')
     .select('position')
