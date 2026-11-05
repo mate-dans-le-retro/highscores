@@ -55,8 +55,7 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
           Un record à afficher ?
         </h1>
         <p className="text-body text-ink-secondary">
-          Prends ton score en photo, si possible avec toi devant l'écran. On lit
-          le jeu et le score, tu n'as plus qu'à vérifier.
+          Prends ton score en photo, si possible avec toi devant l'écran.
         </p>
       </div>
 
