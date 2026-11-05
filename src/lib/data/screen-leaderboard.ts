@@ -34,11 +34,14 @@ export interface ScoreForScreen extends LeaderboardRow {
 /**
  * Builds the public-screen leaderboard from every approved score of a game.
  *
- * - Top of the all-time ranking fills the main block (past events dimmed).
- * - Current-event scores outside that top go under a separator, without
- *   duplicates.
- * - Each extra current row shrinks the all-time block (9+1, 8+2…), but never
- *   below `minAllTimeRows`.
+ * - The top K of the all-time ranking fills the main block (past events
+ *   dimmed, current-event rows at full brightness).
+ * - Every current-event score outside that block goes under a separator, in
+ *   ranking order: none is skipped while a lower one is shown.
+ * - Each extra row shrinks the block (9+1, 8+2…), never below
+ *   `minAllTimeRows`; when the extras outnumber the room left, the lowest
+ *   ones are left out.
+ * - Every row keeps its all-time rank, so the ranks only go down the screen.
  */
 export function buildScreenLeaderboard(
   scores: Array<ScoreForScreen>,
@@ -50,50 +53,39 @@ export function buildScreenLeaderboard(
   }
 
   const n = Math.max(1, rowsShown)
-  const m = Math.min(n, Math.max(0, minAllTimeRows))
+  const m = Math.min(n, Math.max(1, minAllTimeRows))
 
-  const allTimeRanked = rankScores(scores, order).map(({ entry, rank }) => ({
+  const ranked = rankScores(scores, order).map(({ entry, rank }) => ({
     ...entry,
     rank,
   }))
+  const isCurrent = (row: ScoreForScreen) => row.event_id === currentEventId
+  // Current-event scores below position k, i.e. outside a block of size k.
+  const extrasBelow = (k: number) => ranked.slice(k).filter(isCurrent)
 
-  const currentOnly = allTimeRanked.filter(
-    (row) => row.event_id === currentEventId,
-  )
-  const currentRankById = new Map(
-    rankScores(currentOnly, order).map(({ entry, rank }) => [entry.id, rank]),
-  )
+  // Shrinking the block pushes more current scores out of it, which may ask
+  // for a smaller block again: settle on the largest block that leaves room
+  // for its own extras. k only goes down, so this ends.
+  let k = Math.min(n, ranked.length)
+  for (;;) {
+    const extras = extrasBelow(k).length
+    if (k + extras <= n) break
+    const next = Math.max(m, n - extras)
+    if (next >= k) break
+    k = next
+  }
 
-  // Provisional all-time top of size N: anything from the current event in
-  // there stays in the main block (full brightness), never under the separator.
-  const provisionalTop = allTimeRanked.slice(0, n)
-  const topIds = new Set(provisionalTop.map((row) => row.id))
+  const allTimeRows = ranked
+    .slice(0, k)
+    .map((row) => toScreenRow(row, 'all_time', currentEventId))
+  const extraRows = extrasBelow(k)
+    .slice(0, n - k)
+    .map((row) => toScreenRow(row, 'current', currentEventId))
 
-  const extrasAll = allTimeRanked.filter(
-    (row) => row.event_id === currentEventId && !topIds.has(row.id),
-  )
-
-  const extrasCount = Math.min(extrasAll.length, n - m)
-  const allTimeCount = n - extrasCount
-  const allTimeRows = provisionalTop
-    .slice(0, allTimeCount)
-    .map((row) => toScreenRow(row, 'all_time', currentEventId, row.rank))
-  const extraRows = extrasAll
-    .slice(0, extrasCount)
-    .map((row) =>
-      toScreenRow(
-        row,
-        'current',
-        currentEventId,
-        currentRankById.get(row.id) ?? row.rank,
-      ),
-    )
-
-  const rows = [...allTimeRows, ...extraRows]
   return {
-    rows,
+    rows: [...allTimeRows, ...extraRows],
     separator_at: extraRows.length > 0 ? allTimeRows.length : null,
-    empty: rows.length === 0,
+    empty: false,
   }
 }
 
@@ -101,12 +93,10 @@ function toScreenRow(
   row: ScoreForScreen,
   section: LeaderboardSection,
   currentEventId: string,
-  rank: number,
 ): ScreenLeaderboardRow {
   const { event_name, ...base } = row
   return {
     ...base,
-    rank,
     section,
     dimmed: section === 'all_time' && row.event_id !== currentEventId,
     event_name: event_name ?? null,
