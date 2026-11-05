@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { GameThumb } from '#/components/game-thumb'
 import { Logo } from '#/components/logo'
+import { NewRecordScreen } from '#/components/new-record-screen'
 import { PixelPanel } from '#/components/pixel-panel'
 import { QrCode } from '#/components/qr-code'
 import { RecordsWall } from '#/components/records-wall'
@@ -11,6 +12,7 @@ import { ScoreTable } from '#/components/score-table'
 import type { ScoreTableRow } from '#/components/score-table'
 import {
   DEFAULT_SETTINGS,
+  findNewRecords,
   formatScore,
   formatScoreWhen,
   formatStation,
@@ -21,12 +23,14 @@ import {
   useHighscoresRealtime,
   visibleGamesQuery,
 } from '#/lib/highscores'
-import type { DisplayedGame, GameRecord } from '#/lib/highscores'
+import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { cn } from '#/lib/utils'
 
 /** Last stretch of the rotation: fade the screen toward black. */
 const FADE_MS = 2_500
+/** How long the "Nouveau record" takeover stays on screen. */
+const NEW_RECORD_MS = 12_000
 
 type Slide = { kind: 'game'; game: DisplayedGame } | { kind: 'wall' }
 
@@ -58,11 +62,40 @@ function PublicScreen() {
   const [index, setIndex] = useState(0)
   const [startedAt, setStartedAt] = useState(() => Date.now())
   const [now, setNow] = useState(() => Date.now())
+  const [celebration, setCelebration] = useState<NewRecord | null>(null)
+  const [celebrationQueue, setCelebrationQueue] = useState<Array<NewRecord>>([])
+  const previousRecords = useRef<Array<GameRecord> | null>(null)
   const count = slides.length
   const safeIndex = count === 0 ? 0 : index % count
   const slide: Slide | undefined = count === 0 ? undefined : slides[safeIndex]
   const durationMs =
     slide && slide.kind === 'wall' ? wallDurationMs : gameDurationMs
+  const paused = celebration !== null
+
+  useEffect(() => {
+    if (!records.data) return
+    if (previousRecords.current === null) {
+      previousRecords.current = records.data
+      return
+    }
+    const found = findNewRecords(previousRecords.current, records.data)
+    previousRecords.current = records.data
+    if (found.length === 0) return
+    setCelebrationQueue((queue) => [...queue, ...found])
+  }, [records.data])
+
+  useEffect(() => {
+    if (celebration || celebrationQueue.length === 0) return
+    const [next, ...rest] = celebrationQueue
+    setCelebration(next)
+    setCelebrationQueue(rest)
+  }, [celebration, celebrationQueue])
+
+  useEffect(() => {
+    if (!celebration) return
+    const timer = window.setTimeout(() => setCelebration(null), NEW_RECORD_MS)
+    return () => window.clearTimeout(timer)
+  }, [celebration])
 
   useEffect(() => {
     setIndex(0)
@@ -73,7 +106,7 @@ function PublicScreen() {
   }, [safeIndex, durationMs, count])
 
   useEffect(() => {
-    if (count < 2) return
+    if (paused || count < 2) return
     const tick = window.setInterval(() => {
       const t = Date.now()
       setNow(t)
@@ -82,20 +115,20 @@ function PublicScreen() {
       }
     }, 50)
     return () => window.clearInterval(tick)
-  }, [count, durationMs, startedAt])
+  }, [count, durationMs, startedAt, paused])
 
   // Keep the progress bar alive when there is a single slide (wall-only).
   useEffect(() => {
-    if (count !== 1) return
+    if (paused || count !== 1) return
     const tick = window.setInterval(() => setNow(Date.now()), 50)
     return () => window.clearInterval(tick)
-  }, [count])
+  }, [count, paused])
 
   useEffect(() => {
-    if (count !== 1) return
+    if (paused || count !== 1) return
     if (now - startedAt < durationMs) return
     setStartedAt(Date.now())
-  }, [count, durationMs, now, startedAt])
+  }, [count, durationMs, now, startedAt, paused])
 
   const progress =
     count === 0 ? 0 : Math.min(1, Math.max(0, (now - startedAt) / durationMs))
@@ -222,6 +255,8 @@ function PublicScreen() {
           )}
         </nav>
       ) : null}
+
+      {celebration ? <NewRecordScreen entry={celebration} /> : null}
     </main>
   )
 }
