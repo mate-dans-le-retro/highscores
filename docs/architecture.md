@@ -101,7 +101,10 @@ The connection can drop on the venue wifi, and the signals sent meanwhile are lo
 
 ## Storage
 
-- `photos` (public, 10 MB max, any image type): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail).
+- `photos` (public, 10 MB max, any image type): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail), hand-entered ones under `admin/`.
+
+Photos are prepared on the phone by `preparePhoto()` (`src/lib/data/photo.ts`): a JPEG proof (~2000 px) and thumbnail (~800 px). A HEIC the browser cannot decode loads `heic-to` (WebAssembly, its own chunk) on demand. If nothing can read the file, the original is uploaded alone (no thumbnail) and the admin converts a stored `.heic` on display (`useReadablePhotoUrl()`). While the player fills in the form, the photo lives in memory and IndexedDB (`src/lib/draft-photo.ts`); the sessionStorage draft only keeps its id.
+
 - `covers` (public, 5 MB max): game covers, managed from the admin.
 
 ## Environment variables

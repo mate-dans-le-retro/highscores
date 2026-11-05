@@ -49,7 +49,7 @@ The URL can also switch it: `?mock=1` turns the mock on and `?mock=0` turns it o
 - A player who does not want to be on screen stays ranked, under a retro nickname ("Un Mario anonyme"), stable for a given score. The real name is kept in the database; what changes is what leaves the backend: a source never returns the name or the photo of an anonymous score, and the real backend must guarantee it on the server side (view or server function), not only in the browser.
 - The "TOUS LES TEMPS" badge only shows when the new record beats the best existing score of every event.
 - Score types are a closed list that is easy to extend: `points` and `time` (stored in milliseconds, shown as 1'32"48) today, plus `other`. A new type needs a name in `ScoreType` and a formatter in `src/lib/format.ts`.
-- A photo is never refused: when the browser cannot shrink it (HEIC outside Safari), the original file is kept.
+- A photo is never refused: when the browser cannot shrink it (HEIC outside Safari), the original file is kept. Since then, HEIC is converted in the browser first (see "HEIC photos are converted in the browser, on demand").
 
 ## 2026-11-05: screen rotation and rows are settings the URL can override
 
@@ -116,3 +116,9 @@ Clément's calls on the review of the public screens, and how we applied them.
 - **Wall.** Games are shared evenly between pages (7 → 4 + 3) and each row of cards is centred. The photo takes two fifths of a card at most, so names and scores fit without the header. Without the header, the wall still has its "LES RECORDS" title. A card says when its record is also the all-time one (`wallCardView()`): the gold "TOUS LES TEMPS" badge of the "Nouveau record" screen, in 28px pixel type, when the event record is the best ever; no badge but the "★ Alex · 520 000" line when the all-time record is another score; the badge plus the event and date of origin when nobody has scored this event yet.
 - **"NOUVEAU RECORD !"** is in `brand-pink`, as on the mockup (the design system allows it from 24px).
 - **Demo data.** The current event of the mock is dated from now (minutes, hours and a day ago), and the demo rotation alternates the wall and the games.
+
+## 2026-11-05: HEIC photos are converted in the browser, on demand
+
+A photo is never refused, and volunteers read the proof in Chrome, which cannot show HEIC. iOS mostly hands the page a JPEG already: the camera always does, and the photo library does by default (WebKit asks the picker for its "compatible" format). A HEIC still arrives when an iPhone user sets the picker's format to "Current" or picks a file from the Files app, from an Android phone that shoots HEIF, or from a laptop (AirDrop). So `preparePhoto()` tries the browser's own decoder first (Safari 17+ reads HEIC), and only when it fails on a file detected as HEIF (type, extension or `ftyp` brand) it loads `heic-to` (libheif in WebAssembly, ~3 MB, ~0.8 MB gzipped, in its own chunk) and converts it to the same JPEG proof and thumbnail. If that fails too, the original file is kept and the admin converts it on display. The draft keeps the photo in memory and IndexedDB, never in sessionStorage. Server-side conversion was ruled out: sharp's prebuilt binaries have no HEVC decoder, Supabase image transformations cannot output from HEIC, and uploading full-size originals would weigh on the venue's wifi.
+
+`heic-to` and libheif are LGPL-3.0: we use the unmodified npm package, loaded as a separate file, so it stays replaceable.
