@@ -13,7 +13,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 ### 1. Public screen (`/`, `scene` theme; `/scores` redirects to it)
 
 - Projected or shown on a TV in the room, watched from afar, without a mouse.
-- Shows the leaderboard of one game at a time: game name and machine at the top, then rank, player, score. Ten rows max.
+- Shows the leaderboard of one game at a time: game name and console at the top, then rank, player, score. Ten rows max.
 - Rotates through the visible games every 15 seconds.
 - Updates by itself when a score is approved (Supabase Realtime). A new score can be highlighted for a few seconds (a passing pink row); that is the only movement allowed.
 - Always shows a QR code to `/score` next to the leaderboard.
@@ -30,7 +30,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 
 Reserved for MDLR volunteers (email sign-in, public sign-ups closed).
 
-- **Games**: add, rename, choose the machine, the score order (higher or lower wins), the display order, and **show or hide** a game on the public screen.
+- **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, and **show or hide** a game on the public screen.
 - **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason).
 - **Scores**: enter a score by hand (approved right away), fix or delete an existing score.
 - **Instagram** (bonus): when approving a submission whose player gave consent, post the photo and score on the MDLR Instagram account. If the Meta API is not ready in time, fall back to a "Download the visual" button to post by hand.

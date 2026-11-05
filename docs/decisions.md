@@ -68,3 +68,21 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 - The public leaderboard is a `ScreenLeaderboard`: all-time top N (past events dimmed with event name), current-event scores outside that top under a separator without duplicates, empty state flag. No `current_event_rows` / `?eventRows=`.
 - Mock mode shows a "Données de démo" watermark.
 - Game tiles use `cover_path` when set; otherwise the UI falls back to `short_label` (trigramme placeholder).
+
+## 2026-11-05: the public reads scores through `public_scores()` only
+
+The public has no read access to `scores` any more. It calls `public_scores()` (security definer), which returns the approved scores of visible games, every event included, and never the name or the photo of a score kept off screen. Those rows come with `anonymous_seed`, an HMAC-SHA256 of the normalized name and the game id, keyed by a secret stored in the unexposed `private` schema: one stable nickname per player per game, which cannot be traced back to a first name by hashing a list. The browser turns the seed into the nickname with `anonymousName()`, so the nickname lists stay in one place. Ranking and the screen layout stay in the browser too (`rankScores`, `buildScreenLeaderboard`), shared with the mock: a weekend is a few hundred scores.
+
+A function rather than a view with the owner's rights: same filtering through PostgREST, without the "security definer view" lint.
+
+## 2026-11-05: realtime through `change_signals`
+
+Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Pending submissions send no signal, so the public cannot even tell that someone submitted.
+
+## 2026-11-05: a global flood guard, not a per-device limit
+
+Everyone at the venue shares one wifi, so a limit per IP would block the room. A trigger refuses player submissions beyond 30 per minute in total, and volunteers can close submissions from the settings (which also blocks photo uploads). To revisit if someone actually abuses it.
+
+## 2026-11-05: the photos bucket accepts any image type
+
+A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one.
