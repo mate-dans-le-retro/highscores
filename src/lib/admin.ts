@@ -586,6 +586,40 @@ export async function setGameVisible(id: string, visible: boolean) {
   if (error) throw error
 }
 
+/** Thrown when a game still has scores: FK cascade would wipe them. */
+export class GameHasScoresError extends Error {
+  readonly count: number
+
+  constructor(count: number) {
+    super(`Game still has ${count} score(s)`)
+    this.name = 'GameHasScoresError'
+    this.count = count
+  }
+}
+
+/**
+ * Deletes a game for good. Refuses when any score still points at it
+ * (pending, approved or rejected): `scores.game_id` cascades on delete.
+ * Station labels for the game go away with it (`game_event_setups` cascade).
+ * Cover file in storage is best-effort; an orphan is harmless.
+ */
+export async function deleteGame(game: Pick<AdminGame, 'id' | 'cover_path'>) {
+  const supabase = getSupabase()
+  const { count, error: countError } = await supabase
+    .from('scores')
+    .select('id', { count: 'exact', head: true })
+    .eq('game_id', game.id)
+  if (countError) throw countError
+  if ((count ?? 0) > 0) throw new GameHasScoresError(count ?? 0)
+
+  const { error } = await supabase.from('games').delete().eq('id', game.id)
+  if (error) throw error
+
+  if (game.cover_path) {
+    await supabase.storage.from('covers').remove([game.cover_path])
+  }
+}
+
 /** Saves a new display order: positions 1, 2, 3… */
 export async function reorderGames(ids: Array<string>) {
   const supabase = getSupabase()

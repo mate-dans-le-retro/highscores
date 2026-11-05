@@ -7,6 +7,7 @@ import {
   EyeOff,
   Pencil,
   Plus,
+  Trash2,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -15,9 +16,11 @@ import { GameThumb, scoreRuleLabel } from '#/components/admin/game-thumb'
 import { Button } from '#/components/ui/button'
 import { Switch } from '#/components/ui/switch'
 import {
+  GameHasScoresError,
   adminGamesQuery,
   approvedScoresQuery,
   currentEventQuery,
+  deleteGame,
   rankGameScores,
   reorderGames,
   setGameVisible,
@@ -37,6 +40,8 @@ function Games() {
   const invalidate = useInvalidateAdmin()
   const [editing, setEditing] = useState<AdminGame | null>(null)
   const [adding, setAdding] = useState(false)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const move = useMutation({
     mutationFn: ({ index, by }: { index: number; by: -1 | 1 }) => {
@@ -51,6 +56,27 @@ function Games() {
     mutationFn: ({ id, visible }: { id: string; visible: boolean }) =>
       setGameVisible(id, visible),
     onSettled: invalidate,
+  })
+  const remove = useMutation({
+    mutationFn: (game: AdminGame) => deleteGame(game),
+    onSuccess: async () => {
+      setConfirmDeleteId(null)
+      setDeleteError(null)
+      await invalidate()
+    },
+    onError: (error) => {
+      if (error instanceof GameHasScoresError) {
+        setDeleteError(
+          error.count === 1
+            ? 'Ce jeu a encore 1 score (validé, en attente ou refusé). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
+            : `Ce jeu a encore ${error.count} scores (validés, en attente ou refusés). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`,
+        )
+        return
+      }
+      setDeleteError(
+        'La suppression n’est pas passée. Réessaie dans un instant.',
+      )
+    },
   })
 
   const list = games.data ?? []
@@ -73,6 +99,12 @@ function Games() {
 
       {games.isPending && (
         <p className="text-body-sm text-ink-secondary">Chargement…</p>
+      )}
+
+      {deleteError && (
+        <p role="alert" className="text-body-sm text-destructive">
+          {deleteError}
+        </p>
       )}
 
       <div className="overflow-x-auto rounded-xl bg-surface-raised shadow-card">
@@ -99,6 +131,7 @@ function Games() {
                 event.data?.id,
               )
               const best = ranking.at(0)
+              const confirming = confirmDeleteId === game.id
               return (
                 <tr
                   key={game.id}
@@ -179,23 +212,71 @@ function Games() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={`Modifier ${game.name}`}
-                        onClick={() => setEditing(game)}
-                      >
-                        <Pencil />
-                      </Button>
-                      <Button asChild variant="ghost" size="sm">
-                        <Link
-                          to="/admin/games/$gameId"
-                          params={{ gameId: game.id }}
-                        >
-                          Records
-                          <ChevronRight />
-                        </Link>
-                      </Button>
+                      {confirming ? (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setConfirmDeleteId(null)
+                              setDeleteError(null)
+                            }}
+                          >
+                            Garder
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={remove.isPending}
+                            onClick={() => {
+                              setDeleteError(null)
+                              remove.mutate(game)
+                            }}
+                          >
+                            Supprimer
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Modifier ${game.name}`}
+                            onClick={() => setEditing(game)}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Supprimer ${game.name}`}
+                            onClick={() => {
+                              if (ranking.length > 0) {
+                                setConfirmDeleteId(null)
+                                setDeleteError(
+                                  ranking.length === 1
+                                    ? 'Ce jeu a encore 1 score validé. Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
+                                    : `Ce jeu a encore ${ranking.length} scores validés. Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`,
+                                )
+                                return
+                              }
+                              setDeleteError(null)
+                              setConfirmDeleteId(game.id)
+                            }}
+                          >
+                            <Trash2 />
+                          </Button>
+                          <Button asChild variant="ghost" size="sm">
+                            <Link
+                              to="/admin/games/$gameId"
+                              params={{ gameId: game.id }}
+                            >
+                              Records
+                              <ChevronRight />
+                            </Link>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
