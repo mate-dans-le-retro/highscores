@@ -18,7 +18,7 @@ export function RecordsWall({ records, className }: RecordsWallProps) {
   return (
     <div
       className={cn(
-        'grid min-h-0 flex-1 auto-rows-fr grid-cols-3 gap-x-10 gap-y-8',
+        'grid min-h-0 flex-1 grid-cols-3 grid-rows-2 gap-x-10 gap-y-8',
         className,
       )}
     >
@@ -44,9 +44,14 @@ function RecordCard({ record }: { record: GameRecord }) {
       </h2>
       <PixelPanel className="min-h-0 flex-1">
         {!main ? (
-          <p className="text-body-ui text-ink-inverse/75">
-            Pas encore de record. À toi de jouer !
-          </p>
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+            <p className="font-display text-arcade-title text-ink-inverse">
+              À prendre !
+            </p>
+            <p className="text-body text-ink-inverse/75">
+              Pas encore de record sur ce jeu.
+            </p>
+          </div>
         ) : (
           <div className="flex min-h-0 flex-1 items-stretch gap-6">
             <div className="flex aspect-square h-full shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">

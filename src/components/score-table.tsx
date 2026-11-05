@@ -75,7 +75,7 @@ export function ScoreTable({
     >
       <header className="shrink-0 px-8 pt-7 pb-5">
         {machine ? (
-          <p className="text-scene-meta text-ink-secondary uppercase">
+          <p className="mb-2 font-display text-arcade-title text-ink-secondary uppercase">
             {machine}
           </p>
         ) : null}
