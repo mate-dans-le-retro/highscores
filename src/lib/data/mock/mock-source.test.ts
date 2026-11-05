@@ -9,10 +9,8 @@ describe('mockSource on the seed', () => {
   it('builds a screen leaderboard and anonymizes scores kept off screen', async () => {
     const board = await mockSource.getLeaderboard('g-tetris', { rows: 10 })
     expect(board.empty).toBe(false)
-    expect(board.rows.map(({ rank }) => rank)).toEqual([1, 2, 3, 4, 5, 6])
-    const zoe = board.rows.at(5)
+    const zoe = board.rows.find((row) => row.anonymous)
     expect(zoe).toBeDefined()
-    expect(zoe!.anonymous).toBe(true)
     expect(zoe!.photo_path).toBeNull()
     expect(zoe!.player_name).toBe(
       anonymousName({ playerName: 'Zoé', gameId: 'g-tetris' }),
@@ -25,17 +23,61 @@ describe('mockSource on the seed', () => {
     expect(board.rows.map(({ player_name }) => player_name)).toEqual([
       'Yanis',
       'Lina',
+      'Tom',
+      'Éva',
     ])
+    expect(board.rows.find((row) => row.player_name === 'Tom')?.dimmed).toBe(
+      true,
+    )
   })
 
-  it('dims past-event rows and keeps current-event rows full in the all-time block', async () => {
+  it('dims past-event rows when the current edition has no score', async () => {
     const board = await mockSource.getLeaderboard('g-duck-hunt', { rows: 10 })
-    const marc = board.rows.find((row) => row.player_name === 'Marc')
-    const lea = board.rows.find((row) => row.player_name === 'Léa')
-    expect(marc?.dimmed).toBe(true)
-    expect(marc?.event_name).toBe("Weekend d'avril 2026")
-    expect(lea?.dimmed).toBe(false)
+    expect(board.empty).toBe(false)
+    expect(board.rows.every((row) => row.dimmed)).toBe(true)
+    expect(board.rows.every((row) => row.event_id !== 'evt-2026-11')).toBe(true)
     expect(board.separator_at).toBeNull()
+    const marc = board.rows.find((row) => row.player_name === 'Marc')
+    expect(marc?.event_name).toBe("Weekend d'avril 2026")
+  })
+
+  it('exposes an empty visible game for the empty state', async () => {
+    const board = await mockSource.getLeaderboard('g-space-invaders', {
+      rows: 10,
+    })
+    expect(board).toEqual({ rows: [], separator_at: null, empty: true })
+    const games = await mockSource.listVisibleGames()
+    expect(games.map(({ slug }) => slug)).toContain('space-invaders')
+  })
+
+  it('shrinks the all-time block when current extras sit under the separator', async () => {
+    const board = await mockSource.getLeaderboard('g-guitar-hero', {
+      rows: 10,
+      minAllTimeRows: 5,
+    })
+    expect(board.empty).toBe(false)
+    // Five current extras → all-time block shrinks to M=5 (5+5).
+    expect(board.separator_at).toBe(5)
+    expect(board.rows).toHaveLength(10)
+    const allTime = board.rows.slice(0, 5)
+    const extras = board.rows.slice(5)
+    expect(allTime.map(({ player_name, dimmed }) => [player_name, dimmed])).toEqual([
+      ['Alex', true],
+      ['Béa', true],
+      ['Chris', true],
+      ['Hugo', false],
+      ['Iris', false],
+    ])
+    expect(extras.every((row) => row.section === 'current' && !row.dimmed)).toBe(
+      true,
+    )
+    expect(extras.map(({ player_name }) => player_name)).toEqual([
+      'Lou',
+      'Max',
+      'Noé',
+      anonymousName({ playerName: 'Ophélie', gameId: 'g-guitar-hero' }),
+      'Pia',
+    ])
   })
 
   it('serves hidden games to nobody', async () => {
@@ -50,7 +92,7 @@ describe('mockSource on the seed', () => {
     const records = await mockSource.listRecords()
     const duckHunt = records.find(({ game }) => game.slug === 'duck-hunt')
     expect(duckHunt?.game.station_label).toBe('Étage')
-    expect(duckHunt?.current?.player_name).toBe('Léa')
+    expect(duckHunt?.current).toBeNull()
     expect(duckHunt?.all_time?.player_name).toBe('Marc')
     expect(duckHunt?.all_time?.station_label).toBe('Tournoi')
   })
