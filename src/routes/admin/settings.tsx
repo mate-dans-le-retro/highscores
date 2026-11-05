@@ -17,6 +17,7 @@ import {
 } from '#/lib/admin'
 import type { AdminSettings, SettingsChanges } from '#/lib/admin'
 import type { ScreenMode } from '#/lib/data/types'
+import { useSubmitScoreUrl } from '#/lib/submit-url'
 import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/admin/settings')({
@@ -227,22 +228,25 @@ function SelectSetting({
 }
 
 function SubmitQrCode() {
-  const url =
-    typeof window === 'undefined' ? '/score' : `${window.location.origin}/score`
+  // The admin always reads the real backend, so its QR code never carries the demo.
+  const url = useSubmitScoreUrl(false)
   return (
     <section className="flex flex-col gap-4 rounded-xl bg-surface-raised p-4 shadow-card sm:flex-row sm:items-center md:p-6">
-      <div className="w-40 shrink-0 border border-line-subtle">
-        <QrCode
-          className="bg-surface-raised fill-ink-primary"
-          value={url}
-          label="QR code vers le formulaire joueur"
-        />
+      <div className="aspect-square w-40 shrink-0 border border-line-subtle">
+        {url && (
+          <QrCode
+            className="bg-surface-raised fill-ink-primary"
+            value={url}
+            label="QR code vers le formulaire joueur"
+          />
+        )}
       </div>
       <div className="flex flex-col gap-1">
         <h2 className="text-h5">QR code d'envoi</h2>
         <p className="text-body-sm text-ink-secondary">
-          Ouvre le formulaire joueur ({url.replace(/^https?:\/\//, '')}). À
-          imprimer près de chaque borne.
+          Ouvre le formulaire joueur
+          {url ? ` (${url.replace(/^https?:\/\//, '')})` : ''}. À imprimer près
+          de chaque borne.
         </p>
       </div>
     </section>

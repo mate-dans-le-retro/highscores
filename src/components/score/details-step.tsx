@@ -48,7 +48,6 @@ export function DetailsStep({
   onDraftChange,
 }: DetailsStepProps) {
   const navigate = useNavigate({ from: '/score' })
-  const [detecting, setDetecting] = useState(false)
   const detectionKey = useRef<string | null>(null)
   const [scoreTouched, setScoreTouched] = useState(false)
   const draftRef = useRef(draft)
@@ -64,31 +63,24 @@ export function DetailsStep({
 
     let cancelled = false
     let finished = false
-    setDetecting(true)
-    void detectFromPhoto(photo.photo.proof)
-      .then((result) => {
-        finished = true
-        if (cancelled) return
-        const current = draftRef.current
-        const gameId = current.gameId ?? result.gameId
-        const type = gamesRef.current.find(
-          ({ id }) => id === gameId,
-        )?.score_type
-        const next: ScoreDraft = {
-          ...current,
-          detectedGameId: result.gameId,
-          detectedScore: result.score,
-          gameId,
-          scoreText:
-            current.scoreText ||
-            (result.score !== null ? formatScore(result.score, type) : ''),
-        }
-        writeScoreDraft(next)
-        onDraftChangeRef.current(next)
-      })
-      .finally(() => {
-        if (!cancelled) setDetecting(false)
-      })
+    void detectFromPhoto(photo.photo.proof).then((result) => {
+      finished = true
+      if (cancelled) return
+      const current = draftRef.current
+      const gameId = current.gameId ?? result.gameId
+      const type = gamesRef.current.find(({ id }) => id === gameId)?.score_type
+      const next: ScoreDraft = {
+        ...current,
+        detectedGameId: result.gameId,
+        detectedScore: result.score,
+        gameId,
+        scoreText:
+          current.scoreText ||
+          (result.score !== null ? formatScore(result.score, type) : ''),
+      }
+      writeScoreDraft(next)
+      onDraftChangeRef.current(next)
+    })
 
     return () => {
       cancelled = true
@@ -124,16 +116,9 @@ export function DetailsStep({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-h3 font-extrabold text-ink-primary">
-          Vérifie tes infos
-        </h1>
-        <p className="text-body text-ink-secondary">
-          {detecting
-            ? 'On jette un œil à ta photo…'
-            : "On a lu ta photo. Corrige ce qui n'est pas juste."}
-        </p>
-      </div>
+      <h1 className="text-h3 font-extrabold text-ink-primary">
+        Vérifie tes infos
+      </h1>
 
       <div className="rounded-xl border border-line-subtle bg-surface-raised p-4">
         <div className="flex items-center gap-4">
