@@ -30,7 +30,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 
 Reserved for MDLR volunteers (Google sign-in, email and password as a fallback, public sign-ups closed).
 
-- **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, and **show or hide** a game on the public screen.
+- **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, **show or hide** a game on the public screen, and **delete** a game that has no scores left (otherwise hide it).
 - **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason).
 - **Scores**: enter a score by hand (approved right away), fix or delete an existing score.
 - **Instagram** (bonus): when approving a submission whose player gave consent, post the photo and score on the MDLR Instagram account. If the Meta API is not ready in time, fall back to a "Download the visual" button to post by hand.

@@ -38,7 +38,7 @@ Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "
 
 Built (no mockup for it): a fourth filter "À publier" lists approved scores whose player agreed to Instagram and not posted yet. Its detail, also shown under an approved submission, has the visual with "Télécharger l'image" (PNG, or JPEG, or "Partager" on a phone), four short steps, the caption with "Copier la légende", the player's account with "Copier" (or "Pas de compte Instagram renseigné : publie sans taguer."), and "Marquer comme publié" / "Remettre à publier". `/dev` previews it with demo scores.
 
-**Games.** Table: drag handle (order), initials thumbnail, name, score type ("Points · le plus haut gagne", "Temps · le plus bas gagne"), number of records, best score, "Affiché"/"Masqué" switch, edit, "Records". Button "Ajouter un jeu".
+**Games.** Table: drag handle (order), initials thumbnail, name, score type ("Points · le plus haut gagne", "Temps · le plus bas gagne"), number of records, best score, "Affiché"/"Masqué" switch, edit, delete (with confirm; blocked when the game still has scores of any status, with a nudge to hide it instead), "Records". Button "Ajouter un jeu".
 
 **Add a game** (dialog). Name, thumbnail (initials by default, or an uploaded image), score type "Points" / "Temps" / "Autre", "Le meilleur score est" "Le plus haut" / "Le plus bas", "Affiché" switch.
 
