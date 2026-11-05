@@ -136,7 +136,7 @@ function ScreenSettings() {
           </div>
           <SelectSetting
             id="min-all-time"
-            label="Places réservées aux records de tous les temps"
+            label="Places réservées aux records absolus"
             value={value.min_all_time_rows}
             options={[3, 5, 10]}
             format={(rows) => `Au moins ${rows}`}
@@ -160,8 +160,8 @@ function ScreenSettings() {
           </label>
           <p className="text-caption text-ink-secondary">
             Les scores de l'évènement en cours qui ne rentrent pas dans le top
-            s'affichent sous un séparateur, à la place des derniers records de
-            tous les temps.
+            s'affichent sous un séparateur, à la place des derniers records
+            absolus.
           </p>
         </section>
 

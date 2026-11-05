@@ -1,7 +1,6 @@
-import { AllTimeBadge } from '#/components/all-time-badge'
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
-import { RankBadge } from '#/components/rank-badge'
+import { PixelStar } from '#/components/pixel-star'
 import {
   formatScore,
   formatScoreWhen,
@@ -88,58 +87,63 @@ function RecordCard({
     )
   }
 
-  const { main, allTimeBadge, otherAllTime, origin } = view
+  const { main, allTimeStar, otherAllTime, origin } = view
   const image = main.anonymous ? null : photoUrl(main.photo_path)
 
   return (
     <PixelPanel label={game.name} className={cn('min-w-0', className)}>
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        {allTimeBadge ? <AllTimeBadge className="w-full shrink-0" /> : null}
-        <div className="flex min-h-0 flex-1 items-center gap-6">
-          <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
-            {image ? (
-              <img
-                src={image}
-                alt=""
-                className="size-full object-contain"
-                draggable={false}
+      <div className="flex min-h-0 flex-1 items-center gap-6">
+        <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
+          {image ? (
+            <img
+              src={image}
+              alt=""
+              className="size-full object-contain"
+              draggable={false}
+            />
+          ) : (
+            <PhotoPlaceholder anonymous={main.anonymous} size="sm" />
+          )}
+        </div>
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            {allTimeStar ? (
+              // In em of the pixel font: one star cell is one font pixel
+              // (1/8 em), and the letters fill the top 7/8 of the em, so
+              // their centre is 1/16 em above the line's.
+              <PixelStar
+                label="Record absolu"
+                className="relative -top-[0.0625em] h-[1.25em] text-scene-pixel"
               />
-            ) : (
-              <PhotoPlaceholder anonymous={main.anonymous} size="sm" />
-            )}
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-            <div className="flex min-w-0 items-center gap-3">
-              <RankBadge rank={1} size="sm" className="shrink-0" />
-              <p className="truncate font-display text-scene-pixel text-ink-inverse">
-                {main.player_name}
-              </p>
-            </div>
-            <p className="font-display text-scene-pixel text-ink-inverse">
-              {formatScore(main.score, game.score_type)}
+            ) : null}
+            <p className="truncate font-display text-scene-pixel text-ink-inverse">
+              {main.player_name}
             </p>
-            {otherAllTime ? (
-              <p className="truncate text-h4 text-ink-inverse">
-                <span aria-hidden="true" className="text-rank-gold">
-                  ★{' '}
-                </span>
-                <span className="sr-only">Record tous les temps : </span>
+          </div>
+          <p className="font-display text-scene-pixel text-ink-inverse">
+            {formatScore(main.score, game.score_type)}
+          </p>
+          {otherAllTime ? (
+            <p className="flex min-w-0 items-center gap-2 text-h4 text-ink-inverse">
+              <PixelStar className="h-4" />
+              <span className="truncate">
+                <span className="sr-only">Record absolu : </span>
                 {otherAllTime.player_name}
                 {' · '}
                 {formatScore(otherAllTime.score, game.score_type)}
+              </span>
+            </p>
+          ) : null}
+          {origin ? (
+            <div className="text-h4 text-ink-inverse">
+              {origin.event_name ? (
+                <p className="truncate">{origin.event_name}</p>
+              ) : null}
+              <p className="truncate font-semibold">
+                {formatScoreWhen(origin.created_at)}
               </p>
-            ) : null}
-            {origin ? (
-              <div className="text-h4 text-ink-inverse">
-                {origin.event_name ? (
-                  <p className="truncate">{origin.event_name}</p>
-                ) : null}
-                <p className="truncate font-semibold">
-                  {formatScoreWhen(origin.created_at)}
-                </p>
-              </div>
-            ) : null}
-          </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </PixelPanel>

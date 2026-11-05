@@ -34,13 +34,13 @@ const record = (
 ): GameRecord => ({ game, current, runner_up: null, all_time })
 
 describe('wallCardView', () => {
-  it('badges an event record that is also the all-time record, without ★ line', () => {
+  it('stars an event record that is also the all-time record, without ★ line', () => {
     const julie = row('julie', 128_400, 'evt-2026-11')
     const view = wallCardView(record(julie, allTime(julie, 'Novembre 2026')))
     expect(view).toEqual({
       kind: 'record',
       main: julie,
-      allTimeBadge: true,
+      allTimeStar: true,
       otherAllTime: null,
       origin: null,
     })
@@ -52,13 +52,13 @@ describe('wallCardView', () => {
     const view = wallCardView(record(hugo, alex))
     expect(view).toMatchObject({
       main: hugo,
-      allTimeBadge: false,
+      allTimeStar: false,
       otherAllTime: alex,
       origin: null,
     })
   })
 
-  it('falls back to the badged all-time record, with its event and date', () => {
+  it('falls back to the starred all-time record, with its event and date', () => {
     const marc = allTime(
       row('marc', 31_200, 'evt-2026-04'),
       "Weekend d'avril 2026",
@@ -66,7 +66,7 @@ describe('wallCardView', () => {
     const view = wallCardView(record(null, marc))
     expect(view).toMatchObject({
       main: marc,
-      allTimeBadge: true,
+      allTimeStar: true,
       otherAllTime: null,
       origin: {
         event_name: "Weekend d'avril 2026",

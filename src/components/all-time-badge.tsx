@@ -2,7 +2,7 @@ import { pixelCaps } from '#/lib/highscores'
 import { cn } from '#/lib/utils'
 
 /**
- * Gold « TOUS LES TEMPS » tag: the score beats every event. Pixel register,
+ * Gold « RECORD ABSOLU » tag: the score beats every event. Pixel register,
  * at the projected pixel minimum (28px).
  */
 export function AllTimeBadge({ className }: { className?: string }) {
@@ -13,7 +13,7 @@ export function AllTimeBadge({ className }: { className?: string }) {
         className,
       )}
     >
-      {pixelCaps('Tous les temps')}
+      {pixelCaps('Record absolu')}
     </span>
   )
 }

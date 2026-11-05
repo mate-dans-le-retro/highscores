@@ -117,7 +117,7 @@ export interface NewRecord {
   game: DisplayedGame
   record: LeaderboardRow
   previous: LeaderboardRow | null
-  /** Beats the best existing score of every event ("TOUS LES TEMPS"). */
+  /** Beats the best existing score of every event ("RECORD ABSOLU"). */
   all_time: boolean
 }
 
