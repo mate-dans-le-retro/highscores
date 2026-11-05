@@ -154,7 +154,7 @@ function Games() {
                               aria-label="Masqué"
                             />
                           )}
-                          {best.player_name}
+                          {best.player_name ?? 'Sans nom'}
                         </p>
                         <p className="font-display text-xs text-ink-accent">
                           {formatScore(best.score, game.score_type)}

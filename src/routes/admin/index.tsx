@@ -207,7 +207,7 @@ function SubmissionCard({
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-display text-sm">
-          {submission.player_name}
+          {submission.player_name ?? 'Sans nom'}
         </span>
         <span className="truncate text-caption text-ink-secondary">
           {game?.name ?? `${submission.custom_game_name} (jeu libre)`} ·{' '}

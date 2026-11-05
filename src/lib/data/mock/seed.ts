@@ -146,7 +146,7 @@ export function buildSeedScores(now: number = Date.now()): Array<Score> {
 
   function score(
     gameSlug: string | null,
-    player_name: string,
+    player_name: string | null,
     value: number,
     minutesAgo: number,
     overrides: Partial<Score> = {},
@@ -231,6 +231,8 @@ export function buildSeedScores(now: number = Date.now()): Array<Score> {
     // --- Super Mario Bros.: a couple of current scores ---
     score('super-mario-bros', 'Paul', 412_300, 300, { photo_path: PHOTO.paul }),
     score('super-mario-bros', 'Camille', 298_100, 3),
+    // Sent without a name: the screen shows a nickname seeded by the id.
+    score('super-mario-bros', null, 187_500, 7),
 
     // --- Guitar Hero: dense past + current mid/bottom (default view = 5+5) ---
     // Three past records above the current mid, so Hugo/Iris stay in the

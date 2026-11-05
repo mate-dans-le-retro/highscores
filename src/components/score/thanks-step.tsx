@@ -30,7 +30,7 @@ export function ThanksStep({ draft, onDraftChange }: ThanksStepProps) {
           </p>
         </div>
 
-        <p className="inline-flex w-fit items-center gap-2 rounded-full bg-surface-accent px-4 py-2 text-body-sm font-semibold text-ink-on-accent">
+        <p className="inline-flex w-fit items-center gap-2 self-center rounded-full bg-surface-accent px-4 py-2 text-body-sm font-semibold text-ink-on-accent">
           <Info className="size-4" aria-hidden="true" />
           En attente de validation
         </p>

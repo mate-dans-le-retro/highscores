@@ -91,7 +91,7 @@ function GameRecords() {
           {allTime ? (
             <>
               <strong className="text-ink-primary">
-                {allTime.player_name} ·{' '}
+                {allTime.player_name ?? 'Sans nom'} ·{' '}
                 {formatScore(allTime.score, game.score_type)}
               </strong>
               {allTimeEvent && <span>· {allTimeEvent}</span>}
@@ -159,7 +159,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
   const invalidate = useInvalidateAdmin()
   const [editing, setEditing] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [name, setName] = useState(score.player_name)
+  const [name, setName] = useState(score.player_name ?? '')
   const [scoreText, setScoreText] = useState(
     formatScore(score.score, game.score_type),
   )
@@ -172,7 +172,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
   const save = useMutation({
     mutationFn: () =>
       updateScore(score.id, {
-        player_name: name.trim(),
+        player_name: name.trim() || null,
         score: parsed ?? score.score,
         display_on_screen: shown,
       }),
@@ -231,7 +231,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 !score.display_on_screen && 'text-ink-secondary',
               )}
             >
-              {score.player_name}
+              {score.player_name ?? 'Sans nom'}
               {!score.display_on_screen && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2 py-0.5 font-sans text-caption font-semibold">
                   <EyeOff className="size-3" aria-hidden="true" />
@@ -276,7 +276,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
               <Button
                 size="icon-sm"
                 aria-label="Enregistrer"
-                disabled={parsed === null || !name.trim() || save.isPending}
+                disabled={parsed === null || save.isPending}
                 onClick={() => save.mutate()}
               >
                 <Check />
@@ -305,7 +305,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Modifier le score de ${score.player_name}`}
+                aria-label={`Modifier le score de ${score.player_name ?? 'Sans nom'}`}
                 onClick={() => setEditing(true)}
               >
                 <Pencil />
@@ -313,7 +313,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
               <Button
                 variant="ghost"
                 size="icon-sm"
-                aria-label={`Supprimer le score de ${score.player_name}`}
+                aria-label={`Supprimer le score de ${score.player_name ?? 'Sans nom'}`}
                 onClick={() => setConfirmDelete(true)}
               >
                 <Trash2 />

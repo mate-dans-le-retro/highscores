@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import type { PreparedPhoto } from './data/photo'
+import { randomUuid } from './random-uuid'
 
 /**
  * The player's photo while they fill in the form. sessionStorage is far too
@@ -78,7 +79,7 @@ export function createDraftPhotos(backend: DraftPhotoBackend) {
   return {
     /** Never fails: without IndexedDB, the photo stays in memory only. */
     async save(photo: PreparedPhoto): Promise<DraftPhoto> {
-      const saved = remember(crypto.randomUUID(), photo)
+      const saved = remember(randomUuid(), photo)
       try {
         await backend.put({ id: saved.id, ...photo })
       } catch (error) {

@@ -10,7 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { detectFromPhoto } from '#/lib/detect-from-photo'
 import type { DraftPhoto } from '#/lib/draft-photo'
+import { formatScore } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
+import { parseScoreInput, parseTimeInput } from '#/lib/parse-score'
+import type { TimeInputError } from '#/lib/parse-score'
 import { writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { cn } from '#/lib/utils'
@@ -20,6 +23,15 @@ type DetailsStepProps = {
   photo: DraftPhoto
   games: Array<DisplayedGame>
   onDraftChange: (draft: ScoreDraft) => void
+}
+
+const TIME_EXAMPLE = `13248 pour 1'32"48`
+
+const TIME_ERRORS: Record<TimeInputError, string> = {
+  format: `On n'a pas compris ce temps. Tape juste les chiffres : ${TIME_EXAMPLE}.`,
+  seconds: "Les secondes s'arrêtent à 59 : vérifie ton temps.",
+  minutes: "Les minutes s'arrêtent à 59 quand il y a des heures.",
+  zero: 'Un chrono à zéro ? Même Sonic ne va pas si vite.',
 }
 
 function formatPointsInput(digits: string) {
@@ -38,9 +50,12 @@ export function DetailsStep({
   const navigate = useNavigate({ from: '/score' })
   const [detecting, setDetecting] = useState(false)
   const detectionKey = useRef<string | null>(null)
+  const [scoreTouched, setScoreTouched] = useState(false)
   const draftRef = useRef(draft)
+  const gamesRef = useRef(games)
   const onDraftChangeRef = useRef(onDraftChange)
   draftRef.current = draft
+  gamesRef.current = games
   onDraftChangeRef.current = onDraftChange
 
   useEffect(() => {
@@ -48,19 +63,25 @@ export function DetailsStep({
     detectionKey.current = photo.id
 
     let cancelled = false
+    let finished = false
     setDetecting(true)
     void detectFromPhoto(photo.photo.proof)
       .then((result) => {
+        finished = true
         if (cancelled) return
         const current = draftRef.current
+        const gameId = current.gameId ?? result.gameId
+        const type = gamesRef.current.find(
+          ({ id }) => id === gameId,
+        )?.score_type
         const next: ScoreDraft = {
           ...current,
           detectedGameId: result.gameId,
           detectedScore: result.score,
-          gameId: current.gameId ?? result.gameId,
+          gameId,
           scoreText:
             current.scoreText ||
-            (result.score !== null ? String(result.score) : ''),
+            (result.score !== null ? formatScore(result.score, type) : ''),
         }
         writeScoreDraft(next)
         onDraftChangeRef.current(next)
@@ -71,6 +92,8 @@ export function DetailsStep({
 
     return () => {
       cancelled = true
+      // Unmounted mid-reading (StrictMode does it on purpose): read again.
+      if (!finished) detectionKey.current = null
     }
   }, [photo])
 
@@ -78,18 +101,20 @@ export function DetailsStep({
   const scoreType = selectedGame?.score_type ?? 'points'
   const gameDetected =
     draft.detectedGameId !== null && draft.gameId === draft.detectedGameId
+  const scoreValue = parseScoreInput(draft.scoreText, scoreType)
   const scoreDetected =
-    draft.detectedScore !== null &&
-    draft.scoreText.replace(/\D/g, '') === String(draft.detectedScore)
+    draft.detectedScore !== null && scoreValue === draft.detectedScore
 
-  const scoreOk =
-    scoreType === 'time'
-      ? draft.scoreText.trim().length > 0
-      : /^\d+$/.test(draft.scoreText.replace(/\s/g, ''))
+  const time =
+    scoreType === 'time' && draft.scoreText.trim()
+      ? parseTimeInput(draft.scoreText)
+      : null
+  const timeError =
+    time && !time.ok && scoreTouched ? TIME_ERRORS[time.error] : null
   const gameOk = draft.customGame
     ? (draft.customGameName?.trim().length ?? 0) > 0
     : Boolean(draft.gameId)
-  const canContinue = gameOk && scoreOk && draft.playerName.trim().length > 0
+  const canContinue = gameOk && scoreValue !== null
 
   function patch(partial: Partial<ScoreDraft>) {
     const next = { ...draft, ...partial }
@@ -195,13 +220,16 @@ export function DetailsStep({
                 htmlFor="score"
                 className="text-body-sm leading-snug font-bold"
               >
-                Score
+                {scoreType === 'time' ? 'Temps' : 'Score'}
               </Label>
               {scoreDetected && <DetectedTag />}
             </div>
             <Input
               id="score"
-              className="h-12 rounded-xl font-mono text-arcade-name"
+              className={cn(
+                'h-12 rounded-xl font-mono text-arcade-name',
+                timeError && 'border-ink-accent',
+              )}
               value={
                 scoreType === 'time'
                   ? draft.scoreText
@@ -216,34 +244,40 @@ export function DetailsStep({
                   scoreText: event.target.value.replace(/\D/g, ''),
                 })
               }}
-              inputMode={scoreType === 'time' ? 'text' : 'numeric'}
-              placeholder={scoreType === 'time' ? `1'32"48` : '0'}
+              onBlur={() => setScoreTouched(true)}
+              inputMode="numeric"
+              autoComplete="off"
+              enterKeyHint="done"
+              placeholder={scoreType === 'time' ? '13248' : '0'}
+              aria-invalid={Boolean(timeError)}
+              aria-describedby="score-hint"
               required
             />
-            <p className="text-body-sm text-ink-secondary">
-              Tel qu'affiché sur l'écran du jeu.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Label
-              htmlFor="player"
-              className="text-body-sm leading-snug font-bold"
+            <p
+              id="score-hint"
+              aria-live="polite"
+              className={cn(
+                'text-body-sm',
+                timeError ? 'font-bold text-ink-accent' : 'text-ink-secondary',
+              )}
             >
-              Ton nom ou pseudo
-            </Label>
-            <Input
-              id="player"
-              className="h-12 rounded-xl text-arcade-name"
-              value={draft.playerName}
-              onChange={(event) => patch({ playerName: event.target.value })}
-              maxLength={40}
-              autoComplete="nickname"
-              placeholder="Julie"
-              required
-            />
-            <p className="text-body-sm text-ink-secondary">
-              C'est ce qui s'affichera sur l'écran.
+              {scoreType !== 'time' ? (
+                "Tel qu'affiché sur l'écran du jeu."
+              ) : timeError ? (
+                timeError
+              ) : time?.ok ? (
+                <span className="inline-flex items-center gap-1.5">
+                  On lit
+                  <span className="inline-flex items-center">
+                    <span className="font-display text-arcade-label leading-none text-ink-accent">
+                      {formatScore(time.ms, 'time')}
+                    </span>
+                    .
+                  </span>
+                </span>
+              ) : (
+                `Tape les chiffres d'affilée, comme sur le chrono : ${TIME_EXAMPLE}.`
+              )}
             </p>
           </div>
         </div>

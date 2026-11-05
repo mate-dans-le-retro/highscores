@@ -1,5 +1,5 @@
 import { useNavigate } from '@tanstack/react-router'
-import { Camera, Images, Info } from 'lucide-react'
+import { Camera, ChevronRight, Images, Info } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
@@ -78,31 +78,73 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
         </div>
 
         <div className="flex flex-col gap-3 p-4">
-          <Button
-            type="button"
-            size="lg"
-            className="h-12 w-full rounded-xl text-h5"
-            disabled={busy !== null}
-            onClick={() => cameraInputRef.current?.click()}
-          >
-            <Camera className="size-5" aria-hidden="true" />
-            {busy === 'converting'
-              ? 'Conversion de la photo…'
-              : busy
-                ? 'Préparation…'
-                : 'Prendre la photo'}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="h-12 w-full rounded-xl border-line-subtle text-h5"
-            disabled={busy !== null}
-            onClick={() => galleryInputRef.current?.click()}
-          >
-            <Images className="size-5" aria-hidden="true" />
-            Choisir dans la galerie
-          </Button>
+          {photoUrl && !busy ? (
+            <>
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 w-full rounded-xl text-h5"
+                onClick={() =>
+                  void navigate({
+                    search: (prev) => ({ ...prev, step: 'details' }),
+                  })
+                }
+              >
+                Continuer avec cette photo
+                <ChevronRight className="size-5" aria-hidden="true" />
+              </Button>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="h-12 rounded-xl border-line-subtle text-body-ui"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="size-5" aria-hidden="true" />
+                  Reprendre
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="h-12 rounded-xl border-line-subtle text-body-ui"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <Images className="size-5" aria-hidden="true" />
+                  Galerie
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Button
+                type="button"
+                size="lg"
+                className="h-12 w-full rounded-xl text-h5"
+                disabled={busy !== null}
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera className="size-5" aria-hidden="true" />
+                {busy === 'converting'
+                  ? 'Conversion de la photo…'
+                  : busy
+                    ? 'Préparation…'
+                    : 'Prendre la photo'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="h-12 w-full rounded-xl border-line-subtle text-h5"
+                disabled={busy !== null}
+                onClick={() => galleryInputRef.current?.click()}
+              >
+                <Images className="size-5" aria-hidden="true" />
+                Choisir dans la galerie
+              </Button>
+            </>
+          )}
 
           <input
             ref={cameraInputRef}
@@ -134,7 +176,8 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
           aria-hidden="true"
         />
         <p className="text-body-sm text-ink-secondary">
-          Ta photo n'apparaît sur l'écran qu'après validation par l'équipe.
+          Ta photo n'apparaît sur l'écran que si tu l'acceptes à la dernière
+          étape, et une fois validée par l'équipe.
         </p>
       </div>
 

@@ -60,7 +60,8 @@ export interface Score {
   game_id: string | null
   /** Free game name typed by the player, until a volunteer creates or links the game. */
   custom_game_name: string | null
-  player_name: string
+  /** null when the player left it empty: the screen shows a nickname seeded by the id. */
+  player_name: string | null
   /** Points, or milliseconds when the game's score_type is 'time'. */
   score: number
   /**
@@ -135,9 +136,15 @@ export interface Settings {
 
 /** Either game_id or custom_game_name is set, never both. */
 export interface SubmissionInput {
+  /**
+   * Chosen on the phone, so that the form previews the nickname of a nameless
+   * score. Sending the same id twice stores the score once.
+   */
+  id: string
   game_id: string | null
   custom_game_name: string | null
-  player_name: string
+  /** null or blank: the screen shows a nickname seeded by the id. */
+  player_name: string | null
   score: number
   /** Already through preparePhoto() on the phone: the sources upload it as is. */
   photo: PreparedPhoto
