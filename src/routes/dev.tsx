@@ -48,7 +48,9 @@ function DevPanel() {
           <code className="font-mono text-body-sm">?mock=1</code> à l&apos;URL,
           ou mets{' '}
           <code className="font-mono text-body-sm">VITE_DATA_SOURCE=mock</code>{' '}
-          dans ton <code className="font-mono text-body-sm">.env.local</code>.
+          dans ton{' '}
+          <code className="font-mono text-body-sm">.env.development.local</code>
+          .
         </p>
         <p>
           <a href="/?mock=1" className="text-ink-accent underline">

@@ -78,7 +78,7 @@ Pages only import `src/lib/highscores.ts` (TanStack Query options, `submitScore`
 Which source runs (`src/lib/data/mode.ts`):
 
 1. `?mock=1` or `?mock=0` in the URL turns the mock on or off; the choice holds for the tab's session (sessionStorage), across navigation and reloads.
-2. Otherwise, `VITE_DATA_SOURCE=mock` (local `.env.local` only) turns it on.
+2. Otherwise, `VITE_DATA_SOURCE=mock` (local `.env.development.local` only) turns it on.
 3. Otherwise, Supabase.
 
 Both sources anonymize the scores a player kept off screen: the row keeps its rank and score, with a retro nickname and no photo. With Supabase, the database already hides the name and the photo; the browser only builds the nickname from the seed.
@@ -109,14 +109,24 @@ Photos are prepared on the phone by `preparePhoto()` (`src/lib/data/photo.ts`): 
 
 ## Environment variables
 
-| Variable                        | Where                | Role                                                                             |
-| ------------------------------- | -------------------- | -------------------------------------------------------------------------------- |
-| `VITE_DATA_SOURCE`              | local (`.env.local`) | `mock`: fake data in `localStorage`, see "Data sources"                          |
-| `VITE_SUPABASE_URL`             | client + server      | Supabase project URL                                                             |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | local (`.env`)       | public key (RLS)                                                                 |
-| `VITE_SUPABASE_ANON_KEY`        | Vercel               | public key set by the Supabase integration (read if the previous one is missing) |
+| Variable                        | Where                                        | Role                                                                         |
+| ------------------------------- | -------------------------------------------- | ---------------------------------------------------------------------------- |
+| `VITE_DATA_SOURCE`              | local only (`.env.development.local`)        | `mock`: fake data in `localStorage`, see "Data sources"                      |
+| `VITE_SUPABASE_URL`             | Vercel, pulled into `.env.local`             | Supabase project URL                                                         |
+| `VITE_SUPABASE_ANON_KEY`        | Vercel, pulled into `.env.local`             | public key set by the Supabase integration                                   |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | optional override (`.env.development.local`) | public key (RLS), read before `VITE_SUPABASE_ANON_KEY`, for a local Supabase |
 
 On Vercel, these variables come from the Marketplace Supabase integration, configured with the public `VITE_` prefix. Only `VITE_*` variables reach the browser; read them by their exact name (`import.meta.env.VITE_SUPABASE_URL`), never through the whole `import.meta.env` object.
+
+Locally, the same variables come from Vercel through its CLI, a dev dependency: `pnpm vercel:login` once per machine, `pnpm vercel:link` once per checkout (it writes `.vercel/`; answer no when it offers to pull the development variables), then `pnpm env:pull`, which writes the variables of the Vercel **preview** environment for the `main` branch into `.env.local`: the variables preprod runs with. The Supabase integration may not have set them for the Vercel development environment. Variables marked "Sensitive" on Vercel come back empty.
+
+Vite loads, from lowest to highest priority, `.env`, `.env.local`, `.env.[mode]` and `.env.[mode].local` (`mode` is `development` for `pnpm dev`). Hence the split:
+
+- `.env.local` belongs to Vercel: every `pnpm env:pull` overwrites it. Do not edit it.
+- `.env.development.local` holds personal overrides for `pnpm dev` and wins over `.env.local`: `VITE_DATA_SOURCE=mock`, or the URL and key of a local Supabase. Since the code reads `VITE_SUPABASE_PUBLISHABLE_KEY` before `VITE_SUPABASE_ANON_KEY`, an override must set `VITE_SUPABASE_PUBLISHABLE_KEY`.
+- `.env` is no longer needed. If it defines `VITE_SUPABASE_PUBLISHABLE_KEY` (an old local Supabase key), that key wins over the pulled `VITE_SUPABASE_ANON_KEY` and the remote project answers 401: remove the line.
+
+With the pulled variables and no mock, `pnpm dev` reads and writes the real database, shared by preprod and production. The pull also brings the integration's server-only secrets (`SUPABASE_SERVICE_ROLE_KEY`, Postgres URLs…) into `.env.local`; no code reads them today, git ignores the file, and they must never be copied into a `VITE_` variable.
 
 Secrets (service role, Instagram, AI) stay in variables **without** the `VITE_` prefix, read only in server functions. The integration already sets `SUPABASE_SERVICE_ROLE_KEY` on the server.
 
