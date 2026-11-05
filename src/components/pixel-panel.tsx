@@ -4,7 +4,7 @@ import { pixelCaps } from '#/lib/highscores'
 import { cn } from '#/lib/utils'
 
 type PixelPanelProps = {
-  /** Display-font label above the frame. Three words at most. */
+  /** Display-font title inside the frame. Three words at most. */
   label?: string
   /** `accent` (default) uses the pink border; `plain` uses line-strong. */
   tone?: 'accent' | 'plain'
@@ -15,9 +15,8 @@ type PixelPanelProps = {
  * Arcade-register frame: square corners, pixel border, hard shadow.
  * Inner surface is surface-inverse with ink-inverse text.
  *
- * The label sits above the frame, as on the Highscores mockup, on a solid
- * chip: pink on white was unreadable, and text never sits on the pixel
- * pattern when projected. `className` sizes the whole block.
+ * The title sits inside the frame in `brand-pink`: allowed on white from
+ * 24px, and the pixel size is 28px.
  */
 export function PixelPanel({
   label,
@@ -26,29 +25,23 @@ export function PixelPanel({
   children,
   ...props
 }: PixelPanelProps) {
-  const frame = (
+  return (
     <div
       className={cn(
         'flex min-h-0 flex-col rounded-none border-4 bg-surface-inverse text-ink-inverse shadow-pixel',
         tone === 'accent' ? 'border-line-accent' : 'border-line-strong',
-        label ? 'flex-1' : className,
+        className,
       )}
-      {...(label ? {} : props)}
-    >
-      <div className="flex min-h-0 flex-1 flex-col p-6">{children}</div>
-    </div>
-  )
-  if (!label) return frame
-
-  return (
-    <section
-      className={cn('flex min-h-0 flex-col gap-3', className)}
       {...props}
     >
-      <h2 className="max-w-full self-start bg-surface-sunken px-3 py-1 font-display text-scene-pixel text-balance text-ink-accent">
-        {pixelCaps(label)}
-      </h2>
-      {frame}
-    </section>
+      <div className="flex min-h-0 flex-1 flex-col p-6">
+        {label ? (
+          <h2 className="mb-4 shrink-0 font-display text-scene-pixel text-balance text-brand-pink">
+            {pixelCaps(label)}
+          </h2>
+        ) : null}
+        {children}
+      </div>
+    </div>
   )
 }
