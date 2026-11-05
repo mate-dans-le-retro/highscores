@@ -56,7 +56,7 @@ export function GameDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="min-w-0 overflow-hidden sm:max-w-md">
         {open && (
           <GameForm
             game={game}
@@ -141,7 +141,7 @@ function GameForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form onSubmit={submit} className="flex min-w-0 flex-col gap-5">
       <DialogHeader>
         <DialogTitle>{game ? 'Modifier le jeu' : 'Ajouter un jeu'}</DialogTitle>
         <DialogDescription>
@@ -186,24 +186,29 @@ function GameForm({
         Le surnom vaut pour l'évènement en cours seulement.
       </p>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex min-w-0 flex-col gap-2">
         <Label>Vignette</Label>
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <GameThumb
             game={{ name, short_label: label, cover_path: preview }}
-            className="size-12"
+            className="size-12 shrink-0"
           />
           <Input
             aria-label="Initiales"
-            className="w-20 uppercase"
+            className="w-20 shrink-0 uppercase"
             maxLength={4}
             placeholder={defaultShortLabel(name)}
             value={shortLabel}
             onChange={(event) => setShortLabel(event.target.value)}
           />
-          <label className="flex h-9 flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed border-line-strong px-3 text-sm font-semibold hover:bg-surface-sunken">
-            <Upload className="size-4" aria-hidden="true" />
-            {cover ? cover.name : 'Ajouter une image'}
+          <label
+            className="flex h-9 min-w-0 flex-1 cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-md border border-dashed border-line-strong px-3 text-sm font-semibold hover:bg-surface-sunken"
+            title={cover?.name}
+          >
+            <Upload className="size-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 truncate">
+              {cover ? cover.name : 'Ajouter une image'}
+            </span>
             <input
               type="file"
               accept="image/*"

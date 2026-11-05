@@ -636,7 +636,8 @@ export async function reorderGames(ids: Array<string>) {
 }
 
 export function coverUrl(path: string | null) {
-  if (!path || /^(https?:|data:|\/)/.test(path)) return path
+  // Pass through absolute/inline URLs (incl. blob: previews in the game modal).
+  if (!path || /^(https?:|data:|blob:|\/)/.test(path)) return path
   return getSupabase().storage.from('covers').getPublicUrl(path).data.publicUrl
 }
 

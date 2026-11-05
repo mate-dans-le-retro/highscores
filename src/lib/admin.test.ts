@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultShortLabel, parseScore, placeFor } from './admin'
+import { coverUrl, defaultShortLabel, parseScore, placeFor } from './admin'
 
 describe('parseScore', () => {
   it('reads points with or without separators', () => {
@@ -49,5 +49,21 @@ describe('placeFor', () => {
 
   it('ignores the score being edited', () => {
     expect(placeFor(250, ranking, 'desc', 'a')).toBe(1)
+  })
+})
+
+describe('coverUrl', () => {
+  it('passes through blob, data, http and rooted paths used as previews', () => {
+    expect(coverUrl(null)).toBeNull()
+    expect(coverUrl('blob:http://localhost:3000/abc')).toBe(
+      'blob:http://localhost:3000/abc',
+    )
+    expect(coverUrl('data:image/png;base64,xx')).toBe(
+      'data:image/png;base64,xx',
+    )
+    expect(coverUrl('https://cdn.example/cover.png')).toBe(
+      'https://cdn.example/cover.png',
+    )
+    expect(coverUrl('/covers/local.svg')).toBe('/covers/local.svg')
   })
 })
