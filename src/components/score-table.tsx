@@ -34,11 +34,13 @@ function formatCell(score: number | string) {
   return new Intl.NumberFormat('fr-FR').format(score)
 }
 
+const isHighlighted = (row: ScoreTableRow) =>
+  (row.rank === 1 && !row.dimmed) || row.fresh
+
 /** Pink bar for the best score (and a score that just landed), dark otherwise. */
 function barTone(row: ScoreTableRow) {
-  return (row.rank === 1 && !row.dimmed) || row.fresh
-    ? 'bg-surface-accent text-ink-on-accent'
-    : 'bg-surface-overlay'
+  if (isHighlighted(row)) return 'bg-surface-accent text-ink-on-accent'
+  return row.dimmed ? 'bg-surface-overlay/50' : 'bg-surface-overlay'
 }
 
 function placeLabel(rank: number) {
@@ -90,27 +92,33 @@ export function ScoreTable({
         <ol className="flex min-h-0 flex-1 flex-col gap-2 px-6 pb-6">
           {rows.map((row, index) => {
             const name = `${row.player} — ${formatCell(row.score)}, ${placeLabel(row.rank)}`
+            const dimmedText = row.dimmed && !row.fresh && 'opacity-60'
             const content = (
               <>
                 <RankBadge rank={row.rank} size="md" />
-                <div className="flex min-w-0 items-baseline gap-6">
-                  <p className="shrink-0 truncate font-display text-scene-pixel">
+                <div className={cn('min-w-0', dimmedText)}>
+                  <p className="truncate font-display text-scene-pixel leading-8">
                     {row.player}
                   </p>
                   {row.meta ? (
                     <p
-                      className={
-                        'truncate text-scene-meta ' +
-                        (row.rank === 1 && !row.dimmed
+                      className={cn(
+                        'truncate text-body leading-6',
+                        isHighlighted(row)
                           ? 'text-ink-on-accent'
-                          : 'text-ink-secondary')
-                      }
+                          : 'text-ink-secondary',
+                      )}
                     >
                       {row.meta}
                     </p>
                   ) : null}
                 </div>
-                <p className="justify-self-end font-display text-scene-pixel tabular-nums">
+                <p
+                  className={cn(
+                    'justify-self-end font-display text-scene-pixel tabular-nums',
+                    dimmedText,
+                  )}
+                >
                   {formatCell(row.score)}
                 </p>
               </>
@@ -119,12 +127,12 @@ export function ScoreTable({
             return (
               <li
                 key={row.id}
-                className="flex max-h-24 min-h-0 flex-1 basis-0 flex-col"
+                className="relative flex max-h-24 min-h-0 flex-1 basis-0 flex-col"
               >
                 {separatorAt === index ? (
                   <div
                     role="separator"
-                    className="mx-2 mb-2 shrink-0 border-t-4 border-dashed border-line-subtle"
+                    className="absolute inset-x-2 -top-1.5 border-t-4 border-dashed border-line-subtle"
                   />
                 ) : null}
                 {selectable ? (
@@ -133,12 +141,11 @@ export function ScoreTable({
                     aria-label={name}
                     onClick={() => onSelectRow(index, row)}
                     className={cn(
-                      'grid min-h-0 w-full flex-1 grid-cols-[auto_1fr_auto] items-center gap-6 px-5 text-left transition-[background-color,transform,outline] duration-500',
+                      'grid min-h-0 w-full flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-5 text-left transition-[background-color,transform,outline] duration-500',
                       barTone(row),
                       'hover:outline hover:outline-4 hover:outline-offset-[-4px] hover:outline-line-accent',
                       'active:translate-x-px active:translate-y-px',
                       'focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-focus-ring',
-                      row.dimmed && !row.fresh && 'opacity-60',
                     )}
                   >
                     {content}
@@ -146,9 +153,8 @@ export function ScoreTable({
                 ) : (
                   <div
                     className={cn(
-                      'grid min-h-0 flex-1 grid-cols-[auto_1fr_auto] items-center gap-6 px-5 transition-[background-color] duration-500',
+                      'grid min-h-0 flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-5 transition-[background-color] duration-500',
                       barTone(row),
-                      row.dimmed && !row.fresh && 'opacity-60',
                     )}
                   >
                     {content}

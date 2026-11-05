@@ -127,6 +127,8 @@ export interface Settings {
   rows_shown: 3 | 5 | 10
   /** M: all-time block never shrinks below this (default 5). */
   min_all_time_rows: 3 | 5 | 10
+  /** Title and logo above the public screen (hidden by default). */
+  show_header: boolean
 }
 
 /** Either game_id or custom_game_name is set, never both. */

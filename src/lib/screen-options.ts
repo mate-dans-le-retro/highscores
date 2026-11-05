@@ -13,13 +13,14 @@ const boundedInt = (min: number, max: number) =>
 
 /**
  * Search params of the public screen, to override the settings on the fly:
- * `/?rotation=30`, `/?rows=10`, `/?minAllTime=5`.
+ * `/?rotation=30`, `/?rows=10`, `/?minAllTime=5`, `/?header=1` (or 0).
  */
 export const screenSearchSchema = z.object({
   rotation: boundedInt(5, 300),
   // The design system allows ten rows at most on the projected screen.
   rows: boundedInt(1, 10),
   minAllTime: boundedInt(1, 10),
+  header: boundedInt(0, 1),
 })
 
 export type ScreenSearch = z.infer<typeof screenSearchSchema>
@@ -40,5 +41,7 @@ export function screenOptions(settings: Settings, search: ScreenSearch) {
     screenMode: settings.screen_mode,
     rows,
     minAllTimeRows,
+    showHeader:
+      search.header === undefined ? settings.show_header : search.header === 1,
   }
 }

@@ -146,6 +146,18 @@ function ScreenSettings() {
               })
             }
           />
+          <label className="flex items-center justify-between gap-4 text-body-ui">
+            <span>
+              Afficher le titre et le logo en haut de l'écran
+              <span className="block text-caption text-ink-secondary">
+                Masqués, ils laissent plus de place aux scores.
+              </span>
+            </span>
+            <Switch
+              checked={value.show_header}
+              onCheckedChange={(show_header) => save.mutate({ show_header })}
+            />
+          </label>
           <p className="text-caption text-ink-secondary">
             Les scores de l'évènement en cours qui ne rentrent pas dans le top
             s'affichent sous un séparateur, à la place des derniers records de

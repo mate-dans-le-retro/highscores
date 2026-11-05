@@ -336,6 +336,15 @@ function SettingsSection() {
             onCheckedChange={(checked) => patch({ submissions_open: checked })}
           />
         </div>
+
+        <div className="flex items-center justify-between gap-4">
+          <Label htmlFor="show-header">Titre et logo sur l'écran</Label>
+          <Switch
+            id="show-header"
+            checked={current.show_header}
+            onCheckedChange={(checked) => patch({ show_header: checked })}
+          />
+        </div>
       </div>
     </section>
   )

@@ -21,20 +21,35 @@ const SIZES: Record<RankBadgeSize, string> = {
 
 const METALS = {
   1: {
-    plate: 'bg-[linear-gradient(135deg,var(--rank-gold-hi),var(--rank-gold))]',
-    ink: 'text-ink-on-accent',
+    plate:
+      'bg-[linear-gradient(155deg,var(--rank-gold-hi)_0%,var(--rank-gold)_62%)]',
+    number: 'text-rank-gold',
   },
   2: {
     plate:
-      'bg-[linear-gradient(135deg,var(--rank-silver-hi),var(--rank-silver))]',
-    ink: 'text-ink-on-accent',
+      'bg-[linear-gradient(155deg,var(--rank-silver-hi)_0%,var(--rank-silver)_62%)]',
+    number: 'text-rank-silver',
   },
   3: {
     plate:
-      'bg-[linear-gradient(135deg,var(--rank-bronze-hi),var(--rank-bronze))]',
-    ink: 'text-ink-on-accent',
+      'bg-[linear-gradient(155deg,var(--rank-bronze-hi)_0%,var(--rank-bronze)_62%)]',
+    number: 'text-rank-bronze',
   },
 } as const
+
+/** Cup on a 16-unit grid (x, y, width, height): bowl, handles, stem, base. */
+const CUP = [
+  [3, 2, 10, 2],
+  [4, 4, 8, 4],
+  [5, 8, 6, 1],
+  [1, 3, 1, 4],
+  [2, 7, 2, 1],
+  [14, 3, 1, 4],
+  [12, 7, 2, 1],
+  [7, 9, 2, 2],
+  [5, 11, 6, 1],
+  [4, 12, 8, 2],
+] as const
 
 function placeName(rank: number) {
   if (rank === 1) return '1re place'
@@ -61,7 +76,7 @@ export function RankBadge({
         role="img"
         aria-label={accessible}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-none bg-surface-overlay font-display text-ink-primary',
+          'inline-flex shrink-0 items-center justify-center rounded-none bg-surface-sunken font-display text-ink-primary',
           SIZES[size],
           className,
         )}
@@ -79,39 +94,32 @@ export function RankBadge({
         'relative inline-flex shrink-0 items-center justify-center rounded-none',
         SIZES[size],
         !bare && metal.plate,
-        bare ? 'text-ink-primary' : metal.ink,
         className,
       )}
     >
-      <CupIcon className="absolute inset-[12.5%] text-current opacity-90" />
+      <svg
+        viewBox="0 0 16 16"
+        aria-hidden="true"
+        focusable="false"
+        shapeRendering="crispEdges"
+        className={cn(
+          'size-full fill-current',
+          bare ? 'text-ink-primary' : 'text-ink-on-accent',
+        )}
+      >
+        {CUP.map(([x, y, width, height]) => (
+          <rect key={`${x}-${y}`} x={x} y={y} width={width} height={height} />
+        ))}
+      </svg>
       <span
         aria-hidden="true"
-        className="relative z-10 translate-y-[18%] font-display leading-none"
+        className={cn(
+          'absolute inset-x-0 top-[18%] flex h-[30%] items-center justify-center font-display leading-none',
+          metal.number,
+        )}
       >
         {rank}
       </span>
     </span>
-  )
-}
-
-/** Trophy cup drawn on a 16×16 grid, with two units of margin top and bottom. */
-function CupIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className={cn('size-full', className)}
-      aria-hidden="true"
-      focusable="false"
-    >
-      {/* Bowl */}
-      <path
-        fill="currentColor"
-        d="M4 2h8v1H4zm-1 1h10v1H3zm0 1h10v1H3zm1 1h8v1H4zm1 1h6v1H5zm1 1h4v1H6z"
-      />
-      {/* Stem + base */}
-      <path fill="currentColor" d="M7 9h2v2H7zm-2 2h6v1H5zm-1 1h8v1H4z" />
-      {/* Handles */}
-      <path fill="currentColor" d="M2 3h1v3H2zm11 0h1v3h-1z" />
-    </svg>
   )
 }
