@@ -7,11 +7,17 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  isValidInstagramHandle,
+  normalizeInstagramHandle,
+} from '#/lib/instagram-handle'
 import { dataUrlToBlob, writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { formatScore, submitScore } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
 import { parseScoreInput } from '#/lib/parse-score'
+import { submissionErrorMessage } from '#/lib/submission-error'
+import { cn } from '#/lib/utils'
 
 type ConsentStepProps = {
   draft: ScoreDraft
@@ -19,9 +25,13 @@ type ConsentStepProps = {
   onDraftChange: (draft: ScoreDraft) => void
 }
 
+const INSTAGRAM_HINT =
+  "Le pseudo Instagram, c'est des lettres, chiffres, points ou _ (30 max)."
+
 export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
   const navigate = useNavigate({ from: '/score' })
   const [error, setError] = useState<string | null>(null)
+  const [handleError, setHandleError] = useState<string | null>(null)
   const mutation = useMutation({ mutationFn: submitScore })
 
   const game = games.find((g) => g.id === draft.gameId)
@@ -32,6 +42,7 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
   const scoreValue = parseScoreInput(draft.scoreText, scoreType)
   const scoreLabel =
     scoreValue === null ? draft.scoreText : formatScore(scoreValue, scoreType)
+  const handleOk = isValidInstagramHandle(draft.instagramHandle)
 
   function patch(partial: Partial<ScoreDraft>) {
     const next = { ...draft, ...partial }
@@ -44,6 +55,13 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
     if (draft.customGame && !draft.customGameName?.trim()) return
     if (!draft.customGame && !draft.gameId) return
 
+    if (!isValidInstagramHandle(draft.instagramHandle)) {
+      setHandleError(INSTAGRAM_HINT)
+      setError(null)
+      return
+    }
+
+    setHandleError(null)
     setError(null)
     try {
       await mutation.mutateAsync({
@@ -56,19 +74,15 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
         photo: dataUrlToBlob(draft.photoDataUrl),
         display_on_screen: draft.displayOnScreen,
         instagram_consent: draft.instagramConsent,
-        instagram_handle: draft.instagramHandle.trim()
-          ? draft.instagramHandle.trim().replace(/^@/, '')
-          : null,
+        instagram_handle: normalizeInstagramHandle(draft.instagramHandle),
         detected_game_id: draft.detectedGameId,
         detected_score: draft.detectedScore,
       })
       await navigate({
         search: (prev) => ({ ...prev, step: 'done' }),
       })
-    } catch {
-      setError(
-        "Oups, l'envoi a planté. Vérifie ta connexion et retente ta chance.",
-      )
+    } catch (caught) {
+      setError(submissionErrorMessage(caught))
     }
   }
 
@@ -164,22 +178,41 @@ export function ConsentStep({ draft, games, onDraftChange }: ConsentStepProps) {
           </Label>
           <Input
             id="instagram-handle"
-            className="h-12 rounded-xl text-arcade-name"
+            className={cn(
+              'h-12 rounded-xl text-arcade-name',
+              handleError && 'border-ink-accent',
+            )}
             value={draft.instagramHandle}
-            onChange={(event) => patch({ instagramHandle: event.target.value })}
+            onChange={(event) => {
+              setHandleError(null)
+              patch({ instagramHandle: event.target.value })
+            }}
             placeholder="@toncompte"
             autoComplete="username"
+            maxLength={31}
+            aria-invalid={Boolean(handleError) || !handleOk}
+            aria-describedby={
+              handleError ? 'instagram-handle-error' : undefined
+            }
           />
+          {handleError && (
+            <p
+              id="instagram-handle-error"
+              role="alert"
+              className="text-body-sm text-ink-accent"
+            >
+              {handleError}
+            </p>
+          )}
         </div>
 
         <p className="mt-5 text-body-sm text-ink-secondary">
           Tu changes d'avis ? Dis-le à un bénévole, on retire ta photo.
         </p>
 
-        {(error || mutation.isError) && (
+        {error && (
           <p role="alert" className="mt-3 text-body-sm text-ink-accent">
-            {error ??
-              "Oups, l'envoi a planté. Vérifie ta connexion et retente ta chance."}
+            {error}
           </p>
         )}
 
