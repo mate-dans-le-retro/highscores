@@ -13,6 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ScoreRouteImport } from './routes/score'
 import { Route as ScoresRouteImport } from './routes/scores'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminGamesIndexRouteImport } from './routes/admin/games/index'
+import { Route as AdminGamesGameIdRouteImport } from './routes/admin/games/$gameId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,37 +38,92 @@ const ScoresRoute = ScoresRouteImport.update({
   path: '/scores',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGamesIndexRoute = AdminGamesIndexRouteImport.update({
+  id: '/games/',
+  path: '/games/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGamesGameIdRoute = AdminGamesGameIdRouteImport.update({
+  id: '/games/$gameId',
+  path: '/games/$gameId',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/games/$gameId': typeof AdminGamesGameIdRoute
+  '/admin/games/': typeof AdminGamesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/games/$gameId': typeof AdminGamesGameIdRoute
+  '/admin/games': typeof AdminGamesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/admin': typeof AdminRoute
+  '/admin': typeof AdminRouteWithChildren
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/settings': typeof AdminSettingsRoute
+  '/admin/': typeof AdminIndexRoute
+  '/admin/games/$gameId': typeof AdminGamesGameIdRoute
+  '/admin/games/': typeof AdminGamesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/score' | '/scores'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/score'
+    | '/scores'
+    | '/admin/settings'
+    | '/admin/'
+    | '/admin/games/$gameId'
+    | '/admin/games/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/score' | '/scores'
-  id: '__root__' | '/' | '/admin' | '/score' | '/scores'
+  to:
+    | '/'
+    | '/score'
+    | '/scores'
+    | '/admin/settings'
+    | '/admin'
+    | '/admin/games/$gameId'
+    | '/admin/games'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/score'
+    | '/scores'
+    | '/admin/settings'
+    | '/admin/'
+    | '/admin/games/$gameId'
+    | '/admin/games/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AdminRoute: typeof AdminRoute
+  AdminRoute: typeof AdminRouteWithChildren
   ScoreRoute: typeof ScoreRoute
   ScoresRoute: typeof ScoresRoute
 }
@@ -99,12 +158,56 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScoresRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/games/': {
+      id: '/admin/games/'
+      path: '/games'
+      fullPath: '/admin/games/'
+      preLoaderRoute: typeof AdminGamesIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/games/$gameId': {
+      id: '/admin/games/$gameId'
+      path: '/games/$gameId'
+      fullPath: '/admin/games/$gameId'
+      preLoaderRoute: typeof AdminGamesGameIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
+interface AdminRouteChildren {
+  AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminGamesGameIdRoute: typeof AdminGamesGameIdRoute
+  AdminGamesIndexRoute: typeof AdminGamesIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSettingsRoute: AdminSettingsRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminGamesGameIdRoute: AdminGamesGameIdRoute,
+  AdminGamesIndexRoute: AdminGamesIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AdminRoute: AdminRoute,
+  AdminRoute: AdminRouteWithChildren,
   ScoreRoute: ScoreRoute,
   ScoresRoute: ScoresRoute,
 }
