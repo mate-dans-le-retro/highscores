@@ -28,7 +28,7 @@ export const Route = createFileRoute('/dev')({
 const SCREEN_MODES: Array<{ value: Settings['screen_mode']; label: string }> = [
   { value: 'game', label: 'Jeux seulement' },
   { value: 'wall', label: 'Mur seulement' },
-  { value: 'both', label: 'Jeux puis mur' },
+  { value: 'both', label: 'Mur puis jeux' },
 ]
 
 const GAME_DURATIONS: Array<Settings['game_duration_s']> = [15, 30, 60]

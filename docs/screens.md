@@ -13,11 +13,13 @@ Three views. Volunteers choose which ones run in the admin ("Écran et Instagram
 - "LE RECORD": the photo of the record holder, with "Julie · samedi à 14h32" under it.
 - "À TOI DE JOUER": the QR code to `/score`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".
 
-**Record wall** ("Mur des records", "LES RECORDS"). A 3 × 2 grid of `PixelPanel`s, one per visible game: game name as label, record photo, gold cup, player and score. When the all-time record (previous events) differs from the current one, a smaller line with a gold star shows it ("★ Marc · 31 200").
+In the app (see docs/decisions.md, "public screen after the visual review"): the first place is white and a new score pink for 30 s; current-event scores outside the all-time top sit under a separator labelled with the event name, with their all-time rank in a plain square. The record panel is "Record de l'évènement" (photo, name, score, time), or "Record de tous les temps" with its date and event when the current event has no score yet. A game without any score shows a large QR code in the table and no side panels.
+
+**Record wall** ("Mur des records", "LES RECORDS"). A 3 × 2 grid of `PixelPanel`s, one per visible game: game name as label, record photo, gold cup, player and score. When the all-time record (previous events) differs from the current one, a smaller line with a gold star shows it ("★ Marc · 31 200"). Beyond six games, the games are shared evenly between pages and each row of cards is centred.
 
 **New record** ("NOUVEAU RECORD !"). Shown when an approved score takes first place: big pink title, the player's photo (640px square), then the game, a gold "TOUS LES TEMPS" badge when it beats the all-time record, the cup, the name, the score in very large type, and "Ancien record : Marc, 98 200".
 
-Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin).
+Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin). After a new record, the screen shows that game; a click on a pill shows that slide from the start of its time.
 
 ## Player form (`/score`, `arcade` theme, phone)
 

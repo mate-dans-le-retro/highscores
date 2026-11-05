@@ -7,6 +7,8 @@ type RankBadgeProps = {
   size?: RankBadgeSize
   /** Skip the coloured plate (e.g. on a podium step that already carries the metal). */
   bare?: boolean
+  /** Numbered square even for ranks 1–3: cups are kept for the podium. */
+  plain?: boolean
   /** Replaces the default accessible name (« 1re place »). */
   label?: string
   className?: string
@@ -64,10 +66,12 @@ export function RankBadge({
   rank,
   size = 'md',
   bare = false,
+  plain = false,
   label,
   className,
 }: RankBadgeProps) {
-  const metal = rank >= 1 && rank <= 3 ? METALS[rank as 1 | 2 | 3] : null
+  const metal =
+    !plain && rank >= 1 && rank <= 3 ? METALS[rank as 1 | 2 | 3] : null
   const accessible = label ?? placeName(rank)
 
   if (!metal) {
