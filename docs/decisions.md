@@ -148,4 +148,4 @@ Volunteers can remove a game from the list for good (SQL delete), not only hide 
 
 ## 2026-11-05: game covers are cropped square before upload
 
-Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. No migration.
+Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. No migration.

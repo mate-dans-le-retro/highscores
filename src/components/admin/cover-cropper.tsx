@@ -1,5 +1,5 @@
 import Cropper from 'react-easy-crop'
-import type { Area } from 'react-easy-crop'
+import type { Area, MediaSize } from 'react-easy-crop'
 import { useCallback, useState } from 'react'
 
 import { Button } from '#/components/ui/button'
@@ -10,11 +10,17 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { Label } from '#/components/ui/label'
-import { COVER_ASPECT, cropCoverToFile } from '#/lib/cover-crop'
+import {
+  COVER_ASPECT,
+  coverMaxZoom,
+  coverMinZoom,
+  cropCoverToFile,
+} from '#/lib/cover-crop'
 
 /**
  * Square crop step shown after a volunteer picks a cover file.
  * Confirm yields a JPEG `File`; cancel discards the selection.
+ * `minZoom` drops below 1 for wide art so the whole image can sit in the square.
  */
 export function CoverCropper({
   imageSrc,
@@ -29,12 +35,27 @@ export function CoverCropper({
 }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
+  const [minZoom, setMinZoom] = useState(1)
+  const [maxZoom, setMaxZoom] = useState(coverMaxZoom(1))
   const [area, setArea] = useState<Area | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(false)
 
   const onCropComplete = useCallback((_percent: Area, pixels: Area) => {
     setArea(pixels)
+  }, [])
+
+  const onMediaLoaded = useCallback((mediaSize: MediaSize) => {
+    const nextMin = coverMinZoom(
+      mediaSize.naturalWidth,
+      mediaSize.naturalHeight,
+      COVER_ASPECT,
+    )
+    const nextMax = coverMaxZoom(nextMin)
+    setMinZoom(nextMin)
+    setMaxZoom(nextMax)
+    setZoom(nextMin)
+    setCrop({ x: 0, y: 0 })
   }, [])
 
   async function confirm() {
@@ -63,10 +84,13 @@ export function CoverCropper({
           image={imageSrc}
           crop={crop}
           zoom={zoom}
+          minZoom={minZoom}
+          maxZoom={maxZoom}
           aspect={COVER_ASPECT}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onCropComplete={onCropComplete}
+          onMediaLoaded={onMediaLoaded}
           objectFit="contain"
           showGrid
         />
@@ -77,9 +101,9 @@ export function CoverCropper({
         <input
           id="cover-zoom"
           type="range"
-          min={1}
-          max={3}
-          step={0.05}
+          min={minZoom}
+          max={maxZoom}
+          step={0.01}
           value={zoom}
           onChange={(event) => setZoom(Number(event.target.value))}
           className="w-full accent-primary"
