@@ -2,33 +2,37 @@ import { useNavigate } from '@tanstack/react-router'
 import { Camera, Images, Info } from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
 import { Button } from '@/components/ui/button'
 import { preparePhoto } from '#/lib/data/photo'
-import { blobToDataUrl } from '#/lib/score-draft'
+import { draftPhotos } from '#/lib/draft-photo'
 import type { ScoreDraft } from '#/lib/score-draft'
 
 type PhotoStepProps = {
   draft: ScoreDraft
+  photoUrl: string | null
   onDraftChange: (draft: ScoreDraft) => void
 }
 
-export function PhotoStep({ draft, onDraftChange }: PhotoStepProps) {
+export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
   const navigate = useNavigate({ from: '/score' })
   const cameraInputRef = useRef<HTMLInputElement>(null)
   const galleryInputRef = useRef<HTMLInputElement>(null)
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState<'preparing' | 'converting' | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleFile(file: File | undefined) {
     if (!file) return
-    setBusy(true)
+    setBusy('preparing')
     setError(null)
     try {
-      const prepared = await preparePhoto(file)
-      const photoDataUrl = await blobToDataUrl(prepared.proof)
+      const prepared = await preparePhoto(file, {
+        onConvert: () => setBusy('converting'),
+      })
+      const saved = await draftPhotos.save(prepared)
       const next: ScoreDraft = {
         ...draft,
-        photoDataUrl,
+        photoId: saved.id,
         // Fresh photo clears previous detection tags.
         detectedGameId: null,
         detectedScore: null,
@@ -40,7 +44,7 @@ export function PhotoStep({ draft, onDraftChange }: PhotoStepProps) {
     } catch {
       setError("Oups, on n'a pas pu lire cette photo. Retente avec une autre.")
     } finally {
-      setBusy(false)
+      setBusy(null)
     }
   }
 
@@ -58,12 +62,8 @@ export function PhotoStep({ draft, onDraftChange }: PhotoStepProps) {
 
       <div className="overflow-hidden rounded-xl border border-line-subtle bg-surface-raised">
         <div className="flex aspect-[4/3] items-center justify-center bg-surface-sunken">
-          {draft.photoDataUrl ? (
-            <img
-              src={draft.photoDataUrl}
-              alt="Aperçu de ta photo"
-              className="size-full object-cover"
-            />
+          {photoUrl ? (
+            <DraftPhotoPreview url={photoUrl} alt="Aperçu de ta photo" />
           ) : (
             <div className="flex flex-col items-center gap-3 px-6 text-center">
               <Camera
@@ -82,18 +82,22 @@ export function PhotoStep({ draft, onDraftChange }: PhotoStepProps) {
             type="button"
             size="lg"
             className="h-12 w-full rounded-xl text-h5"
-            disabled={busy}
+            disabled={busy !== null}
             onClick={() => cameraInputRef.current?.click()}
           >
             <Camera className="size-5" aria-hidden="true" />
-            {busy ? 'Préparation…' : 'Prendre la photo'}
+            {busy === 'converting'
+              ? 'Conversion de la photo…'
+              : busy
+                ? 'Préparation…'
+                : 'Prendre la photo'}
           </Button>
           <Button
             type="button"
             variant="outline"
             size="lg"
             className="h-12 w-full rounded-xl border-line-subtle text-h5"
-            disabled={busy}
+            disabled={busy !== null}
             onClick={() => galleryInputRef.current?.click()}
           >
             <Images className="size-5" aria-hidden="true" />

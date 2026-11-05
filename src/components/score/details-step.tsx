@@ -3,18 +3,21 @@ import { ChevronRight, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { DetectedTag } from '@/components/score/detected-tag'
+import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
 import { GameTile } from '@/components/score/game-tile'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { detectFromPhoto } from '#/lib/detect-from-photo'
+import type { DraftPhoto } from '#/lib/draft-photo'
 import type { DisplayedGame } from '#/lib/highscores'
-import { dataUrlToBlob, writeScoreDraft } from '#/lib/score-draft'
+import { writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { cn } from '#/lib/utils'
 
 type DetailsStepProps = {
   draft: ScoreDraft
+  photo: DraftPhoto
   games: Array<DisplayedGame>
   onDraftChange: (draft: ScoreDraft) => void
 }
@@ -26,7 +29,12 @@ function formatPointsInput(digits: string) {
   return new Intl.NumberFormat('fr-FR').format(n)
 }
 
-export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
+export function DetailsStep({
+  draft,
+  photo,
+  games,
+  onDraftChange,
+}: DetailsStepProps) {
   const navigate = useNavigate({ from: '/score' })
   const [detecting, setDetecting] = useState(false)
   const detectionKey = useRef<string | null>(null)
@@ -36,14 +44,12 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
   onDraftChangeRef.current = onDraftChange
 
   useEffect(() => {
-    const photoDataUrl = draft.photoDataUrl
-    if (!photoDataUrl) return
-    if (detectionKey.current === photoDataUrl) return
-    detectionKey.current = photoDataUrl
+    if (detectionKey.current === photo.id) return
+    detectionKey.current = photo.id
 
     let cancelled = false
     setDetecting(true)
-    void detectFromPhoto(dataUrlToBlob(photoDataUrl))
+    void detectFromPhoto(photo.photo.proof)
       .then((result) => {
         if (cancelled) return
         const current = draftRef.current
@@ -66,7 +72,7 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
     return () => {
       cancelled = true
     }
-  }, [draft.photoDataUrl])
+  }, [photo])
 
   const selectedGame = games.find((game) => game.id === draft.gameId) ?? null
   const scoreType = selectedGame?.score_type ?? 'points'
@@ -83,11 +89,7 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
   const gameOk = draft.customGame
     ? (draft.customGameName?.trim().length ?? 0) > 0
     : Boolean(draft.gameId)
-  const canContinue =
-    Boolean(draft.photoDataUrl) &&
-    gameOk &&
-    scoreOk &&
-    draft.playerName.trim().length > 0
+  const canContinue = gameOk && scoreOk && draft.playerName.trim().length > 0
 
   function patch(partial: Partial<ScoreDraft>) {
     const next = { ...draft, ...partial }
@@ -111,13 +113,7 @@ export function DetailsStep({ draft, games, onDraftChange }: DetailsStepProps) {
       <div className="rounded-xl border border-line-subtle bg-surface-raised p-4">
         <div className="flex items-center gap-4">
           <div className="size-20 shrink-0 overflow-hidden rounded-lg bg-surface-sunken">
-            {draft.photoDataUrl && (
-              <img
-                src={draft.photoDataUrl}
-                alt="Ta photo"
-                className="size-full object-cover"
-              />
-            )}
+            <DraftPhotoPreview url={photo.url} alt="Ta photo" />
           </div>
           <div className="flex flex-col gap-2">
             <p className="text-body-ui font-semibold">Photo prise</p>

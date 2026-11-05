@@ -1,8 +1,10 @@
-export const SCORE_DRAFT_KEY = 'mdlr-highscores:score-draft:v1'
+export const SCORE_DRAFT_KEY = 'mdlr-highscores:score-draft:v2'
+/** v1 kept the photo as a data URL: dropped on read to free the quota. */
+const LEGACY_DRAFT_KEY = 'mdlr-highscores:score-draft:v1'
 
 export interface ScoreDraft {
-  /** Resized JPEG as a data URL (survives reload; used for preview and submit). */
-  photoDataUrl: string | null
+  /** Id of the photo held by draftPhotos (memory + IndexedDB), never the photo itself. */
+  photoId: string | null
   gameId: string | null
   customGameName: string | null
   /** When true, the player picked "Un autre jeu" instead of a listed game. */
@@ -18,7 +20,7 @@ export interface ScoreDraft {
 }
 
 export const emptyScoreDraft = (): ScoreDraft => ({
-  photoDataUrl: null,
+  photoId: null,
   gameId: null,
   customGameName: null,
   customGame: false,
@@ -46,6 +48,7 @@ export function readScoreDraft(
   store: SessionStore | null = sessionStore(),
 ): ScoreDraft {
   if (!store) return emptyScoreDraft()
+  store.removeItem(LEGACY_DRAFT_KEY)
   const raw = store.getItem(SCORE_DRAFT_KEY)
   if (!raw) return emptyScoreDraft()
   try {
@@ -56,11 +59,16 @@ export function readScoreDraft(
   }
 }
 
+/** The draft is a few hundred bytes, but a full storage must not block the form. */
 export function writeScoreDraft(
   draft: ScoreDraft,
   store: SessionStore | null = sessionStore(),
 ) {
-  store?.setItem(SCORE_DRAFT_KEY, JSON.stringify(draft))
+  try {
+    store?.setItem(SCORE_DRAFT_KEY, JSON.stringify(draft))
+  } catch (error) {
+    console.warn('Score draft not saved', error)
+  }
 }
 
 export function clearScoreDraft(store: SessionStore | null = sessionStore()) {
@@ -76,26 +84,4 @@ export function resetScoreDraftKeepName(
   next.playerName = draft.playerName
   writeScoreDraft(next, store)
   return next
-}
-
-export function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result)
-      else reject(new Error('Could not read the photo'))
-    }
-    reader.onerror = () =>
-      reject(reader.error ?? new Error('FileReader failed'))
-    reader.readAsDataURL(blob)
-  })
-}
-
-export function dataUrlToBlob(dataUrl: string): Blob {
-  const [header, data] = dataUrl.split(',', 2)
-  const mime = /data:([^;]+)/.exec(header)?.[1] ?? 'image/jpeg'
-  const binary = atob(data)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
-  return new Blob([bytes], { type: mime })
 }

@@ -2,6 +2,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Info } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { draftPhotos } from '#/lib/draft-photo'
 import { resetScoreDraftKeepName } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 
@@ -41,6 +42,7 @@ export function ThanksStep({ draft, onDraftChange }: ThanksStepProps) {
           className="h-12 w-full rounded-xl border-line-subtle text-h5"
           onClick={() => {
             const next = resetScoreDraftKeepName(draft)
+            void draftPhotos.clear()
             onDraftChange(next)
             void navigate({
               search: (prev) => ({ ...prev, step: 'photo' }),

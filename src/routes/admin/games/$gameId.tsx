@@ -37,6 +37,7 @@ import {
 } from '#/lib/admin'
 import type { AdminGame, RankedScore } from '#/lib/admin'
 import { formatScore, formatScoreWhen } from '#/lib/format'
+import { useReadablePhotoUrl } from '#/lib/readable-photo'
 import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/admin/games/$gameId')({
@@ -164,7 +165,9 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
   )
   const [shown, setShown] = useState(score.display_on_screen)
   const parsed = parseScore(scoreText, game.score_type)
-  const photo = proofUrl(score.thumb_path ?? score.photo_path)
+  const photo = useReadablePhotoUrl(
+    proofUrl(score.thumb_path ?? score.photo_path),
+  )
 
   const save = useMutation({
     mutationFn: () =>

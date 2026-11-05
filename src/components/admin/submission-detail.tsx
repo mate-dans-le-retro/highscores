@@ -29,6 +29,7 @@ import {
 } from '#/lib/admin'
 import type { AdminGame, AdminScore } from '#/lib/admin'
 import { formatScore, formatScoreWhen } from '#/lib/format'
+import { useReadablePhotoUrl } from '#/lib/readable-photo'
 
 const statusLabels = {
   pending: 'À valider',
@@ -71,6 +72,7 @@ export function SubmissionDetail({
       : null
   const pending = submission.status === 'pending'
   const photo = proofUrl(submission.photo_path)
+  const photoSrc = useReadablePhotoUrl(photo)
 
   const approve = useMutation({
     mutationFn: () =>
@@ -118,11 +120,17 @@ export function SubmissionDetail({
               rel="noreferrer"
               className="group relative block overflow-hidden rounded-lg bg-surface-sunken"
             >
-              <img
-                src={photo}
-                alt={`Photo envoyée par ${submission.player_name}`}
-                className="max-h-[560px] w-full object-contain"
-              />
+              {photoSrc ? (
+                <img
+                  src={photoSrc}
+                  alt={`Photo envoyée par ${submission.player_name}`}
+                  className="max-h-[560px] w-full object-contain"
+                />
+              ) : (
+                <span className="grid h-48 place-items-center text-body-sm text-ink-secondary">
+                  Conversion de la photo…
+                </span>
+              )}
               <span className="absolute right-2 bottom-2 inline-flex items-center gap-1 rounded-md bg-surface-raised px-2 py-1 text-caption font-semibold opacity-0 shadow-card transition-opacity group-hover:opacity-100">
                 <ExternalLink className="size-3" aria-hidden="true" />
                 Ouvrir en grand

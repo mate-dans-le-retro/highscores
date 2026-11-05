@@ -20,6 +20,7 @@ import {
 } from '#/lib/admin'
 import type { AdminGame, AdminScore, SubmissionStatus } from '#/lib/admin'
 import { formatScore, formatScoreWhen } from '#/lib/format'
+import { useReadablePhotoUrl } from '#/lib/readable-photo'
 import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/admin/')({
@@ -173,7 +174,9 @@ function SubmissionCard({
   selected: boolean
   onSelect: () => void
 }) {
-  const photo = proofUrl(submission.thumb_path ?? submission.photo_path)
+  const photo = useReadablePhotoUrl(
+    proofUrl(submission.thumb_path ?? submission.photo_path),
+  )
   const place =
     game && submission.status === 'pending'
       ? placeFor(
