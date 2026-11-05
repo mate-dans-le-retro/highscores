@@ -97,7 +97,7 @@ A photo is never refused: some phones send `image/heif` or no type at all. The b
 - The submissions queue refreshes every 10 seconds instead of listening to realtime: the public must not receive score rows, and a short delay is fine for a volunteer.
 - Games are reordered with up and down arrows, not by dragging rows as in the mockup: it works the same on a phone.
 - A free game name ("Un autre jeu") is either created as a new game from the submission, or linked to an existing game by picking it in the list.
-- Instagram: the admin shows the player's consent and handle, but does not publish yet.
+- Instagram: the admin shows the player's consent and handle, but does not publish yet. Superseded by "Instagram posts are made by hand, from the admin" below.
 
 ## 2026-11-05: Google sign-in for volunteers, sign-ups still closed
 
@@ -130,3 +130,14 @@ A photo is never refused, and volunteers read the proof in Chrome, which cannot 
 - **The phone chooses the score id.** The draft holds a v4 UUID from the start: the preview knows the nickname a nameless score will get, and a retried send stores the score once (the mock ignores a known id, Supabase treats a duplicate key on insert as already sent). Photo file names stay random per try, so a retry never collides with a photo already uploaded.
 - **No `crypto.randomUUID()` in the browser.** It only exists over HTTPS or on localhost: a phone on the dev server over the LAN could not store its photo nor send its score. `randomUuid()` falls back on `crypto.getRandomValues()`.
 - **Times.** The field shows a numeric keyboard. Digits alone read like a stopwatch, from the right (13248 = 1'32"48); separators are accepted too, typographic quotes of phone keyboards included (1’32”48, 1:32.48, 1:32:48, 1.32.48, 1:32, 32"48, 1h02'03"45). Seconds stop at 59 when minutes are shown. The form reads the value back ("On lit 1'32"48.") and explains a refused time. The admin keeps its own, more permissive parser for now.
+
+## 2026-11-05: Instagram posts are made by hand, from the admin
+
+No Meta API before the event: a volunteer posts by hand, and the admin gives them everything for it.
+
+- **Where.** A fourth filter "À publier" in Submissions lists the approved player scores whose player said yes to Instagram and that are not posted yet, oldest first. Its detail only holds the post. The detail of an approved submission (filter "Validées") shows the same post under the review form, and its card says "Publié sur Instagram" once done. The mockups put the caption in the submission detail (p.16): this keeps it there, and adds a queue so nothing is forgotten.
+- **Visual.** Mockup p.15 drawn on a canvas at 1080 × 1350 (Instagram's 4:5 portrait), colors read from the `arcade` tokens. The photo frame is taller than on the mockup, where it is a placeholder bar: the photo is the point of the post. The photo is contained, not cropped (it is the proof), over a blurred copy of itself. The headline follows the rank in the score's event: "NOUVEAU RECORD !" (1st), "SUR LE PODIUM !" (2nd, 3rd), "BEAU SCORE !"; the cup or numbered square is the screen's `RankBadge`; "RECORD ABSOLU" when the score beats every score of the other events, like the screen's badge. Names that do not fit wrap on two lines.
+- **Anonymous.** A score kept off screen keeps the screen's masked bust and its nickname (the same as the screen when `public_scores()` gives its seed, else seeded by the score id), never the real name nor the photo, in the visual and in the caption. Its handle is shown to the volunteer with a warning, and left out of the caption: tagging would undo the anonymity.
+- **Photo loading.** The photo is fetched into a local object URL before drawing, so the canvas is never tainted; a HEIC is converted on the way. The public bucket answers `Access-Control-Allow-Origin: *` (checked on the project). If the fetch fails anyway, the visual falls back to the placeholder and says so, with "Réessayer". No dependency added.
+- **Caption.** Built in code (`instagramCaption()`): tutoiement, one exclamation mark per idea, the player's handle when there is one, the event, `@mate_dans_le_retro` and hashtags (with one for the game). The volunteer can edit it before copying. `settings.instagram_caption` is not used yet: it has no screen.
+- **"Publié" status.** Stored in the existing `scores.instagram_post_id` column (in the first migration, already in production, players cannot set it), as `manual:<ISO date>`: no migration, and the status is shared between volunteers' devices. A future automatic post will store Instagram's media id there, which never starts with `manual:`. "Remettre à publier" clears it.
