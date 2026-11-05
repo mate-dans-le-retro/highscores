@@ -38,9 +38,9 @@ interface PublicScoreRow {
   created_at: string
 }
 
-/** Covers are paths in the covers bucket; full URLs pass through. */
+/** Covers are paths in the covers bucket; full URLs (incl. blob:) pass through. */
 function coverUrl(path: string | null) {
-  if (!path || /^(https?:|data:|\/)/.test(path)) return path
+  if (!path || /^(https?:|data:|blob:|\/)/.test(path)) return path
   return getSupabase().storage.from('covers').getPublicUrl(path).data.publicUrl
 }
 
