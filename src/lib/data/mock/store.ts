@@ -7,15 +7,15 @@ import type {
   Settings,
 } from '../types'
 import {
+  buildSeedScores,
   seedEvents,
   seedGameEventSetups,
   seedGames,
-  seedScores,
   seedSettings,
 } from './seed'
 
 /** Bump the version when the seed or the shape changes: the seed is reloaded. */
-const STORAGE_KEY = 'mdlr-highscores:mock:v4'
+const STORAGE_KEY = 'mdlr-highscores:mock:v5'
 
 const ALL_TABLES: Array<ChangedTable> = ['games', 'scores', 'settings']
 
@@ -27,12 +27,13 @@ export interface MockState {
   settings: Settings
 }
 
+/** Dated from now: a reset brings the « il y a 12 min » scores back. */
 const seedState = (): MockState =>
   structuredClone({
     events: seedEvents,
     games: seedGames,
     game_event_setups: seedGameEventSetups,
-    scores: seedScores,
+    scores: buildSeedScores(),
     settings: seedSettings,
   })
 
