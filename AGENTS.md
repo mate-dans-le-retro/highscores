@@ -49,7 +49,8 @@ src/
     index.tsx        public screen, scene theme
     scores.tsx       redirects to /
     score.tsx        player form, arcade theme
-    admin.tsx        volunteer admin, console theme
+    admin.tsx        volunteer admin layout (sign-in, tabs), console theme
+    admin/           admin pages: submissions, games, records, settings
   components/        app components (qr-code.tsx)
   components/ui/     shadcn components (copied code, see "shadcn/ui" below)
   lib/

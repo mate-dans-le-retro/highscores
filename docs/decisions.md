@@ -86,3 +86,11 @@ Everyone at the venue shares one wifi, so a limit per IP would block the room. A
 ## 2026-11-05: the photos bucket accepts any image type
 
 A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one.
+
+## 2026-11-05: an admin for the weekend, simple first
+
+- Volunteers sign in with an email and a password, created by hand in Supabase: no email links to configure before Saturday.
+- The submissions queue refreshes every 10 seconds instead of listening to realtime: the public must not receive score rows, and a short delay is fine for a volunteer.
+- Games are reordered with up and down arrows, not by dragging rows as in the mockup: it works the same on a phone.
+- A free game name ("Un autre jeu") is either created as a new game from the submission, or linked to an existing game by picking it in the list.
+- Instagram: the admin shows the player's consent and handle, but does not publish yet.

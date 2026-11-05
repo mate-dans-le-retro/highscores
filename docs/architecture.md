@@ -23,6 +23,8 @@ The app is a server-rendered TanStack Start app deployed on Vercel. Pages talk d
 | `/score`  | arcade  | Player form (QR code on the screen) |
 | `/admin`  | console | Volunteer admin, reached by its URL |
 
+The admin (client-rendered, `ssr: false`) has four pages: `/admin` (submissions queue), `/admin/games` (games, order, display), `/admin/games/$gameId` (ranking of the current event, scores by hand, archiving) and `/admin/settings` (screen, submissions, QR code, event name). Its data access is in `src/lib/admin.ts`, straight to Supabase with the volunteer's session.
+
 Each route declares its theme in `staticData.theme`; `__root.tsx` sets the value of the deepest route on `<html data-theme>`, from the server render on.
 
 ## Data model
@@ -47,7 +49,7 @@ Defined in `supabase/migrations/`. Summary:
 | Public (`anon`)          | reads (visible games)   | no read: `public_scores()` only. Inserts a `pending` submission, `source = player`, with its photo, in the current event, while submissions are open, on a visible game or a free game name. 30 player submissions per minute at most, in total | uploads to `photos/submissions/` while submissions are open, cannot list or overwrite anything |
 | Volunteer (`is_admin()`) | everything              | everything                                                                                                                                                                                                                                      | everything on `photos` and `covers`                                                            |
 
-Auth sign-ups are closed (`enable_signup = false`). To add a volunteer: invite them from the Supabase dashboard, then insert their `user_id` into `public.admins`.
+Auth sign-ups are closed (`enable_signup = false`). Volunteers sign in with an email and a password. To add one: create the user from the Supabase dashboard (Authentication, Add user, with a password and "Auto confirm"), then insert their `user_id` into `public.admins`. A signed-in account that is not in `public.admins` sees a "Pas encore bénévole" page and nothing else.
 
 Check the policies locally after any change, for example:
 
