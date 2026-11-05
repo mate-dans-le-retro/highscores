@@ -42,7 +42,7 @@ export function GameTile({
           <span aria-hidden="true">{shortLabel}</span>
         )}
       </span>
-      <span className="min-w-0 flex-1 truncate text-body-ui font-semibold text-ink-primary">
+      <span className="line-clamp-2 min-w-0 flex-1 text-body-ui leading-tight font-semibold break-words text-ink-primary">
         {name}
       </span>
       {selected && (
