@@ -266,13 +266,15 @@ export function DetailsStep({
               ) : timeError ? (
                 timeError
               ) : time?.ok ? (
-                <>
-                  On lit{' '}
-                  <span className="font-display text-ink-accent">
-                    {formatScore(time.ms, 'time')}
+                <span className="inline-flex items-center gap-1.5">
+                  On lit
+                  <span className="inline-flex items-center">
+                    <span className="font-display text-arcade-label leading-none text-ink-accent">
+                      {formatScore(time.ms, 'time')}
+                    </span>
+                    .
                   </span>
-                  .
-                </>
+                </span>
               ) : (
                 `Tape les chiffres d'affilée, comme sur le chrono : ${TIME_EXAMPLE}.`
               )}
