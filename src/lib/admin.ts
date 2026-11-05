@@ -535,6 +535,7 @@ export type SettingsChanges = Partial<
     | 'wall_duration_s'
     | 'rows_shown'
     | 'min_all_time_rows'
+    | 'show_header'
     | 'instagram_enabled'
     | 'instagram_mode'
     | 'instagram_caption'

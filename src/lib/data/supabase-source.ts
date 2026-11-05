@@ -138,7 +138,7 @@ function toGameRecord(
 }
 
 const SETTINGS_COLUMNS =
-  'submissions_open, screen_mode, game_duration_s, wall_duration_s, rows_shown, min_all_time_rows'
+  'submissions_open, screen_mode, game_duration_s, wall_duration_s, rows_shown, min_all_time_rows, show_header'
 
 async function getSettings(): Promise<Settings> {
   const { data, error } = await getSupabase()

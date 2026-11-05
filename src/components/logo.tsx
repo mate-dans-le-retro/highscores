@@ -1,6 +1,6 @@
 import { cn } from '#/lib/utils'
 
-const DEFAULT_SRC = '/mdlr-logo.svg'
+const DEFAULT_SRC = '/mdlr-logo-couleur-fond-sombre.svg'
 
 type LogoProps = {
   /** Product-provided asset URL. Defaults to the public lockup. */

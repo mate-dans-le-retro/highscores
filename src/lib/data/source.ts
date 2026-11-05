@@ -14,6 +14,7 @@ export const DEFAULT_SETTINGS: Settings = {
   wall_duration_s: 20,
   rows_shown: 10,
   min_all_time_rows: 5,
+  show_header: false,
 }
 
 export interface LeaderboardQueryOptions {

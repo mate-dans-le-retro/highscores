@@ -87,6 +87,7 @@ The rotation and the number of rows come from the settings (15 s and 10 rows by 
 | ---------- | -------- | --------------- |
 | `rotation` | 5 to 300 | `/?rotation=30` |
 | `rows`     | 1 to 10  | `/?rows=10`     |
+| `header`   | 0 or 1   | `/?header=1`    |
 
 ## Realtime
 

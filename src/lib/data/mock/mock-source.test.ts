@@ -106,12 +106,11 @@ describe('mockSource on the seed', () => {
     expect(tetris?.runner_up?.player_name).toBe('Marc')
   })
 
-  it('exposes a cover image or leaves null for the trigramme fallback', async () => {
+  it('ships no fake cover: games show their trigramme', async () => {
     const games = await mockSource.listVisibleGames()
-    const tetris = games.find(({ slug }) => slug === 'tetris')
-    const pacMan = games.find(({ slug }) => slug === 'pac-man')
-    expect(tetris?.cover_path).toMatch(/^data:image\/svg\+xml/)
-    expect(pacMan?.cover_path).toBeNull()
-    expect(pacMan?.short_label).toBe('PAC')
+    expect(games.every(({ cover_path }) => cover_path === null)).toBe(true)
+    expect(games.find(({ slug }) => slug === 'pac-man')?.short_label).toBe(
+      'PAC',
+    )
   })
 })

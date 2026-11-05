@@ -30,22 +30,6 @@ export const seedEvents: Array<EventEdition> = [
   { id: CURRENT_EVENT, name: 'Novembre 2026', archived_at: null },
 ]
 
-/** Placeholder cover so the mock can exercise the image path before real art. */
-const placeholderCover = (label: string, fill: string) =>
-  `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320"><rect width="320" height="320" fill="${fill}"/><text x="160" y="175" text-anchor="middle" font-family="monospace" font-size="64" fill="#fff">${label}</text></svg>`,
-  )}`
-
-const COVER = {
-  tetris: '#2a9d8f',
-  duckHunt: '#e76f51',
-  smb: '#e9c46a',
-  guitarHero: '#f4a261',
-  marioKart: '#264653',
-  spaceInvaders: '#6a4c93',
-  streetFighter: '#bc4749',
-} as const
-
 function game(
   slug: string,
   name: string,
@@ -65,45 +49,32 @@ function game(
     score_unit: 'pts',
     visible: true,
     position,
-    // Most seeded games ship a placeholder cover; leave null to demo the trigramme fallback.
-    cover_path: placeholderCover(short_label, '#5a3a8a'),
+    // No fake art: games show their trigramme until a real image is set.
+    cover_path: null,
     ...overrides,
   }
 }
 
 export const seedGames: Array<Game> = [
   // Few current records (mockup names).
-  game('tetris', 'Tetris', 'TET', 'Game Boy', 1, {
-    cover_path: placeholderCover('TET', COVER.tetris),
-  }),
+  game('tetris', 'Tetris', 'TET', 'Game Boy', 1),
   // Past-event records only: nothing from the current edition.
-  game('duck-hunt', 'Duck Hunt', 'DH', 'NES', 2, {
-    cover_path: placeholderCover('DH', COVER.duckHunt),
-  }),
+  game('duck-hunt', 'Duck Hunt', 'DH', 'NES', 2),
   // A couple of current scores only.
-  game('super-mario-bros', 'Super Mario Bros.', 'SMB', 'NES', 3, {
-    cover_path: placeholderCover('SMB', COVER.smb),
-  }),
+  game('super-mario-bros', 'Super Mario Bros.', 'SMB', 'NES', 3),
   // Dense past top + current mid/bottom → exercises 9+1…5+5 shrink.
-  game('guitar-hero', 'Guitar Hero', 'GH', 'PS2', 4, {
-    cover_path: placeholderCover('GH', COVER.guitarHero),
-  }),
-  // No cover on purpose: the UI must fall back to short_label ("PAC").
-  game('pac-man', 'Pac-Man', 'PAC', 'Arcade', 5, { cover_path: null }),
+  game('guitar-hero', 'Guitar Hero', 'GH', 'PS2', 4),
+  game('pac-man', 'Pac-Man', 'PAC', 'Arcade', 5),
   // Time-based ranking (lowest wins).
   game('mario-kart', 'Mario Kart', 'MK', 'Super NES', 6, {
     score_type: 'time',
     score_order: 'asc',
     score_unit: null,
-    cover_path: placeholderCover('MK', COVER.marioKart),
   }),
   // Visible empty state: no approved score at all.
-  game('space-invaders', 'Space Invaders', 'SI', 'Arcade', 7, {
-    cover_path: placeholderCover('SI', COVER.spaceInvaders),
-  }),
+  game('space-invaders', 'Space Invaders', 'SI', 'Arcade', 7),
   game('street-fighter-2', 'Street Fighter II', 'SF2', 'Super NES', 8, {
     visible: false,
-    cover_path: placeholderCover('SF2', COVER.streetFighter),
   }),
 ]
 

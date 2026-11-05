@@ -28,8 +28,8 @@ import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { cn } from '#/lib/utils'
 
-/** Last stretch of the rotation: fade the screen toward black. */
-const FADE_MS = 2_500
+/** Brief dip to black when the screen changes: out, then back in on the new one. */
+const FADE_MS = 300
 /** How long the "Nouveau record" takeover stays on screen. */
 const NEW_RECORD_MS = 12_000
 /** The records wall shows 3×2 cards (mockup p.2); more games add a page. */
@@ -49,8 +49,14 @@ function PublicScreen() {
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)
   const records = useQuery(recordsQuery)
-  const { gameDurationMs, wallDurationMs, screenMode, rows, minAllTimeRows } =
-    screenOptions(settings.data ?? DEFAULT_SETTINGS, Route.useSearch())
+  const {
+    gameDurationMs,
+    wallDurationMs,
+    screenMode,
+    rows,
+    minAllTimeRows,
+    showHeader,
+  } = screenOptions(settings.data ?? DEFAULT_SETTINGS, Route.useSearch())
 
   const slides = useMemo<Array<Slide>>(() => {
     const list = games.data ?? []
@@ -140,13 +146,8 @@ function PublicScreen() {
 
   const progress =
     count === 0 ? 0 : Math.min(1, Math.max(0, (now - startedAt) / durationMs))
-  const fade =
-    count < 2
-      ? 0
-      : Math.min(
-          1,
-          Math.max(0, (now - startedAt - (durationMs - FADE_MS)) / FADE_MS),
-        )
+  const fadedOut =
+    count > 1 && !paused && now - startedAt >= durationMs - FADE_MS
 
   const game = slide && slide.kind === 'game' ? slide.game : undefined
   const record = game
@@ -175,26 +176,35 @@ function PublicScreen() {
 
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-75"
-          style={{ opacity: fade * 0.92 }}
+          className={cn(
+            'pointer-events-none absolute inset-0 z-30 bg-black transition-opacity duration-300 ease-linear',
+            fadedOut ? 'opacity-100' : 'opacity-0',
+          )}
         />
 
-        <header className="flex h-44 shrink-0 items-center justify-between gap-8 border-b-4 border-line-subtle bg-surface-sunken px-24">
-          {showWall ? (
-            <div className="flex flex-col gap-2">
-              <p className="font-display text-arcade-label uppercase text-ink-accent">
-                Highscores
-              </p>
-              <h1 className="text-scene-hero uppercase">Les records</h1>
-            </div>
-          ) : (
-            <h1 className="text-scene-hero uppercase">Highscores</h1>
-          )}
-          <Logo alt="" className="m-0 w-60 shrink-0" />
-        </header>
+        {showHeader ? (
+          <header className="flex h-44 shrink-0 items-center justify-between gap-8 border-b-4 border-line-subtle bg-surface-sunken px-24">
+            {showWall ? (
+              <div className="flex flex-col gap-2">
+                <p className="font-display text-arcade-label uppercase text-ink-accent">
+                  Highscores
+                </p>
+                <h1 className="text-scene-hero uppercase">Les records</h1>
+              </div>
+            ) : (
+              <h1 className="text-scene-hero uppercase">Highscores</h1>
+            )}
+            <Logo alt="" className="m-0 w-60 shrink-0" />
+          </header>
+        ) : null}
 
         {showWall ? (
-          <div className="flex min-h-0 flex-1 flex-col px-24 pt-10">
+          <div
+            className={cn(
+              'flex min-h-0 flex-1 flex-col px-24',
+              showHeader ? 'pt-10' : 'pt-24',
+            )}
+          >
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
             {records.isError && (
               <p className="text-scene-row">
@@ -211,7 +221,12 @@ function PublicScreen() {
             )}
           </div>
         ) : (
-          <div className="flex min-h-0 flex-1 gap-12 px-24 pt-10">
+          <div
+            className={cn(
+              'flex min-h-0 flex-1 gap-12 px-24',
+              showHeader ? 'pt-10' : 'pt-24',
+            )}
+          >
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
               {games.isPending && <p className="text-scene-row">Chargement…</p>}
               {games.isError && (
@@ -405,9 +420,9 @@ function GameLeaderboard({
       player: row.player_name,
       score: formatScore(row.score, game.score_type),
       dimmed: row.dimmed,
-      // The mockup rows carry no date: only a past event's name, so that an
-      // all-time score below the line reads as such.
-      meta: row.dimmed && row.event_name ? row.event_name : undefined,
+      meta: [formatScoreWhen(row.created_at), row.dimmed && row.event_name]
+        .filter(Boolean)
+        .join(' · '),
     })) ?? []
 
   return (

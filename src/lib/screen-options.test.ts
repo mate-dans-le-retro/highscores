@@ -28,6 +28,18 @@ describe('screenSearchSchema', () => {
     })
   })
 
+  it('reads the header override', () => {
+    expect(parse({ header: 1 }).header).toBe(1)
+    expect(parse({ header: '0' }).header).toBe(0)
+    expect(parse({ header: 'oui' }).header).toBeUndefined()
+    expect(screenOptions(DEFAULT_SETTINGS, {}).showHeader).toBe(false)
+    expect(screenOptions(DEFAULT_SETTINGS, { header: 1 }).showHeader).toBe(true)
+    expect(
+      screenOptions({ ...DEFAULT_SETTINGS, show_header: true }, { header: 0 })
+        .showHeader,
+    ).toBe(false)
+  })
+
   it('ignores missing or invalid values', () => {
     expect(parse({})).toEqual({})
     expect(parse({ rotation: 'vite', rows: 2.5, minAllTime: 'nope' })).toEqual({
@@ -47,6 +59,7 @@ describe('screenOptions', () => {
       screenMode: 'game',
       rows: 10,
       minAllTimeRows: 5,
+      showHeader: false,
     })
   })
 
@@ -64,6 +77,7 @@ describe('screenOptions', () => {
       screenMode: 'game',
       rows: 8,
       minAllTimeRows: 3,
+      showHeader: false,
     })
   })
 
@@ -77,6 +91,7 @@ describe('screenOptions', () => {
       screenMode: 'game',
       rows: 3,
       minAllTimeRows: 3,
+      showHeader: false,
     })
   })
 
@@ -96,6 +111,7 @@ describe('screenOptions', () => {
       screenMode: 'both',
       rows: 3,
       minAllTimeRows: 3,
+      showHeader: false,
     })
   })
 })
