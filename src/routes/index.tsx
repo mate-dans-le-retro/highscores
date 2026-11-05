@@ -78,8 +78,9 @@ function PublicScreen() {
   }, [games.data, screenMode])
 
   const [index, setIndex] = useState(0)
-  const [startedAt, setStartedAt] = useState(() => Date.now())
-  const [now, setNow] = useState(() => Date.now())
+  /** Bumped when a lone slide starts over, to restart its timers and bar. */
+  const [lap, setLap] = useState(0)
+  const [fadedOut, setFadedOut] = useState(false)
   const [celebration, setCelebration] = useState<NewRecord | null>(null)
   const [celebrationQueue, setCelebrationQueue] = useState<Array<NewRecord>>([])
   const previousRecords = useRef<Array<GameRecord> | null>(null)
@@ -119,39 +120,24 @@ function PublicScreen() {
     setIndex(0)
   }, [screenMode, games.data?.length])
 
+  // Two timers per slide, so the screen only renders when something changes:
+  // the progress bar animates on its own (see RotationProgress).
   useEffect(() => {
-    setStartedAt(Date.now())
-  }, [safeIndex, durationMs, count])
-
-  useEffect(() => {
-    if (paused || count < 2) return
-    const tick = window.setInterval(() => {
-      const t = Date.now()
-      setNow(t)
-      if (t - startedAt >= durationMs) {
-        setIndex((i) => (i + 1) % count)
-      }
-    }, 50)
-    return () => window.clearInterval(tick)
-  }, [count, durationMs, startedAt, paused])
-
-  // Keep the progress bar alive when there is a single slide (wall-only).
-  useEffect(() => {
-    if (paused || count !== 1) return
-    const tick = window.setInterval(() => setNow(Date.now()), 50)
-    return () => window.clearInterval(tick)
-  }, [count, paused])
-
-  useEffect(() => {
-    if (paused || count !== 1) return
-    if (now - startedAt < durationMs) return
-    setStartedAt(Date.now())
-  }, [count, durationMs, now, startedAt, paused])
-
-  const progress =
-    count === 0 ? 0 : Math.min(1, Math.max(0, (now - startedAt) / durationMs))
-  const fadedOut =
-    count > 1 && !paused && now - startedAt >= durationMs - FADE_MS
+    setFadedOut(false)
+    if (paused || count === 0) return
+    const fade =
+      count > 1
+        ? window.setTimeout(() => setFadedOut(true), durationMs - FADE_MS)
+        : undefined
+    const next = window.setTimeout(() => {
+      if (count > 1) setIndex((i) => (i + 1) % count)
+      else setLap((n) => n + 1)
+    }, durationMs)
+    return () => {
+      window.clearTimeout(fade)
+      window.clearTimeout(next)
+    }
+  }, [safeIndex, lap, count, durationMs, paused])
 
   const game = slide && slide.kind === 'game' ? slide.game : undefined
   const record = game
@@ -168,15 +154,11 @@ function PublicScreen() {
           className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
         />
 
-        <div
-          aria-hidden="true"
-          className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
-        >
-          <div
-            className="h-full bg-surface-accent transition-[width] duration-75 ease-linear"
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
+        <RotationProgress
+          key={`${safeIndex}-${lap}-${count}-${durationMs}-${paused}`}
+          durationMs={durationMs}
+          running={count > 0 && !paused}
+        />
 
         <div
           aria-hidden="true"
@@ -303,6 +285,41 @@ function PublicScreen() {
         {celebration ? <NewRecordScreen entry={celebration} /> : null}
       </main>
     </ScreenStage>
+  )
+}
+
+/**
+ * Rotation progress at the top of the stage. A CSS animation fills it over
+ * `durationMs`, without re-rendering anything; remount it (new `key`) to
+ * start over.
+ */
+function RotationProgress({
+  durationMs,
+  running,
+}: {
+  durationMs: number
+  running: boolean
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute inset-x-0 top-0 z-20 h-2 bg-surface-sunken"
+    >
+      {running ? (
+        <div
+          className="h-full origin-left bg-surface-accent"
+          style={{
+            animation: `mdlr-rotation-progress ${durationMs}ms linear forwards`,
+          }}
+        />
+      ) : null}
+      <style>{`
+        @keyframes mdlr-rotation-progress {
+          from { transform: scaleX(0); }
+          to { transform: scaleX(1); }
+        }
+      `}</style>
+    </div>
   )
 }
 
