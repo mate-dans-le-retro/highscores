@@ -8,6 +8,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
+import { DemoWatermark } from '#/components/demo-watermark'
 
 import appCss from '../styles.css?url'
 
@@ -69,6 +70,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="min-h-screen antialiased">
         {children}
+        <DemoWatermark />
         {theme !== 'scene' && (
           <TanStackDevtools
             config={{ position: 'bottom-right' }}

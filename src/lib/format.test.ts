@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { formatScore, formatStation } from './format'
+import { formatScore, formatScoreWhen, formatStation } from './format'
 
 // Intl uses a narrow no-break space as the French thousands separator.
 const nbsp = '\u202f'
@@ -32,5 +32,33 @@ describe('formatStation', () => {
     expect(formatStation('Super NES', null)).toBe('Super NES')
     expect(formatStation(null, 'Étage')).toBe('Étage')
     expect(formatStation(null, null)).toBe('')
+  })
+})
+
+describe('formatScoreWhen', () => {
+  const now = new Date('2026-11-07T15:00:00+01:00')
+
+  it('says "à l\'instant" under one minute', () => {
+    expect(formatScoreWhen('2026-11-07T14:59:30+01:00', now)).toBe(
+      "à l'instant",
+    )
+  })
+
+  it('uses a relative form under one hour', () => {
+    expect(formatScoreWhen('2026-11-07T14:48:00+01:00', now)).toBe(
+      'il y a 12 min',
+    )
+  })
+
+  it('shows only the time on the same day', () => {
+    const label = formatScoreWhen('2026-11-07T10:32:00+01:00', now)
+    expect(label).toMatch(/^\d{1,2}h\d{2}$/)
+  })
+
+  it('shows the date and the time otherwise', () => {
+    const label = formatScoreWhen('2026-11-05T14:32:00+01:00', now)
+    expect(label).toMatch(/nov/i)
+    expect(label).toMatch(/\d{1,2}h\d{2}/)
+    expect(label).toContain('à')
   })
 })

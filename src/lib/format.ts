@@ -32,3 +32,55 @@ export function formatStation(
 export function formatScore(score: number, type: ScoreType = 'points') {
   return formatters[type](score)
 }
+
+const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
+function sameCalendarDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  )
+}
+
+/**
+ * Relative under 1 h ("il y a 12 min"), time alone the same day ("14h32"),
+ * date + time otherwise ("7 nov. à 14h32").
+ */
+export function formatScoreWhen(iso: string, now: Date = new Date()) {
+  const then = new Date(iso)
+  if (Number.isNaN(then.getTime())) return ''
+
+  const diffMs = now.getTime() - then.getTime()
+  if (diffMs >= 0 && diffMs < 60_000) return "à l'instant"
+  if (diffMs >= 0 && diffMs < 3_600_000) {
+    const minutes = Math.max(1, Math.floor(diffMs / 60_000))
+    return `il y a ${minutes} min`
+  }
+
+  const time = timeFormatter
+    .format(then)
+    .replace(':', 'h')
+    .replace(/\u202f/g, '')
+    .replace(/ /g, '')
+
+  if (sameCalendarDay(then, now)) return time
+
+  const date = dateTimeFormatter
+    .format(then)
+    .replace(',', '')
+    .replace(':', 'h')
+    .replace(/\u202f/g, ' ')
+    .replace(/ (\d{1,2})h/, ' à $1h')
+  return date
+}

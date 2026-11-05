@@ -53,8 +53,18 @@ The URL can also switch it: `?mock=1` turns the mock on and `?mock=0` turns it o
 
 ## 2026-11-05: screen rotation and rows are settings the URL can override
 
-Rotation (15 s by default) and the number of rows (5 by default) are settings, to be changed from the admin. The public screen accepts `?rotation=<seconds>` (5 to 300) and `?rows=<count>` (1 to 10, the design system's maximum) to override them on the fly, for example on a second screen. Values are validated and clamped with zod in the route's search params; invalid ones are ignored.
+Rotation (15 s by default) and the number of rows (10 by default) are settings, to be changed from the admin. The public screen accepts `?rotation=<seconds>` (5 to 300), `?rows=<count>` (1 to 10, the design system's maximum) and `?minAllTime=<count>` (floor for the all-time block, 5 by default) to override them on the fly, for example on a second screen. Values are validated and clamped with zod in the route's search params; invalid ones are ignored.
+
+Supersedes the earlier "5 rows by default" wording from the same day: Clément set the default to 10, with `min_all_time_rows` (default 5) so the all-time block can shrink for current-event extras but never below that floor.
 
 ## 2026-11-05: Vitest for the data layer
 
 `pnpm test` runs Vitest on plain TypeScript modules (ranking, score formatting, new record detection, anonymization, mock switch, screen options). It has its own `vitest.config.ts`, without the TanStack Start plugins.
+
+## 2026-11-05: anonymous nicknames, dual photos, screen leaderboard shape
+
+- Anonymous nicknames are generated (character + qualifier + optional flourish, French agreement), seeded by the normalized player name and the game id, so one nickname per player per game. Per-game character lists with a long pop-culture fallback live in `src/lib/data/anonymous-name.ts` for Claude to reuse on the server.
+- Each submission keeps a proof photo (~2000 px JPEG ~0.85) and a thumbnail (~800 px). The mock stores both in IndexedDB; HEIC that the browser cannot decode is kept as the original, never rejected.
+- The public leaderboard is a `ScreenLeaderboard`: all-time top N (past events dimmed with event name), current-event scores outside that top under a separator without duplicates, empty state flag. No `current_event_rows` / `?eventRows=`.
+- Mock mode shows a "Données de démo" watermark.
+- Game tiles use `cover_path` when set; otherwise the UI falls back to `short_label` (trigramme placeholder).

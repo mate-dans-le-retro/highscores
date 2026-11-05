@@ -59,7 +59,7 @@ curl -s "$A/rest/v1/scores?status=eq.pending" -H "apikey: $K"
 Pages only import `src/lib/highscores.ts` (TanStack Query options, `submitScore`, `useHighscoresRealtime`). Behind it, `src/lib/data/` holds the domain types and two implementations of `HighscoresSource`:
 
 - `supabase-source.ts` (default): the tables and views above, with defaults for the fields the schema does not have yet.
-- `mock/`: seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`).
+- `mock/`: seed data in `localStorage`, shared between the tabs of one browser, so a submission from the `/score` tab shows up on the `/` tab. Photos (proof ~2000 px + thumb ~800 px) live in IndexedDB under `mock-photo:{id}`. In mock mode, the browser console exposes `mdlrMock` (`pending()`, `approve(id)`, `reject(id)`, `setStationLabel(gameId, label)`, `setSettings({...})`, `reset()`), and the UI shows a "Données de démo" watermark.
 
 Which source runs (`src/lib/data/mode.ts`):
 
