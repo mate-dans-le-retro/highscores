@@ -1,5 +1,6 @@
 import { toPublicRow } from '../anonymize'
 import { preparePhoto } from '../photo'
+import { keepSubscribed } from '../realtime-connection'
 import { buildScreenLeaderboard } from '../screen-leaderboard'
 import type { HighscoresSource } from '../source'
 import type {
@@ -184,7 +185,20 @@ export const mockSource: HighscoresSource = {
 
   photoUrl: (path) => cachedMockPhotoUrl(path, 'thumb') ?? path,
 
-  subscribe: subscribeToStore,
+  // No socket to lose here: the attempt joins at once, and the browser's
+  // offline/online events drive the same reconnection path as Supabase.
+  subscribe: (onChange, onStatus) =>
+    keepSubscribed({
+      onStatus: (status) => onStatus?.(status),
+      open: (report) => {
+        const joined = setTimeout(() => report('joined'), 0)
+        const unsubscribe = subscribeToStore(onChange)
+        return () => {
+          clearTimeout(joined)
+          unsubscribe()
+        }
+      },
+    }),
 }
 
 function review(id: string, status: ScoreStatus) {

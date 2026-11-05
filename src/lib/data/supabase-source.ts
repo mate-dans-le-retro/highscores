@@ -2,6 +2,7 @@ import { getSupabase, photoUrl } from '../supabase'
 import { CHARACTERS_BY_GAME_ID, anonymousName } from './anonymous-name'
 import { preparePhoto } from './photo'
 import { rankScores } from './ranking'
+import { keepSubscribed } from './realtime-connection'
 import { buildScreenLeaderboard } from './screen-leaderboard'
 import type { ScoreForScreen } from './screen-leaderboard'
 import type { HighscoresSource, LeaderboardQueryOptions } from './source'
@@ -162,6 +163,8 @@ function instagramHandle(handle: string | null) {
   return /^[A-Za-z0-9._]{1,30}$/.test(clean) ? clean : null
 }
 
+let channelCount = 0
+
 export const supabaseSource: HighscoresSource = {
   listVisibleGames,
 
@@ -244,21 +247,32 @@ export const supabaseSource: HighscoresSource = {
 
   photoUrl,
 
-  subscribe: (onChange) => {
+  subscribe: (onChange, onStatus) => {
     const supabase = getSupabase()
-    const channel = supabase
-      .channel('highscores')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'change_signals' },
-        (payload) => {
-          const topic = (payload.new as { topic?: ChangedTable }).topic
-          if (topic) onChange(topic)
-        },
-      )
-      .subscribe()
-    return () => {
-      void supabase.removeChannel(channel)
-    }
+    return keepSubscribed({
+      onStatus: (status) => onStatus?.(status),
+      open: (report) => {
+        // supabase.channel() hands back an existing channel of the same name,
+        // and a removed one may not be gone yet: every attempt gets its own.
+        channelCount += 1
+        const channel = supabase
+          .channel(`highscores-${channelCount}`)
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'change_signals' },
+            (payload) => {
+              const topic = (payload.new as { topic?: ChangedTable }).topic
+              if (topic) onChange(topic)
+            },
+          )
+          .subscribe((status) => {
+            // CHANNEL_ERROR, TIMED_OUT and CLOSED all mean the signals stopped.
+            report(status === 'SUBSCRIBED' ? 'joined' : 'lost')
+          })
+        return () => {
+          void supabase.removeChannel(channel)
+        }
+      },
+    })
   },
 }

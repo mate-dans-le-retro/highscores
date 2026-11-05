@@ -79,6 +79,10 @@ A function rather than a view with the owner's rights: same filtering through Po
 
 Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Pending submissions send no signal, so the public cannot even tell that someone submitted.
 
+## 2026-11-05: the public screen reconnects, then reloads
+
+A projected tab never gets a focus event, so TanStack Query never refetches on its own: if realtime drops, the screen freezes without telling anyone. The screen detects the drop from the channel status and the browser's network events, resubscribes with a backoff, and refetches everything once it is back. After 60 seconds without a connection, it reloads the page, as long as the site answers. We chose detection over a blind reload every few rotations because Supabase reports every way a channel can fail (error, timeout, close) and its heartbeat catches a socket that dies silently.
+
 ## 2026-11-05: a global flood guard, not a per-device limit
 
 Everyone at the venue shares one wifi, so a limit per IP would block the room. A trigger refuses player submissions beyond 30 per minute in total, and volunteers can close submissions from the settings (which also blocks photo uploads). To revisit if someone actually abuses it.

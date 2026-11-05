@@ -1,3 +1,4 @@
+import type { ConnectionStatus } from './realtime-connection'
 import type { ScreenLeaderboard } from './screen-leaderboard'
 import type {
   ChangedTable,
@@ -36,6 +37,12 @@ export interface HighscoresSource {
   getSettings: () => Promise<Settings>
   submitScore: (input: SubmissionInput) => Promise<void>
   photoUrl: (path: string | null) => string | null
-  /** Calls onChange whenever a table changes; returns the unsubscribe function. */
-  subscribe: (onChange: (table: ChangedTable) => void) => () => void
+  /**
+   * Calls onChange whenever a table changes, and onStatus when the live
+   * connection drops or comes back. Returns the unsubscribe function.
+   */
+  subscribe: (
+    onChange: (table: ChangedTable) => void,
+    onStatus?: (status: ConnectionStatus) => void,
+  ) => () => void
 }
