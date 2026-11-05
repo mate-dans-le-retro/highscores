@@ -21,7 +21,7 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
       role="status"
       aria-live="polite"
       className={cn(
-        'absolute inset-0 z-40 flex flex-col overflow-hidden bg-surface-base p-24',
+        'absolute inset-0 z-40 flex flex-col overflow-hidden bg-surface-base px-24 pt-16 pb-24',
         className,
       )}
     >
@@ -31,16 +31,12 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
       />
       <Confetti />
 
-      <h1 className="relative z-10 text-center font-display text-scene-hero uppercase text-ink-accent">
+      <h1 className="relative z-10 font-display text-scene-hero text-ink-accent uppercase">
         Nouveau record !
       </h1>
 
-      <div className="relative z-10 mt-16 flex flex-1 items-center justify-center gap-16">
-        <div
-          className={cn(
-            'flex size-[min(40vw,520px)] shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-strong bg-surface-sunken',
-          )}
-        >
+      <div className="relative z-10 mt-14 flex min-h-0 flex-1 items-start gap-16">
+        <div className="flex aspect-square h-full shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-strong bg-surface-sunken shadow-pixel">
           {image ? (
             <img
               src={image}
@@ -55,7 +51,7 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
           )}
         </div>
 
-        <div className="flex min-w-0 max-w-xl flex-col gap-8 rounded-none border-4 border-line-subtle bg-surface-raised p-12 shadow-pixel">
+        <div className="mt-16 flex min-w-0 flex-1 flex-col gap-8 rounded-none border-4 border-line-subtle bg-surface-sunken p-12 shadow-pixel">
           <div className="flex flex-wrap items-center gap-4">
             <p className="font-display text-arcade-title uppercase text-ink-accent">
               {game.name}
@@ -74,7 +70,7 @@ export function NewRecordScreen({ entry, className }: NewRecordScreenProps) {
             </p>
           </div>
 
-          <p className="font-mono text-scene-hero text-ink-primary">
+          <p className="font-display text-scene-hero text-ink-primary">
             {formatScore(record.score, game.score_type)}
           </p>
 
@@ -117,7 +113,7 @@ function Confetti() {
       <style>{`
         @keyframes mdlr-confetti {
           0% { transform: translate3d(0,-10%,0) rotate(0deg); opacity: 1; }
-          100% { transform: translate3d(0,110vh,0) rotate(360deg); opacity: 0.85; }
+          100% { transform: translate3d(0,1200px,0) rotate(360deg); opacity: 0.85; }
         }
       `}</style>
     </div>
