@@ -22,7 +22,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 ### 2. Score submission (`/score`, `arcade` theme)
 
 - Opened from the QR code on the public screen, on the player's phone.
-- The player picks the game, enters their nickname and score, takes a photo of themselves in front of the game's screen (proof), and ticks whether they accept an Instagram post.
+- The player takes a photo of themselves in front of the game's screen (proof), picks the game, enters their score, chooses whether to show up on the screen (with an optional nickname, a generated one otherwise), and ticks whether they accept an Instagram post.
 - The submission is sent with the **pending** status; it only shows on the public screen once a volunteer approves it.
 - Planned next step: the player takes the photo first, we **detect the game and the score** automatically (vision model, called from a server function), then they fix it if needed.
 
