@@ -61,16 +61,18 @@ describe('mockSource on the seed', () => {
     expect(board.rows).toHaveLength(10)
     const allTime = board.rows.slice(0, 5)
     const extras = board.rows.slice(5)
-    expect(allTime.map(({ player_name, dimmed }) => [player_name, dimmed])).toEqual([
+    expect(
+      allTime.map(({ player_name, dimmed }) => [player_name, dimmed]),
+    ).toEqual([
       ['Alex', true],
       ['Béa', true],
       ['Chris', true],
       ['Hugo', false],
       ['Iris', false],
     ])
-    expect(extras.every((row) => row.section === 'current' && !row.dimmed)).toBe(
-      true,
-    )
+    expect(
+      extras.every((row) => row.section === 'current' && !row.dimmed),
+    ).toBe(true)
     expect(extras.map(({ player_name }) => player_name)).toEqual([
       'Lou',
       'Max',

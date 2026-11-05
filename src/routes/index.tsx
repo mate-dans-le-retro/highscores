@@ -2,7 +2,11 @@ import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 
+import { Logo } from '#/components/logo'
+import { PixelPanel } from '#/components/pixel-panel'
 import { QrCode } from '#/components/qr-code'
+import { ScoreTable } from '#/components/score-table'
+import type { ScoreTableRow } from '#/components/score-table'
 import {
   DEFAULT_SETTINGS,
   formatScore,
@@ -44,14 +48,15 @@ function PublicScreen() {
   const game = games.data?.[index % Math.max(count, 1)]
 
   return (
-    <main className="flex min-h-screen flex-col gap-12 p-24">
-      <header className="flex items-baseline justify-between gap-8">
-        <h1 className="text-scene-hero">Highscores</h1>
-        {game && (
-          <p className="text-scene-meta text-ink-secondary">
-            {index + 1} / {count}
-          </p>
-        )}
+    <main className="relative flex min-h-screen flex-col gap-12 overflow-hidden p-24">
+      {/* Irregular brand pattern on the edges only — never under the text. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
+      />
+      <header className="flex items-start justify-between gap-8">
+        <h1 className="text-scene-hero uppercase">Highscores</h1>
+        <Logo alt="" className="m-0 w-72 shrink-0" />
       </header>
       <div className="flex flex-1 items-start gap-12">
         <div className="min-w-0 flex-1">
@@ -67,6 +72,7 @@ function PublicScreen() {
               game={game}
               rows={rows}
               minAllTimeRows={minAllTimeRows}
+              positionLabel={`${index + 1} / ${count}`}
             />
           )}
         </div>
@@ -85,24 +91,25 @@ function SubmitScorePanel() {
   }, [])
 
   return (
-    <aside className="flex w-144 shrink-0 flex-col items-center gap-6 border-4 border-line-accent bg-surface-raised p-8 text-center shadow-pixel">
-      <h2 className="font-display text-scene-pixel text-ink-accent">
-        À TOI DE JOUER
-      </h2>
-      {submitUrl ? (
-        <QrCode
-          value={submitUrl}
-          label="QR code pour envoyer ton score"
-          className="size-80"
-        />
-      ) : (
-        <div className="size-80 bg-surface-inverse" />
-      )}
-      <p className="text-scene-row">Un record à afficher ?</p>
-      <p className="text-scene-row text-ink-secondary">
-        Scanne, prends ta photo, c'est parti !
-      </p>
-    </aside>
+    <PixelPanel label="À TOI DE JOUER" className="w-144 shrink-0">
+      <div className="flex flex-col items-center gap-6 text-center">
+        {submitUrl ? (
+          <QrCode
+            value={submitUrl}
+            label="QR code pour envoyer ton score"
+            className="size-80 bg-surface-inverse"
+          />
+        ) : (
+          <div className="size-80 bg-surface-base" />
+        )}
+        <p className="text-scene-row text-ink-inverse">
+          Un record à afficher ?
+        </p>
+        <p className="text-scene-row text-ink-secondary">
+          Scanne, prends ta photo, c'est parti !
+        </p>
+      </div>
+    </PixelPanel>
   )
 }
 
@@ -110,58 +117,38 @@ function GameLeaderboard({
   game,
   rows: rowsShown,
   minAllTimeRows,
+  positionLabel,
 }: {
   game: DisplayedGame
   rows: number
   minAllTimeRows: number
+  positionLabel: string
 }) {
   const board = useQuery(
     leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
   )
 
+  const tableRows: Array<ScoreTableRow> =
+    board.data?.rows.map((row) => ({
+      id: row.id,
+      rank: row.rank,
+      player: row.player_name,
+      score: formatScore(row.score, game.score_type),
+      dimmed: row.dimmed,
+      meta: row.dimmed && row.event_name ? row.event_name : undefined,
+    })) ?? []
+
   return (
-    <section className="flex flex-col gap-8">
-      <div>
-        <h2 className="font-display text-scene-pixel text-ink-accent">
-          {game.name}
-        </h2>
-        {(game.console || game.station_label) && (
-          <p className="text-scene-meta text-ink-secondary">
-            {formatStation(game.console, game.station_label)}
-          </p>
-        )}
-      </div>
-      {board.isSuccess && board.data.empty && (
-        <p className="text-scene-row">
-          Aucun score pour l'instant. À toi de jouer !
-        </p>
-      )}
-      <ol className="flex flex-col">
-        {board.data?.rows.map((row, index) => (
-          <li key={row.id}>
-            {board.data.separator_at === index && (
-              <div
-                role="separator"
-                className="my-4 border-t-4 border-line-subtle"
-              />
-            )}
-            <div
-              className={`grid grid-cols-[4ch_1fr_auto] items-center gap-8 text-scene-row ${
-                row.dimmed ? 'opacity-60' : ''
-              }`}
-            >
-              <span className="font-display text-scene-pixel">{row.rank}</span>
-              <span className="truncate">
-                {row.player_name}
-                {row.dimmed && row.event_name ? ` · ${row.event_name}` : ''}
-              </span>
-              <span className="font-display text-scene-pixel">
-                {formatScore(row.score, game.score_type)}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </section>
+    <div className="flex flex-col gap-4">
+      <p className="self-end text-scene-meta text-ink-secondary">
+        {positionLabel}
+      </p>
+      <ScoreTable
+        game={game.name}
+        machine={formatStation(game.console, game.station_label) || null}
+        rows={tableRows}
+        separatorAt={board.data?.separator_at ?? null}
+      />
+    </div>
   )
 }
