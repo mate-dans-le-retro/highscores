@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildInstagramPost,
+  formatPostDate,
   gameHashtag,
   instagramCaption,
   instagramFileName,
@@ -147,6 +148,20 @@ describe('buildInstagramPost', () => {
     expect(
       build({ score: score({ instagram_handle: null }) }).handle,
     ).toBeNull()
+  })
+})
+
+describe('formatPostDate', () => {
+  it('writes the date and time in Paris time', () => {
+    expect(formatPostDate('2026-11-07T13:32:00Z')).toBe('7 nov. 2026 à 14h32')
+    expect(formatPostDate('2026-11-08T08:05:00Z')).toBe('8 nov. 2026 à 9h05')
+    // Summer time: UTC+2.
+    expect(formatPostDate('2026-04-11T22:30:00Z')).toBe('12 avr. 2026 à 0h30')
+    expect(formatPostDate('pas une date')).toBe('')
+  })
+
+  it('takes the date of the score', () => {
+    expect(build().scoredAt).toBe('2026-11-07T14:00:00Z')
   })
 })
 

@@ -17,6 +17,7 @@ import { copyText } from '#/lib/copy-text'
 import { formatScoreWhen } from '#/lib/format'
 import {
   MDLR_INSTAGRAM,
+  formatPostDate,
   instagramCaption,
   instagramFileName,
 } from '#/lib/instagram-post'
@@ -160,7 +161,7 @@ export function InstagramPanel({
               width={VISUAL_WIDTH}
               height={VISUAL_HEIGHT}
               role="img"
-              aria-label={`Visuel Instagram : ${post.playerName}, ${post.gameName}, ${post.scoreText}`}
+              aria-label={`Visuel Instagram : ${post.playerName}, ${post.gameName}, ${post.scoreText}, le ${formatPostDate(post.scoredAt)}`}
               className="block aspect-[4/5] h-auto w-full"
             />
             {!drawn && (

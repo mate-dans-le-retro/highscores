@@ -67,6 +67,8 @@ export interface InstagramPost {
   /** Beats every score of the other events ("RECORD ABSOLU"). */
   allTime: boolean
   eventName: string | null
+  /** When the score was sent (scores.created_at). */
+  scoredAt: string
   /** Player's account, without the @; null when they gave none. */
   handle: string | null
 }
@@ -114,8 +116,32 @@ export function buildInstagramPost({
     rank,
     allTime,
     eventName,
+    scoredAt: score.created_at,
     handle: score.instagram_handle?.trim().replace(/^@+/, '') || null,
   }
+}
+
+const postDateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hourCycle: 'h23',
+  timeZone: 'Europe/Paris',
+})
+
+/**
+ * "7 nov. 2026 à 14h32", like the dates of the admin, in the event's time
+ * zone whatever the volunteer's device says. Empty for an unreadable date.
+ */
+export function formatPostDate(iso: string) {
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return ''
+  const parts = postDateFormatter.formatToParts(date)
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((entry) => entry.type === type)?.value ?? ''
+  return `${part('day')} ${part('month')} ${part('year')} à ${part('hour')}h${part('minute')}`
 }
 
 const ordinal = (rank: number) => (rank === 1 ? '1re' : `${rank}e`)
