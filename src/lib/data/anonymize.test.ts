@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { ANONYMOUS_NAMES, anonymousName, toPublicRow } from './anonymize'
+import { anonymousName } from './anonymous-name'
+import { toPublicRow } from './anonymize'
 
 const row = {
   id: 's-42',
@@ -22,7 +23,9 @@ describe('toPublicRow', () => {
     const publicRow = toPublicRow(row, false)
     expect(publicRow.anonymous).toBe(true)
     expect(publicRow.photo_path).toBeNull()
-    expect(ANONYMOUS_NAMES).toContain(publicRow.player_name)
+    expect(publicRow.player_name).toBe(
+      anonymousName({ playerName: 'Zoé', gameId: 'g-tetris' }),
+    )
     expect(JSON.stringify(publicRow)).not.toContain('Zoé')
     expect(JSON.stringify(publicRow)).not.toContain('zoe.jpg')
   })
@@ -32,17 +35,10 @@ describe('toPublicRow', () => {
     expect(publicRow.score).toBe(41_000)
     expect(publicRow.rank).toBe(6)
   })
-})
 
-describe('anonymousName', () => {
-  it('always gives the same nickname to the same score', () => {
-    expect(anonymousName('s-42')).toBe(anonymousName('s-42'))
-  })
-
-  it('spreads scores over several nicknames', () => {
-    const names = new Set(
-      Array.from({ length: 50 }, (_, i) => anonymousName(`s-${i}`)),
-    )
-    expect(names.size).toBeGreaterThan(1)
+  it('keeps the same nickname for the same player on the same game', () => {
+    const first = toPublicRow(row, false)
+    const second = toPublicRow({ ...row, id: 's-99', score: 12_000 }, false)
+    expect(first.player_name).toBe(second.player_name)
   })
 })
