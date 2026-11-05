@@ -28,6 +28,8 @@ export interface AdminGame extends Game {
 export interface AdminScore extends Score {
   thumb_path: string | null
   rejection_reason: string | null
+  /** Set once posted on Instagram; see manualPostId() for a post made by hand. */
+  instagram_post_id: string | null
   reviewed_by: string | null
 }
 
@@ -38,6 +40,9 @@ export type AdminSettings = Settings & {
 }
 
 export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
+
+/** Approved submissions whose player agreed to a post, not posted yet. */
+export type SubmissionFilter = SubmissionStatus | 'to_post'
 
 /** The queue refreshes on its own: the public cannot listen to scores. */
 const QUEUE_REFRESH_MS = 10_000
@@ -129,6 +134,18 @@ export const currentEventQuery = queryOptions({
   },
 })
 
+/** Every event, archived ones included. */
+export const eventsQuery = queryOptions({
+  queryKey: ['admin', 'events'],
+  queryFn: async (): Promise<Array<EventEdition>> => {
+    const { data, error } = await getSupabase()
+      .from('events')
+      .select('id, name, archived_at')
+    if (error) throw error
+    return data
+  },
+})
+
 export const archivedEventsQuery = queryOptions({
   queryKey: ['admin', 'archived-events'],
   queryFn: async (): Promise<Array<EventEdition>> => {
@@ -168,16 +185,24 @@ export const adminGamesQuery = queryOptions({
   },
 })
 
-export const submissionsQuery = (status: SubmissionStatus) =>
+/** Player submissions of one filter, newest first (posts to make: oldest first). */
+export const submissionsQuery = (filter: SubmissionFilter) =>
   queryOptions({
-    queryKey: ['admin', 'submissions', status],
+    queryKey: ['admin', 'submissions', filter],
     queryFn: async (): Promise<Array<AdminScore>> => {
-      const { data, error } = await getSupabase()
+      const base = getSupabase()
         .from('scores')
         .select('*')
-        .eq('status', status)
         .eq('source', 'player')
-        .order('created_at', { ascending: false })
+      const query =
+        filter === 'to_post'
+          ? base
+              .eq('status', 'approved')
+              .eq('instagram_consent', true)
+              .is('instagram_post_id', null)
+          : base.eq('status', filter)
+      const { data, error } = await query
+        .order('created_at', { ascending: filter === 'to_post' })
         .limit(200)
       if (error) throw error
       return data as Array<AdminScore>
@@ -187,23 +212,52 @@ export const submissionsQuery = (status: SubmissionStatus) =>
 
 export const submissionCountsQuery = queryOptions({
   queryKey: ['admin', 'submissions', 'counts'],
-  queryFn: async (): Promise<Record<SubmissionStatus, number>> => {
+  queryFn: async (): Promise<Record<SubmissionFilter, number>> => {
     const supabase = getSupabase()
-    const count = async (status: SubmissionStatus) => {
-      const { count: total, error } = await supabase
+    const count = async (filter: SubmissionFilter) => {
+      const base = supabase
         .from('scores')
         .select('id', { count: 'exact', head: true })
-        .eq('status', status)
         .eq('source', 'player')
+      const { count: total, error } =
+        filter === 'to_post'
+          ? await base
+              .eq('status', 'approved')
+              .eq('instagram_consent', true)
+              .is('instagram_post_id', null)
+          : await base.eq('status', filter)
       if (error) throw error
       return total ?? 0
     }
-    const [pending, approved, rejected] = await Promise.all([
+    const [pending, approved, rejected, to_post] = await Promise.all([
       count('pending'),
       count('approved'),
       count('rejected'),
+      count('to_post'),
     ])
-    return { pending, approved, rejected }
+    return { pending, approved, rejected, to_post }
+  },
+  refetchInterval: QUEUE_REFRESH_MS,
+})
+
+/**
+ * Keyed hash public_scores() gives an anonymous score, by score id: the
+ * Instagram post shows the same nickname as the screen. Only visible games.
+ */
+export const anonymousSeedsQuery = queryOptions({
+  queryKey: ['admin', 'anonymous-seeds'],
+  queryFn: async (): Promise<Map<string, string>> => {
+    const { data, error } = await getSupabase()
+      .rpc('public_scores')
+      .select('id, anonymous_seed')
+      .eq('anonymous', true)
+    if (error) throw error
+    return new Map(
+      (data as Array<{ id: string; anonymous_seed: string | null }>).flatMap(
+        (row) =>
+          row.anonymous_seed ? [[row.id, row.anonymous_seed] as const] : [],
+      ),
+    )
   },
   refetchInterval: QUEUE_REFRESH_MS,
 })
@@ -334,6 +388,15 @@ export async function updateScore(
   const { error } = await getSupabase()
     .from('scores')
     .update(changes)
+    .eq('id', id)
+  if (error) throw error
+}
+
+/** Marks a score as posted by hand on Instagram, or back to post (null). */
+export async function setInstagramPostId(id: string, postId: string | null) {
+  const { error } = await getSupabase()
+    .from('scores')
+    .update({ instagram_post_id: postId })
     .eq('id', id)
   if (error) throw error
 }

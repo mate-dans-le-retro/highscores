@@ -12,6 +12,7 @@ import { useState } from 'react'
 
 import { GameDialog } from '#/components/admin/game-dialog'
 import { GameThumb } from '#/components/admin/game-thumb'
+import { ScoreInstagram } from '#/components/admin/score-instagram'
 import { Button } from '#/components/ui/button'
 import { Checkbox } from '#/components/ui/checkbox'
 import { Input } from '#/components/ui/input'
@@ -296,7 +297,7 @@ export function SubmissionDetail({
           <p className="text-caption text-ink-secondary">
             Instagram :{' '}
             {submission.instagram_consent
-              ? `d'accord pour une publication${submission.instagram_handle ? `, à taguer @${submission.instagram_handle}` : ''}.`
+              ? `d'accord pour une publication${submission.instagram_handle ? `, à taguer @${submission.instagram_handle}` : ', sans compte à taguer'}.${pending ? ' Une fois validé, le score arrive dans « À publier ».' : ''}`
               : 'pas d’accord, on ne publie pas.'}
           </p>
 
@@ -338,6 +339,14 @@ export function SubmissionDetail({
           </div>
         </div>
       </div>
+
+      {submission.status === 'approved' &&
+        submission.instagram_consent &&
+        game && (
+          <div className="border-t border-line-subtle pt-6">
+            <ScoreInstagram submission={submission} game={game} />
+          </div>
+        )}
     </article>
   )
 }

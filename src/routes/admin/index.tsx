@@ -1,8 +1,10 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { AtSign, Camera, EyeOff, Trophy } from 'lucide-react'
+import { AtSign, Camera, Check, EyeOff, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
+import { GameThumb } from '#/components/admin/game-thumb'
+import { ScoreInstagram } from '#/components/admin/score-instagram'
 import { SubmissionDetail } from '#/components/admin/submission-detail'
 import { Switch } from '#/components/ui/switch'
 import {
@@ -18,7 +20,7 @@ import {
   updateSettings,
   useInvalidateAdmin,
 } from '#/lib/admin'
-import type { AdminGame, AdminScore, SubmissionStatus } from '#/lib/admin'
+import type { AdminGame, AdminScore, SubmissionFilter } from '#/lib/admin'
 import { formatScore, formatScoreWhen } from '#/lib/format'
 import { useReadablePhotoUrl } from '#/lib/readable-photo'
 import { cn } from '#/lib/utils'
@@ -27,14 +29,15 @@ export const Route = createFileRoute('/admin/')({
   component: Submissions,
 })
 
-const filters: Array<{ status: SubmissionStatus; label: string }> = [
+const filters: Array<{ status: SubmissionFilter; label: string }> = [
   { status: 'pending', label: 'À valider' },
   { status: 'approved', label: 'Validées' },
   { status: 'rejected', label: 'Rejetées' },
+  { status: 'to_post', label: 'À publier' },
 ]
 
 function Submissions() {
-  const [status, setStatus] = useState<SubmissionStatus>('pending')
+  const [status, setStatus] = useState<SubmissionFilter>('pending')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const submissions = useQuery(submissionsQuery(status))
   const counts = useQuery(submissionCountsQuery)
@@ -58,7 +61,7 @@ function Submissions() {
     <div className="grid gap-6 lg:grid-cols-[minmax(320px,400px)_1fr]">
       <section className="flex min-w-0 flex-col gap-4">
         <h1 className="text-h3">Soumissions</h1>
-        <div className="grid grid-cols-3 gap-2" role="tablist">
+        <div className="grid grid-cols-2 gap-2" role="tablist">
           {filters.map((filter) => (
             <button
               key={filter.status}
@@ -126,7 +129,15 @@ function Submissions() {
       </section>
 
       <section id="submission-detail" className="min-w-0 scroll-mt-4">
-        {selected && games.data ? (
+        {selected && games.data && status === 'to_post' ? (
+          <PostDetail
+            key={selected.id}
+            submission={selected}
+            game={
+              selected.game_id ? gamesById.get(selected.game_id) : undefined
+            }
+          />
+        ) : selected && games.data ? (
           <SubmissionDetail
             key={selected.id}
             submission={selected}
@@ -146,11 +157,42 @@ function Submissions() {
   )
 }
 
-function EmptyQueue({ status }: { status: SubmissionStatus }) {
+/** A score to post: what the volunteer needs, without the review form. */
+function PostDetail({
+  submission,
+  game,
+}: {
+  submission: AdminScore
+  game: AdminGame | undefined
+}) {
+  return (
+    <article className="flex flex-col gap-6 rounded-xl bg-surface-raised p-4 shadow-card md:p-6">
+      <header className="flex flex-wrap items-center gap-3">
+        {game && <GameThumb game={game} />}
+        <h2 className="text-h5">
+          {submission.player_name ?? 'Sans nom'} · {game?.name}
+        </h2>
+        <span className="text-caption text-ink-secondary">
+          Validée{' '}
+          {formatScoreWhen(submission.reviewed_at ?? submission.created_at)}
+        </span>
+      </header>
+      {game ? (
+        <ScoreInstagram submission={submission} game={game} />
+      ) : (
+        <p className="text-body-sm text-ink-secondary">Chargement…</p>
+      )}
+    </article>
+  )
+}
+
+function EmptyQueue({ status }: { status: SubmissionFilter }) {
   const text = {
     pending: 'Rien à valider. Profites-en pour aller jouer !',
     approved: 'Aucune soumission validée pour l’instant.',
     rejected: 'Aucune soumission rejetée.',
+    to_post:
+      'Rien à publier : tout est en ligne, ou personne n’a dit oui à Instagram.',
   }[status]
   return (
     <p className="rounded-xl bg-surface-raised p-6 text-center text-body-sm text-ink-secondary shadow-card">
@@ -225,12 +267,18 @@ function SubmissionCard({
               {place === 1 ? '1re' : `${place}e`} place
             </Tag>
           )}
-          {submission.instagram_consent && (
-            <Tag className="bg-surface-sunken text-ink-primary">
-              <AtSign className="size-3" aria-hidden="true" />
-              Instagram
-            </Tag>
-          )}
+          {submission.instagram_consent &&
+            (submission.instagram_post_id ? (
+              <Tag className="bg-state-live-surface text-state-live-ink">
+                <Check className="size-3" aria-hidden="true" />
+                Publié sur Instagram
+              </Tag>
+            ) : (
+              <Tag className="bg-surface-sunken text-ink-primary">
+                <AtSign className="size-3" aria-hidden="true" />
+                Instagram
+              </Tag>
+            ))}
           {!submission.display_on_screen && (
             <Tag className="bg-surface-sunken text-ink-secondary">
               <EyeOff className="size-3" aria-hidden="true" />
