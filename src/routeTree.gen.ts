@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as DevRouteImport } from './routes/dev'
 import { Route as ScoreRouteImport } from './routes/score'
 import { Route as ScoresRouteImport } from './routes/scores'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -26,6 +27,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DevRoute = DevRouteImport.update({
+  id: '/dev',
+  path: '/dev',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScoreRoute = ScoreRouteImport.update({
@@ -62,6 +68,7 @@ const AdminGamesGameIdRoute = AdminGamesGameIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -71,6 +78,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -82,6 +90,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -94,6 +103,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/dev'
     | '/score'
     | '/scores'
     | '/admin/settings'
@@ -103,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/dev'
     | '/score'
     | '/scores'
     | '/admin/settings'
@@ -113,6 +124,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/dev'
     | '/score'
     | '/scores'
     | '/admin/settings'
@@ -124,6 +136,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  DevRoute: typeof DevRoute
   ScoreRoute: typeof ScoreRoute
   ScoresRoute: typeof ScoresRoute
 }
@@ -142,6 +155,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dev': {
+      id: '/dev'
+      path: '/dev'
+      fullPath: '/dev'
+      preLoaderRoute: typeof DevRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/score': {
@@ -208,6 +228,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  DevRoute: DevRoute,
   ScoreRoute: ScoreRoute,
   ScoresRoute: ScoresRoute,
 }

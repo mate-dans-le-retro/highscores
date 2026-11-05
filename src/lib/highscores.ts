@@ -1,7 +1,8 @@
 import { queryOptions, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
-import { source } from './data'
+import { isMock, source } from './data'
+import { mockTools } from './data/mock/mock-source'
 import type { LeaderboardQueryOptions } from './data/source'
 import type { ChangedTable, SubmissionInput } from './data/types'
 
@@ -25,11 +26,19 @@ export { anonymousName, normalizePlayerName } from './data/anonymous-name'
 export { findNewRecords } from './data/records'
 export { DEFAULT_SETTINGS } from './data/source'
 export { formatScore, formatScoreWhen, formatStation } from './format'
-export { isMock } from './data'
+export { isMock }
+export type { MockPendingScore } from './data/mock/mock-source'
+export { mockTools }
 
 export const visibleGamesQuery = queryOptions({
   queryKey: ['games', 'visible'],
   queryFn: () => source.listVisibleGames(),
+})
+
+/** Pending submissions for the mock /dev panel. Empty outside mock mode. */
+export const pendingSubmissionsQuery = queryOptions({
+  queryKey: ['pending'],
+  queryFn: () => (isMock ? mockTools.listPending() : Promise.resolve([])),
 })
 
 export const leaderboardQuery = (
@@ -63,8 +72,8 @@ export const submitScore = (input: SubmissionInput) => source.submitScore(input)
 export const photoUrl = (path: string | null) => source.photoUrl(path)
 
 const invalidatedBy: Record<ChangedTable, Array<string>> = {
-  games: ['games', 'leaderboard', 'records'],
-  scores: ['leaderboard', 'records'],
+  games: ['games', 'leaderboard', 'records', 'pending'],
+  scores: ['leaderboard', 'records', 'pending'],
   settings: ['settings'],
 }
 
