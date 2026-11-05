@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit",
     "vercel:login": "vercel login",
     "vercel:link": "vercel link --scope mate-dans-le-retro-gamings-projects --project highscores",
-    "env:pull": "vercel env pull .env.local --environment=preview --git-branch=main"
+    "env:pull": "vercel env pull .env.local --environment=development"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
