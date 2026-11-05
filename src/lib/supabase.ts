@@ -26,7 +26,10 @@ export function getSupabase() {
     )
   }
 
-  client = createClient(url, publishableKey)
+  client = createClient(url, publishableKey, {
+    // Keeps the tokens out of the callback URL of the Google sign-in.
+    auth: { flowType: 'pkce' },
+  })
   return client
 }
 

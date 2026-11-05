@@ -28,7 +28,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 
 ### 3. Admin (`/admin`, `console` theme)
 
-Reserved for MDLR volunteers (email sign-in, public sign-ups closed).
+Reserved for MDLR volunteers (Google sign-in, email and password as a fallback, public sign-ups closed).
 
 - **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, and **show or hide** a game on the public screen.
 - **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason).

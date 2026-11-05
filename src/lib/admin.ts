@@ -89,6 +89,18 @@ export async function signIn(email: string, password: string) {
   if (error) throw error
 }
 
+export async function signInWithGoogle() {
+  const { error } = await getSupabase().auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}${window.location.pathname}`,
+      // Volunteers may share a laptop: always ask which account to use.
+      queryParams: { prompt: 'select_account' },
+    },
+  })
+  if (error) throw error
+}
+
 export async function signOut() {
   await getSupabase().auth.signOut()
 }
