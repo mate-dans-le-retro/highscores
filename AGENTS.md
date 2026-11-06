@@ -68,7 +68,7 @@ supabase/
   migrations/        versioned SQL schema (source of truth for the database)
   seed.sql           demo games for local development
   scripts/           demo data for the remote database, run by hand (README.md)
-  config.toml        local Supabase config (sign-ups closed)
+  config.toml        local Supabase config (sign-ups open; rights from admins)
 docs/                product, architecture, decisions, design system
 ```
 
@@ -95,7 +95,7 @@ docs/                product, architecture, decisions, design system
 
 - Every schema change goes through a **new migration** in `supabase/migrations/`; never modify a migration already applied in production.
 - Every table has **RLS enabled** with explicit policies. The public (`anon`) only reads visible games and approved scores, and can only insert a `pending` submission.
-- Volunteers are the users listed in `public.admins`; check with `public.is_admin()` in policies.
+- Volunteers are the users listed in `public.admins`; check with `public.is_admin()` in policies. Sign-up creates an Auth user only; promote from `/admin/users` (`set_user_admin`).
 - After a schema change, test the policies locally with the publishable key (see docs/architecture.md).
 - A migration that adds a foreign key to `games`, `events` or `scores` must update `supabase/scripts/demo-clean.sql`, which refuses to run otherwise.
 
