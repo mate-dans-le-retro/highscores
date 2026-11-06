@@ -19,8 +19,9 @@ import {
 
 /**
  * Square crop step shown after a volunteer picks a cover file.
- * Confirm yields a JPEG `File`; cancel discards the selection.
- * `minZoom` drops below 1 for wide art so the whole image can sit in the square.
+ * Confirm yields a PNG when the source has alpha, otherwise a JPEG.
+ * Cancel discards the selection. `minZoom` drops below 1 for wide art so the
+ * whole image can sit in the square.
  */
 export function CoverCropper({
   imageSrc,

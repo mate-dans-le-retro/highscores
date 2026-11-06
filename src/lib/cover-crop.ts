@@ -11,6 +11,8 @@ export const COVER_QUALITY = 0.85
 /** Default max zoom of react-easy-crop; raised if minZoom is already high. */
 export const COVER_MAX_ZOOM = 3
 
+export type CoverCropBackground = 'black' | 'transparent'
+
 /**
  * Lowest zoom so the whole media fits inside a crop of `aspect` (letterbox).
  * Landscape Guitar Hero art needs this under 1; a square stays at 1.
@@ -73,9 +75,43 @@ export function scaledCropSize(
   return Math.max(1, Math.min(maxSize, Math.round(side)))
 }
 
-function ensureJpgName(name: string) {
+/** True when any RGBA pixel in `data` has alpha below 255. */
+export function pixelDataHasAlpha(data: ArrayLike<number>) {
+  for (let i = 3; i < data.length; i += 4) {
+    if ((data[i] ?? 255) < 255) return true
+  }
+  return false
+}
+
+/**
+ * Scans the decoded bitmap for a non-opaque pixel.
+ * Opaque JPEG/PNG sources stay on the black + JPEG path; logos with
+ * transparency (Donkey Konga) keep alpha and export as PNG.
+ */
+export function imageHasAlpha(
+  image: Pick<HTMLImageElement, 'naturalWidth' | 'naturalHeight'> &
+    CanvasImageSource,
+) {
+  const width = image.naturalWidth
+  const height = image.naturalHeight
+  if (width <= 0 || height <= 0) return false
+
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const context = canvas.getContext('2d', { willReadFrequently: true })
+  if (!context) return false
+
+  context.drawImage(image, 0, 0)
+  const { data } = context.getImageData(0, 0, width, height)
+  canvas.width = 0
+  canvas.height = 0
+  return pixelDataHasAlpha(data)
+}
+
+export function ensureCoverName(name: string, extension: 'jpg' | 'png') {
   const base = name.replace(/\.[^.]+$/, '') || 'cover'
-  return `${base}.jpg`
+  return `${base}.${extension}`
 }
 
 function loadImage(src: string) {
@@ -89,7 +125,11 @@ function loadImage(src: string) {
   })
 }
 
-function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  type: 'image/jpeg' | 'image/png',
+  quality?: number,
+) {
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -98,15 +138,16 @@ function canvasToJpeg(canvas: HTMLCanvasElement, quality: number) {
         if (blob) resolve(blob)
         else reject(new Error('Could not encode the cover'))
       },
-      'image/jpeg',
+      type,
       quality,
     )
   })
 }
 
 /**
- * Draws `pixelCrop` onto a square canvas. When the crop is larger than the
- * image (zoom out to fit a wide cover), empty bands stay black.
+ * Draws `pixelCrop` onto a square canvas.
+ * Opaque sources keep black letterbox bands; transparent sources leave empty
+ * bands clear so PNG export preserves alpha.
  */
 export function drawCoverCrop(
   context: CanvasRenderingContext2D,
@@ -114,9 +155,14 @@ export function drawCoverCrop(
     CanvasImageSource,
   pixelCrop: Area,
   size: number,
+  background: CoverCropBackground = 'black',
 ) {
-  context.fillStyle = '#000'
-  context.fillRect(0, 0, size, size)
+  if (background === 'transparent') {
+    context.clearRect(0, 0, size, size)
+  } else {
+    context.fillStyle = '#000'
+    context.fillRect(0, 0, size, size)
+  }
 
   const scaleX = size / pixelCrop.width
   const scaleY = size / pixelCrop.height
@@ -143,8 +189,9 @@ export function drawCoverCrop(
 }
 
 /**
- * Crops `imageSrc` to a square JPEG ready for the `covers` bucket.
- * `fileName` only seeds the download name; the extension is always `.jpg`.
+ * Crops `imageSrc` to a square file ready for the `covers` bucket.
+ * PNG when the source has alpha, otherwise JPEG (~0.85).
+ * `fileName` only seeds the download base name.
  */
 export async function cropCoverToFile(
   imageSrc: string,
@@ -152,13 +199,28 @@ export async function cropCoverToFile(
   fileName = 'cover.jpg',
 ): Promise<File> {
   const image = await loadImage(imageSrc)
+  const hasAlpha = imageHasAlpha(image)
   const size = scaledCropSize(pixelCrop, COVER_SIZE)
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
   const context = canvas.getContext('2d')
   if (!context) throw new Error('Canvas 2D is not available')
-  drawCoverCrop(context, image, pixelCrop, size)
-  const blob = await canvasToJpeg(canvas, COVER_QUALITY)
-  return new File([blob], ensureJpgName(fileName), { type: 'image/jpeg' })
+  drawCoverCrop(
+    context,
+    image,
+    pixelCrop,
+    size,
+    hasAlpha ? 'transparent' : 'black',
+  )
+  if (hasAlpha) {
+    const blob = await canvasToBlob(canvas, 'image/png')
+    return new File([blob], ensureCoverName(fileName, 'png'), {
+      type: 'image/png',
+    })
+  }
+  const blob = await canvasToBlob(canvas, 'image/jpeg', COVER_QUALITY)
+  return new File([blob], ensureCoverName(fileName, 'jpg'), {
+    type: 'image/jpeg',
+  })
 }
