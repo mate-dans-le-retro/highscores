@@ -17,6 +17,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 
 import { GameThumb } from '#/components/admin/game-thumb'
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { Button } from '#/components/ui/button'
 import { Checkbox } from '#/components/ui/checkbox'
 import { Input } from '#/components/ui/input'
@@ -46,10 +47,11 @@ export const Route = createFileRoute('/admin/games/$gameId')({
 
 function GameRecords() {
   const { gameId } = Route.useParams()
-  const games = useQuery(adminGamesQuery)
-  const approved = useQuery(approvedScoresQuery)
-  const event = useQuery(currentEventQuery)
-  const archived = useQuery(archivedEventsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const games = useQuery({ ...adminGamesQuery, refetchInterval })
+  const approved = useQuery({ ...approvedScoresQuery, refetchInterval })
+  const event = useQuery({ ...currentEventQuery, refetchInterval })
+  const archived = useQuery({ ...archivedEventsQuery, refetchInterval })
   const game = games.data?.find(({ id }) => id === gameId)
 
   if (games.isPending) {

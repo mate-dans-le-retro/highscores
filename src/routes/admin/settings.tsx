@@ -2,6 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { QrCode } from '#/components/qr-code'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -43,7 +44,8 @@ const modes: Array<{ value: ScreenMode; label: string; hint: string }> = [
 ]
 
 function ScreenSettings() {
-  const settings = useQuery(adminSettingsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const settings = useQuery({ ...adminSettingsQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const save = useMutation({
     mutationFn: (changes: SettingsChanges) => updateSettings(changes),
@@ -254,7 +256,8 @@ function SubmitQrCode() {
 }
 
 function EventName() {
-  const event = useQuery(currentEventQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const event = useQuery({ ...currentEventQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const [name, setName] = useState<string | null>(null)
   const rename = useMutation({

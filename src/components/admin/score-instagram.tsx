@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { InstagramPanel } from '#/components/admin/instagram-panel'
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import {
   anonymousSeedsQuery,
   approvedScoresQuery,
@@ -25,9 +26,14 @@ export function ScoreInstagram({
   game: AdminGame
 }) {
   const anonymous = !submission.display_on_screen
-  const approved = useQuery(approvedScoresQuery)
-  const events = useQuery(eventsQuery)
-  const seeds = useQuery({ ...anonymousSeedsQuery, enabled: anonymous })
+  const refetchInterval = useAdminRefetchInterval()
+  const approved = useQuery({ ...approvedScoresQuery, refetchInterval })
+  const events = useQuery({ ...eventsQuery, refetchInterval })
+  const seeds = useQuery({
+    ...anonymousSeedsQuery,
+    enabled: anonymous,
+    refetchInterval,
+  })
   const invalidate = useInvalidateAdmin()
   const mark = useMutation({
     mutationFn: (posted: boolean) =>

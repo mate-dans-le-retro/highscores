@@ -4,6 +4,7 @@ import { AtSign, Camera, Check, EyeOff, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { GameThumb } from '#/components/admin/game-thumb'
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { ScoreInstagram } from '#/components/admin/score-instagram'
 import { SubmissionDetail } from '#/components/admin/submission-detail'
 import { Switch } from '#/components/ui/switch'
@@ -39,11 +40,15 @@ const filters: Array<{ status: SubmissionFilter; label: string }> = [
 function Submissions() {
   const [status, setStatus] = useState<SubmissionFilter>('pending')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const submissions = useQuery(submissionsQuery(status))
-  const counts = useQuery(submissionCountsQuery)
-  const games = useQuery(adminGamesQuery)
-  const approved = useQuery(approvedScoresQuery)
-  const event = useQuery(currentEventQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const submissions = useQuery({
+    ...submissionsQuery(status),
+    refetchInterval,
+  })
+  const counts = useQuery({ ...submissionCountsQuery, refetchInterval })
+  const games = useQuery({ ...adminGamesQuery, refetchInterval })
+  const approved = useQuery({ ...approvedScoresQuery, refetchInterval })
+  const event = useQuery({ ...currentEventQuery, refetchInterval })
 
   const list = submissions.data ?? []
   const selected = list.find(({ id }) => id === selectedId) ?? list.at(0)
@@ -313,7 +318,8 @@ function Tag({
 }
 
 function SubmissionsSwitch() {
-  const settings = useQuery(adminSettingsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const settings = useQuery({ ...adminSettingsQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const toggle = useMutation({
     mutationFn: (open: boolean) => updateSettings({ submissions_open: open }),
