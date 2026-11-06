@@ -34,6 +34,7 @@ import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { useSubmitScoreUrl } from '#/lib/submit-url'
+import { useScreenWakeLock } from '#/lib/wake-lock'
 import {
   DOUBLE_CLICK_MS,
   INITIAL_ROTATION,
@@ -64,6 +65,7 @@ export const Route = createFileRoute('/')({
 })
 
 function PublicScreen() {
+  useScreenWakeLock()
   const realtime = useHighscoresRealtime({
     reloadAfterMs: PUBLIC_RELOAD_AFTER_MS,
   })
@@ -627,6 +629,9 @@ function GameLeaderboard({
       rank: row.rank,
       player: row.player_name,
       score: formatScore(row.score, game.score_type),
+      // Same wall rule: never a photo URL for an anonymous score.
+      photoSrc: row.anonymous ? null : photoUrl(row.photo_path),
+      anonymous: row.anonymous,
       dimmed: row.dimmed,
       fresh: fresh.has(row.id),
       meta: [formatScoreWhen(row.created_at), row.dimmed && row.event_name]

@@ -8,7 +8,7 @@ The reference mockups are the "MDLR – Highscores" design canvas (https://claud
 
 Three views. Volunteers choose which ones run in the admin ("Écran et Instagram").
 
-**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
+**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), a square player photo (same Incognito / Sans photo bust as the wall when the score is anonymous or has no photo), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
 
 - "LE RECORD": the photo of the record holder, with "Julie · samedi à 14h32" under it.
 - "À TOI DE JOUER": the QR code to `/score`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".
@@ -20,6 +20,8 @@ In the app (see docs/decisions.md, "public screen after the visual review"): the
 **New record** ("NOUVEAU RECORD !"). Shown when an approved score takes first place: big pink title, the player's photo (640px square), then the game, a gold "RECORD ABSOLU" badge when it beats the all-time record, the cup, the name, the score in very large type, and "Ancien record : Marc, 98 200".
 
 Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin). After a new record, the screen shows that game; a click on a pill shows that slide from the start of its time.
+
+While the tab is visible, the public screen asks for a Screen Wake Lock so the projector laptop stays awake. Missing API or a denied permission leaves the screen running as before (admin and `/score` do not request it).
 
 ## Player form (`/score`, `arcade` theme, phone)
 
