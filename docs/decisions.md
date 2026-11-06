@@ -153,3 +153,7 @@ Reject alone left college-test junk in the database (only Records deleted approv
 ## 2026-11-05: game covers are cropped square before upload
 
 Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. No migration.
+
+## 2026-11-06: printable submission QR poster from the admin
+
+The Screen settings QR card offers "Télécharger l'affiche": a canvas PNG at A4 300 dpi (2480 × 3508), MDLR branding (logo, pixel background, arcade tokens), large QR to the current origin's `/score`, and the same player copy as the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !"). No new dependency; same pattern as the Instagram visual. Print from the production admin so the QR hits `scores.matedansleretro.fr`, not localhost or preview.
