@@ -2,9 +2,19 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { LogOut, MonitorPlay } from 'lucide-react'
 
+import {
+  AdminRealtimeProvider,
+  useAdminRefetchInterval,
+} from '#/components/admin/realtime-provider'
+import { SetPasswordForm } from '#/components/admin/set-password-form'
 import { SignIn } from '#/components/admin/sign-in'
 import { Button } from '#/components/ui/button'
-import { signOut, submissionCountsQuery, useAdminAuth } from '#/lib/admin'
+import {
+  sessionHasPassword,
+  signOut,
+  submissionCountsQuery,
+  useAdminAuth,
+} from '#/lib/admin'
 
 export const Route = createFileRoute('/admin')({
   staticData: { theme: 'console' },
@@ -28,29 +38,40 @@ function AdminLayout() {
   if (auth.status === 'signed-out') return <SignIn />
 
   if (auth.status === 'not-admin') {
+    const needsPassword = !sessionHasPassword(auth.session)
     return (
-      <main className="grid min-h-screen place-items-center px-4">
-        <div className="flex max-w-md flex-col items-center gap-4 text-center">
-          <h1 className="text-h3">Pas encore bénévole</h1>
-          <p className="text-body-ui text-ink-secondary">
-            Ton compte ({auth.session.user.email}) existe, mais il n'est pas
-            encore dans la liste des bénévoles. Demande à Clément de t'ajouter.
-          </p>
-          <Button variant="outline" onClick={() => void signOut()}>
-            Se déconnecter
-          </Button>
+      <main className="grid min-h-screen place-items-center px-4 py-8">
+        <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+          <div className="flex flex-col items-center gap-4">
+            <h1 className="text-h3">Pas encore bénévole</h1>
+            <p className="text-body-ui text-ink-secondary">
+              Ton compte ({auth.session.user.email}) existe, mais il n'est pas
+              encore dans la liste des bénévoles. Demande à Clément de te
+              promouvoir depuis l'onglet Bénévoles.
+            </p>
+            <Button variant="outline" onClick={() => void signOut()}>
+              Se déconnecter
+            </Button>
+          </div>
+          {needsPassword && (
+            <div className="w-full rounded-xl bg-surface-raised p-6 text-left shadow-card">
+              <SetPasswordForm />
+            </div>
+          )}
         </div>
       </main>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AdminTopBar email={auth.session.user.email ?? ''} />
-      <div className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 md:px-8">
-        <Outlet />
+    <AdminRealtimeProvider>
+      <div className="flex min-h-screen flex-col">
+        <AdminTopBar email={auth.session.user.email ?? ''} />
+        <div className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 md:px-8">
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </AdminRealtimeProvider>
   )
 }
 
@@ -59,7 +80,8 @@ const tabClass =
   'inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink-on-accent transition-colors hover:bg-surface-inverse/10 data-[status=active]:bg-surface-inverse data-[status=active]:text-ink-inverse'
 
 function AdminTopBar({ email }: { email: string }) {
-  const counts = useQuery(submissionCountsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const counts = useQuery({ ...submissionCountsQuery, refetchInterval })
   const pending = counts.data?.pending ?? 0
 
   return (
@@ -90,6 +112,9 @@ function AdminTopBar({ email }: { email: string }) {
           </Link>
           <Link to="/admin/settings" className={tabClass}>
             Écran
+          </Link>
+          <Link to="/admin/users" className={tabClass}>
+            Bénévoles
           </Link>
         </nav>
         <div className="ml-auto flex items-center gap-2 md:ml-0">

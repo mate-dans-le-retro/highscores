@@ -8,7 +8,7 @@ The reference mockups are the "MDLR – Highscores" design canvas (https://claud
 
 Three views. Volunteers choose which ones run in the admin ("Écran et Instagram").
 
-**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
+**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), a square player photo (same Incognito / Sans photo bust as the wall when the score is anonymous or has no photo), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
 
 - "LE RECORD": the photo of the record holder, with "Julie · samedi à 14h32" under it.
 - "À TOI DE JOUER": the QR code to `/score`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".
@@ -21,6 +21,8 @@ In the app (see docs/decisions.md, "public screen after the visual review"): the
 
 Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin). After a new record, the screen shows that game; a click on a pill shows that slide from the start of its time.
 
+While the tab is visible, the public screen asks for a Screen Wake Lock so the projector laptop stays awake. Missing API or a denied permission leaves the screen running as before (admin and `/score` do not request it).
+
 ## Player form (`/score`, `arcade` theme, phone)
 
 Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and a three-segment progress bar.
@@ -32,7 +34,11 @@ Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and 
 
 ## Admin (`/admin`, `console` theme, desktop)
 
-Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran et Instagram", and an "Ouvrir l'écran public" button.
+Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Bénévoles", and an "Ouvrir l'écran public" button.
+
+**Sign-in.** Google first, then email/password, with a link to create an account. A new Auth account lands on "Pas encore bénévole" until an admin promotes it; from that page (and from Bénévoles when the admin has no password yet), they can set a password after a Google sign-up.
+
+**Bénévoles.** List of Auth users (email, providers, admin flag, sign-up date). "Promouvoir admin" / "Retirer admin".
 
 **Submissions.** Filters "À valider", "Validées", "Rejetées" with counts. Each card: photo, name, game, relative time, score, and tags ("Record battu", "1re place", "Instagram" or "Sans Instagram", "Masqué"). Detail panel: photo, "Lu sur la photo : Tetris · 128 400", editable game, score and display name, the current record ("Ce score prend la 1re place."), "Afficher sur l'écran public" (unchecked: the score stays ranked, but the name and photo are replaced by a neutral nickname and image), "Publier sur Instagram" (only if the player agreed), the Instagram caption, and the "Rejeter" / "Valider et afficher" actions. Pending and rejected submissions can also be deleted for good (inline confirm "Garder" / "Supprimer", same pattern as records); approved scores stay deletable from Records. A switch "Envois ouverts" opens or closes submissions.
 

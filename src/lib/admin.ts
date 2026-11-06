@@ -44,9 +44,6 @@ export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 /** Approved submissions whose player agreed to a post, not posted yet. */
 export type SubmissionFilter = SubmissionStatus | 'to_post'
 
-/** The queue refreshes on its own: the public cannot listen to scores. */
-const QUEUE_REFRESH_MS = 10_000
-
 // ---------------------------------------------------------------------------
 // Session
 // ---------------------------------------------------------------------------
@@ -78,12 +75,15 @@ export function useAdminAuth(): AdminAuth {
       return data as boolean
     },
     enabled: Boolean(session),
+    // Fail closed: a missing or failed check never opens the admin.
+    retry: false,
   })
 
   if (session === undefined) return { status: 'loading' }
   if (!session) return { status: 'signed-out' }
   if (isAdmin.isPending) return { status: 'loading' }
-  return isAdmin.data
+  // Error, false or unexpected → not-admin (Auth alone grants nothing).
+  return isAdmin.isSuccess && isAdmin.data === true
     ? { status: 'admin', session }
     : { status: 'not-admin', session }
 }
@@ -94,6 +94,16 @@ export async function signIn(email: string, password: string) {
     password,
   })
   if (error) throw error
+}
+
+/** Creates an Auth account only; rights still require public.admins. */
+export async function signUp(email: string, password: string) {
+  const { data, error } = await getSupabase().auth.signUp({
+    email: email.trim(),
+    password,
+  })
+  if (error) throw error
+  return data
 }
 
 export async function signInWithGoogle() {
@@ -108,8 +118,23 @@ export async function signInWithGoogle() {
   if (error) throw error
 }
 
+/** Adds or replaces the password for the signed-in user (e.g. after Google). */
+export async function setPassword(password: string) {
+  const { error } = await getSupabase().auth.updateUser({ password })
+  if (error) throw error
+}
+
 export async function signOut() {
   await getSupabase().auth.signOut()
+}
+
+/** True when the session already has an email/password identity. */
+export function sessionHasPassword(session: Session) {
+  return (
+    session.user.identities?.some(
+      (identity) => identity.provider === 'email',
+    ) ?? false
+  )
 }
 
 async function currentUserId() {
@@ -207,7 +232,6 @@ export const submissionsQuery = (filter: SubmissionFilter) =>
       if (error) throw error
       return data as Array<AdminScore>
     },
-    refetchInterval: QUEUE_REFRESH_MS,
   })
 
 export const submissionCountsQuery = queryOptions({
@@ -237,7 +261,6 @@ export const submissionCountsQuery = queryOptions({
     ])
     return { pending, approved, rejected, to_post }
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 /**
@@ -259,7 +282,6 @@ export const anonymousSeedsQuery = queryOptions({
       ),
     )
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 /** Approved scores of every event, for the records, rankings and game table. */
@@ -273,7 +295,6 @@ export const approvedScoresQuery = queryOptions({
     if (error) throw error
     return data as Array<AdminScore>
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 export const adminSettingsQuery = queryOptions({
@@ -287,6 +308,33 @@ export const adminSettingsQuery = queryOptions({
     return data as AdminSettings
   },
 })
+
+export interface RegisteredUser {
+  id: string
+  email: string | null
+  created_at: string
+  is_admin: boolean
+  has_password: boolean
+  providers: Array<string>
+}
+
+/** Auth users known to Supabase, with their volunteer flag. Admins only. */
+export const registeredUsersQuery = queryOptions({
+  queryKey: ['admin', 'users'],
+  queryFn: async (): Promise<Array<RegisteredUser>> => {
+    const { data, error } = await getSupabase().rpc('list_registered_users')
+    if (error) throw error
+    return data as Array<RegisteredUser>
+  },
+})
+
+export async function setUserAdmin(userId: string, makeAdmin: boolean) {
+  const { error } = await getSupabase().rpc('set_user_admin', {
+    target_user_id: userId,
+    make_admin: makeAdmin,
+  })
+  if (error) throw error
+}
 
 /** Refreshes every admin query after a change. */
 export function useInvalidateAdmin() {

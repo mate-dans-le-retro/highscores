@@ -13,6 +13,7 @@ import { useState } from 'react'
 
 import { GameDialog } from '#/components/admin/game-dialog'
 import { GameThumb, scoreRuleLabel } from '#/components/admin/game-thumb'
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { Button } from '#/components/ui/button'
 import { Switch } from '#/components/ui/switch'
 import {
@@ -34,9 +35,10 @@ export const Route = createFileRoute('/admin/games/')({
 })
 
 function Games() {
-  const games = useQuery(adminGamesQuery)
-  const approved = useQuery(approvedScoresQuery)
-  const event = useQuery(currentEventQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const games = useQuery({ ...adminGamesQuery, refetchInterval })
+  const approved = useQuery({ ...approvedScoresQuery, refetchInterval })
+  const event = useQuery({ ...currentEventQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const [editing, setEditing] = useState<AdminGame | null>(null)
   const [adding, setAdding] = useState(false)

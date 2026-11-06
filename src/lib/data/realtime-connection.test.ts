@@ -5,6 +5,7 @@ import type {
   AttemptStatus,
   ConnectionStatus,
   NetworkSignal,
+  PageSignal,
 } from './realtime-connection'
 
 /** Records every attempt so a test can make it join or drop. */
@@ -45,6 +46,18 @@ function fakeNetwork() {
   return { network, listeners }
 }
 
+function fakePage() {
+  const listeners = new Set<() => void>()
+  const page: PageSignal & { resume: () => void } = {
+    addEventListener: (_type, listener) => listeners.add(listener),
+    removeEventListener: (_type, listener) => listeners.delete(listener),
+    resume() {
+      listeners.forEach((listener) => listener())
+    },
+  }
+  return { page, listeners }
+}
+
 describe('reconnectDelayMs', () => {
   it('doubles from 1 s and stops at 30 s', () => {
     expect([0, 1, 2, 3, 4, 5, 9].map(reconnectDelayMs)).toEqual([
@@ -64,13 +77,15 @@ describe('keepSubscribed', () => {
   function setup() {
     const channels = fakeChannels()
     const { network, listeners } = fakeNetwork()
+    const { page, listeners: pageListeners } = fakePage()
     const statuses: Array<ConnectionStatus> = []
     const stop = keepSubscribed({
       open: channels.open,
       onStatus: (status) => statuses.push(status),
       network,
+      page,
     })
-    return { channels, network, listeners, statuses, stop }
+    return { channels, network, listeners, page, pageListeners, statuses, stop }
   }
 
   it('reports connected once the first attempt joins', () => {
@@ -136,6 +151,7 @@ describe('keepSubscribed', () => {
       },
       onStatus: (status) => statuses.push(status),
       network: null,
+      page: null,
     })
     expect(closed).toEqual([1])
     vi.advanceTimersByTime(1_000)
@@ -180,13 +196,25 @@ describe('keepSubscribed', () => {
   })
 
   it('stops everything when unsubscribed', () => {
-    const { channels, listeners, statuses, stop } = setup()
+    const { channels, listeners, pageListeners, statuses, stop } = setup()
     channels.last().report('lost')
     stop()
     vi.advanceTimersByTime(60_000)
     expect(channels.attempts).toHaveLength(1)
     expect(listeners.online.size).toBe(0)
     expect(listeners.offline.size).toBe(0)
+    expect(pageListeners.size).toBe(0)
     expect(statuses).toEqual(['disconnected'])
+  })
+
+  it('resubscribes on tab resume and marks the connection lost meanwhile', () => {
+    const { channels, page, statuses } = setup()
+    channels.last().report('joined')
+    page.resume()
+    expect(statuses).toEqual(['connected', 'disconnected'])
+    expect(channels.attempts[0].closed).toBe(true)
+    expect(channels.attempts).toHaveLength(2)
+    channels.last().report('joined')
+    expect(statuses).toEqual(['connected', 'disconnected', 'connected'])
   })
 })
