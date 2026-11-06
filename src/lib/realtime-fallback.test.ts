@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  REALTIME_POLL_MS,
-  realtimeFallbackInterval,
-} from './highscores'
+import { REALTIME_POLL_MS, realtimeFallbackInterval } from './highscores'
 
 describe('realtimeFallbackInterval', () => {
   it('polls every 10 s while disconnected', () => {
