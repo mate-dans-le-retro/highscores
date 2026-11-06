@@ -13,7 +13,7 @@ import type { GameRecord } from '#/lib/highscores'
 import { useSubmitScoreUrl } from '#/lib/submit-url'
 import { cn } from '#/lib/utils'
 import { wallCardView } from '#/lib/wall-card'
-import { wallCells } from '#/lib/wall-pages'
+import { WALL_COLUMNS, wallCells } from '#/lib/wall-pages'
 
 type RecordsWallProps = {
   /** One page of the wall: six records at most. */
@@ -51,11 +51,47 @@ export function RecordsWall({
   showGameQr = false,
   className,
 }: RecordsWallProps) {
+  const singleRow = records.length <= WALL_COLUMNS
   const cells = wallCells(records.length)
+  // Two-row pages use grid row 1: clear the floated global QR. Single-row
+  // pages are flex-centred in the full height (QR sits in the empty top).
+  const clearsGlobalQr = !singleRow
+
+  if (singleRow) {
+    return (
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 items-center justify-center',
+          className,
+        )}
+      >
+        <div
+          className="grid w-full grid-cols-6 gap-x-10"
+          // Match one row of a full 3×2 page. Nudge up 12px so the gap above
+          // the cards equals the gap down to the pills (title/QR are absolute).
+          style={{ height: 'min(100%, 46%)', transform: 'translateY(-12px)' }}
+        >
+          {records.map((record, i) => (
+            <RecordCard
+              key={record.game.id}
+              record={record}
+              showGameQr={showGameQr}
+              className={cn(
+                'col-span-2 min-h-0',
+                COLUMN_START[cells[i].column],
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn(
         'grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-4',
+        clearsGlobalQr && 'pt-36',
         className,
       )}
     >
@@ -84,8 +120,10 @@ function EmptyGameQr({
 }) {
   const submitUrl = useSubmitScoreUrl(isMock, { gameSlug })
   if (!submitUrl) return <div className="size-24 shrink-0" aria-hidden="true" />
+  // No shadow-pixel: inside a white panel the hard offset clips and reads as
+  // a broken border. `inline-flex` + block SVG avoids the baseline hairline.
   return (
-    <div className="rounded-none border-4 border-line-accent bg-surface-inverse p-1.5 shadow-pixel">
+    <div className="inline-flex shrink-0 rounded-none border-4 border-line-accent bg-surface-inverse p-2">
       <QrCode
         value={submitUrl}
         label={`QR code pour envoyer un score sur ${gameName}`}
@@ -110,7 +148,7 @@ function RecordCard({
   if (view.kind === 'empty') {
     return (
       <PixelPanel label={game.name} className={cn('min-w-0', className)}>
-        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-2 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-2 text-center">
           <p className="font-display text-scene-pixel text-ink-inverse">
             {pixelCaps('À prendre !')}
           </p>

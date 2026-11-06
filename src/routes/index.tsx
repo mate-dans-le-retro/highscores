@@ -248,20 +248,18 @@ function PublicScreen() {
         ) : null}
 
         {showWall ? (
-          <div
-            className={cn(
-              'flex min-h-0 flex-1 flex-col gap-6 px-24',
-              showHeader ? 'pt-10' : 'pt-24',
+          <div className="relative flex min-h-0 flex-1 flex-col px-24 pt-6">
+            {/*
+              Title + global QR are absolute: they must not consume vertical
+              space, or a centred single row of cards sits too close to the
+              pills (pt here matches the pills' pt below).
+            */}
+            {showHeader ? null : (
+              <h1 className="pointer-events-none absolute top-6 left-24 z-10 font-display text-scene-pixel text-ink-accent">
+                {pixelCaps('Les records')}
+              </h1>
             )}
-          >
-            <div className="flex shrink-0 items-start justify-between gap-8">
-              {showHeader ? (
-                <div className="min-w-0 flex-1" />
-              ) : (
-                <h1 className="min-w-0 font-display text-scene-pixel text-ink-accent">
-                  {pixelCaps('Les records')}
-                </h1>
-              )}
+            <div className="absolute top-6 right-24 z-10">
               <GlobalSubmitQr />
             </div>
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
