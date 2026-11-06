@@ -17,7 +17,11 @@ export function QrCode({ value, label, className }: QrCodeProps) {
       role="img"
       aria-label={label}
       shapeRendering="crispEdges"
-      className={cn('bg-surface-inverse fill-ink-inverse', className)}
+      className={cn(
+        // `block` avoids the inline-SVG baseline gap under the square.
+        'block bg-surface-inverse fill-ink-inverse',
+        className,
+      )}
     >
       {data.flatMap((row, y) =>
         row.map((isDark, x) =>

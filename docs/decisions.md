@@ -174,8 +174,16 @@ Venue wifi drops the Supabase channel; a phone admin that was backgrounded can l
 
 ## 2026-11-05: game covers are cropped square before upload
 
-Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. `restrictPosition={false}` is required so `croppedAreaPixels` can extend past the media (negative x/y) and match that letterboxed preview; with the default clamp the export was a tight center square on a black canvas. No migration.
+Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a square file for the `covers` bucket: PNG when the source has any transparent pixel (Donkey Konga logos), otherwise JPEG (~1024 px, quality 0.85). Opaque letterbox bands stay black; transparent sources keep clear bands instead of a forced black fill. Cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square. `restrictPosition={false}` is required so `croppedAreaPixels` can extend past the media (negative x/y) and match that letterboxed preview; with the default clamp the export was a tight center square on a black canvas. No migration.
 
 ## 2026-11-06: printable submission QR poster from the admin
 
 The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Full MDLR (purple + pixel background) and printer-friendly (white, no pattern). 1, 2 or 4 posters per page (cut from one sheet). Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`; print from the production admin so it hits `scores.matedansleretro.fr`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
+
+## 2026-11-06: QR on the records wall, optional `?game=<slug>`
+
+The wall had no QR while empty "À prendre !" cards begged for one. Light UX shipped:
+
+- **Global QR** always on the wall (top right), pointing at `/score` with no game. A player can send any score without waiting for a game slide.
+- **Per-game QR** only where the layout has room: empty wall cards and the empty-game invite, as `/score?game=<slug>`. Filled wall cards stay photo + score (no second QR). The game-slide "À toi de jouer" panel also uses `?game=<slug>` for the game on screen; a second global QR there would crowd the aside, and the wall already carries the unscoped one.
+- **Form**: `?game=` preselects that visible game on step 2 when the draft has no game yet; the tiles stay changeable. Unknown slugs are ignored.
