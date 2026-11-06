@@ -11,6 +11,7 @@ import { Label } from '#/components/ui/label'
 import { NativeSelect } from '#/components/ui/native-select'
 import { Switch } from '#/components/ui/switch'
 import {
+  adminGamesQuery,
   adminSettingsQuery,
   currentEventQuery,
   renameEvent,
@@ -233,6 +234,8 @@ function SelectSetting({
 function SubmitQrCode() {
   // The admin always reads the real backend, so its QR code never carries the demo.
   const url = useSubmitScoreUrl(false)
+  const refetchInterval = useAdminRefetchInterval()
+  const games = useQuery({ ...adminGamesQuery, refetchInterval })
   return (
     <section className="flex flex-col gap-4 rounded-xl bg-surface-raised p-4 shadow-card sm:flex-row sm:items-start md:p-6">
       <div className="aspect-square w-40 shrink-0 border border-line-subtle">
@@ -253,7 +256,7 @@ function SubmitQrCode() {
             près de chaque borne.
           </p>
         </div>
-        <QrPosterDownload url={url} />
+        <QrPosterDownload url={url} games={games.data ?? []} />
       </div>
     </section>
   )

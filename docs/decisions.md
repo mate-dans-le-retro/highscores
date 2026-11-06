@@ -178,7 +178,7 @@ Every public tile shows the cover as a square (`object-cover`). Picking a file i
 
 ## 2026-11-06: printable submission QR poster from the admin
 
-The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Full MDLR (purple + pixel background) and printer-friendly (white, no pattern). 1, 2 or 4 posters per page (cut from one sheet). Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`; print from the production admin so it hits `scores.matedansleretro.fr`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
+The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Clair (white, no pattern) and Sombre (purple + pixel background). 1, 2 or 4 posters per page (cut from one sheet). Optional "Une affiche par jeu": multi-select games, each poster shows the game name, puts the cover in the QR centre (ECC H), and links to `/score?game=<slug>`. A pack becomes a multipage PDF when it needs more than one sheet. Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
 
 ## 2026-11-06: QR on the records wall, optional `?game=<slug>`
 
