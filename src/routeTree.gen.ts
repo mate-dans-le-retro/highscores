@@ -16,6 +16,7 @@ import { Route as ScoreRouteImport } from './routes/score'
 import { Route as ScoresRouteImport } from './routes/scores'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminGamesIndexRouteImport } from './routes/admin/games/index'
 import { Route as AdminGamesGameIdRouteImport } from './routes/admin/games/$gameId'
 
@@ -54,6 +55,11 @@ const AdminSettingsRoute = AdminSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGamesIndexRoute = AdminGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
@@ -72,6 +78,7 @@ export interface FileRoutesByFullPath {
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games/': typeof AdminGamesIndexRoute
@@ -82,6 +89,7 @@ export interface FileRoutesByTo {
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games': typeof AdminGamesIndexRoute
@@ -94,6 +102,7 @@ export interface FileRoutesById {
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games/': typeof AdminGamesIndexRoute
@@ -107,6 +116,7 @@ export interface FileRouteTypes {
     | '/score'
     | '/scores'
     | '/admin/settings'
+    | '/admin/users'
     | '/admin/'
     | '/admin/games/$gameId'
     | '/admin/games/'
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/score'
     | '/scores'
     | '/admin/settings'
+    | '/admin/users'
     | '/admin'
     | '/admin/games/$gameId'
     | '/admin/games'
@@ -128,6 +139,7 @@ export interface FileRouteTypes {
     | '/score'
     | '/scores'
     | '/admin/settings'
+    | '/admin/users'
     | '/admin/'
     | '/admin/games/$gameId'
     | '/admin/games/'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/games/': {
       id: '/admin/games/'
       path: '/games'
@@ -211,6 +230,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminGamesGameIdRoute: typeof AdminGamesGameIdRoute
   AdminGamesIndexRoute: typeof AdminGamesIndexRoute
@@ -218,6 +238,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminGamesGameIdRoute: AdminGamesGameIdRoute,
   AdminGamesIndexRoute: AdminGamesIndexRoute,

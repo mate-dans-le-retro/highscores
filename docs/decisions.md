@@ -16,7 +16,7 @@ A player submission and a score entered by a volunteer are the same object at di
 
 ## 2026-11-04: sign-ups closed, volunteers in `public.admins`
 
-No public sign-up. An Auth account alone grants nothing: it has to be in `public.admins`. This way, sign-ups opened by mistake would not give access to the admin.
+No public sign-up. An Auth account alone grants nothing: it has to be in `public.admins`. This way, sign-ups opened by mistake would not give access to the admin. Superseded for the sign-up policy by "Open sign-ups, promote from the admin" (2026-11-06); the fail-closed rule (rights only from `public.admins`) stays.
 
 ## 2026-11-04: public repository
 
@@ -101,7 +101,11 @@ A photo is never refused: some phones send `image/heif` or no type at all. The b
 
 ## 2026-11-05: Google sign-in for volunteers, sign-ups still closed
 
-Volunteers sign in with Google, so they have no password to remember. Sign-ups stay closed: we create each volunteer's user first, and their Google identity links to it through the email. With sign-ups open, any Google account could create a user. That user would have no rights, but we would have to check every policy against a signed-in stranger. Rights still come only from `public.admins`. Email and password stay as a fallback, in case Google fails on the venue network during the event.
+Volunteers sign in with Google, so they have no password to remember. Sign-ups stay closed: we create each volunteer's user first, and their Google identity links to it through the email. With sign-ups open, any Google account could create a user. That user would have no rights, but we would have to check every policy against a signed-in stranger. Rights still come only from `public.admins`. Email and password stay as a fallback, in case Google fails on the venue network during the event. Superseded by "Open sign-ups, promote from the admin" below.
+
+## 2026-11-06: Open sign-ups, promote from the admin
+
+Sign-ups are open so colleagues can create an Auth account themselves (Google or email/password). Fail-closed stays: Auth alone grants nothing; `/admin` only opens for rows in `public.admins`. Clément (or any admin) promotes from `/admin/users` (`list_registered_users` / `set_user_admin`), without SQL. Demotion is supported, except for yourself and the last admin. After a Google sign-up, the signed-in user can set a password for the venue wifi. Linking Google onto a password-only account is deferred.
 
 ## 2026-11-05: public screen after the visual review
 

@@ -17,12 +17,12 @@ export function oauthErrorMessage(url: URL) {
   const { code, description, hasError } = errorParams(url)
   if (!hasError) return null
 
-  // Sign-ups are closed: a Google account with no volunteer account lands here.
+  // Dashboard still has sign-ups closed: Auth refuses to create the user.
   if (
     code === 'signup_disabled' ||
     /signups? not allowed/i.test(description ?? '')
   ) {
-    return "Ce compte Google n'est pas encore bénévole. Demande à Clément de t'ajouter."
+    return 'Les inscriptions sont encore fermées côté Auth. Demande à Clément de les ouvrir, puis réessaie.'
   }
   return "La connexion avec Google n'a pas abouti. Réessaie !"
 }

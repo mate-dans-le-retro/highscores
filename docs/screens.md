@@ -32,7 +32,11 @@ Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and 
 
 ## Admin (`/admin`, `console` theme, desktop)
 
-Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran et Instagram", and an "Ouvrir l'écran public" button.
+Pink top bar: logo, "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Bénévoles", and an "Ouvrir l'écran public" button.
+
+**Sign-in.** Google first, then email/password, with a link to create an account. A new Auth account lands on "Pas encore bénévole" until an admin promotes it; from that page (and from Bénévoles when the admin has no password yet), they can set a password after a Google sign-up.
+
+**Bénévoles.** List of Auth users (email, providers, admin flag, sign-up date). "Promouvoir admin" / "Retirer admin".
 
 **Submissions.** Filters "À valider", "Validées", "Rejetées" with counts. Each card: photo, name, game, relative time, score, and tags ("Record battu", "1re place", "Instagram" or "Sans Instagram", "Masqué"). Detail panel: photo, "Lu sur la photo : Tetris · 128 400", editable game, score and display name, the current record ("Ce score prend la 1re place."), "Afficher sur l'écran public" (unchecked: the score stays ranked, but the name and photo are replaced by a neutral nickname and image), "Publier sur Instagram" (only if the player agreed), the Instagram caption, and the "Rejeter" / "Valider et afficher" actions. Pending and rejected submissions can also be deleted for good (inline confirm "Garder" / "Supprimer", same pattern as records); approved scores stay deletable from Records. A switch "Envois ouverts" opens or closes submissions.
 

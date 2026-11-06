@@ -4,15 +4,19 @@ import type { FormEvent } from 'react'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { signIn, signInWithGoogle } from '#/lib/admin'
+import { signIn, signInWithGoogle, signUp } from '#/lib/admin'
 import { oauthErrorMessage, withoutOAuthError } from '#/lib/oauth-error'
 
+type Mode = 'sign-in' | 'sign-up'
+
 export function SignIn() {
+  const [mode, setMode] = useState<Mode>('sign-in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(() =>
     oauthErrorMessage(new URL(window.location.href)),
   )
+  const [info, setInfo] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
   useEffect(() => {
@@ -26,10 +30,32 @@ export function SignIn() {
     event.preventDefault()
     setPending(true)
     setError(null)
+    setInfo(null)
     try {
-      await signIn(email, password)
-    } catch {
-      setError('Email ou mot de passe incorrect. Réessaie !')
+      if (mode === 'sign-in') {
+        await signIn(email, password)
+        return
+      }
+      const data = await signUp(email, password)
+      if (!data.session) {
+        setInfo(
+          'Compte créé. Si on te demande de confirmer ton email, ouvre le lien puis reconnecte-toi. Ensuite, demande à Clément de te promouvoir bénévole.',
+        )
+        setMode('sign-in')
+        setPassword('')
+        return
+      }
+      // Session present: AuthLayout will show "Pas encore bénévole".
+    } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message.toLowerCase() : ''
+      if (mode === 'sign-up' && /already|registered|exists/i.test(message)) {
+        setError('Ce compte existe déjà. Connecte-toi plutôt !')
+      } else if (mode === 'sign-up') {
+        setError("L'inscription n'a pas abouti. Réessaie !")
+      } else {
+        setError('Email ou mot de passe incorrect. Réessaie !')
+      }
     } finally {
       setPending(false)
     }
@@ -38,6 +64,7 @@ export function SignIn() {
   async function continueWithGoogle() {
     setPending(true)
     setError(null)
+    setInfo(null)
     try {
       // On success the browser leaves for Google: the button stays disabled.
       await signInWithGoogle()
@@ -54,12 +81,18 @@ export function SignIn() {
           <p className="font-display text-xs text-ink-accent">MDLR</p>
           <h1 className="text-h3">Admin des highscores</h1>
           <p className="text-body-sm text-ink-secondary">
-            Réservé aux bénévoles. Connecte-toi pour valider les scores.
+            Crée ton compte ou connecte-toi. L'accès bénévole arrive après une
+            promotion par Clément.
           </p>
         </div>
         {error && (
           <p role="alert" className="text-body-sm text-destructive">
             {error}
+          </p>
+        )}
+        {info && (
+          <p role="status" className="text-body-sm text-ink-secondary">
+            {info}
           </p>
         )}
         <Button
@@ -94,16 +127,58 @@ export function SignIn() {
             <Input
               id="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete={
+                mode === 'sign-up' ? 'new-password' : 'current-password'
+              }
               required
+              minLength={6}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
           </div>
           <Button type="submit" variant="outline" size="lg" disabled={pending}>
-            {pending ? 'Connexion…' : 'Se connecter'}
+            {pending
+              ? mode === 'sign-up'
+                ? 'Création…'
+                : 'Connexion…'
+              : mode === 'sign-up'
+                ? 'Créer un compte'
+                : 'Se connecter'}
           </Button>
         </form>
+        <p className="text-center text-body-sm text-ink-secondary">
+          {mode === 'sign-in' ? (
+            <>
+              Pas encore de compte ?{' '}
+              <button
+                type="button"
+                className="font-semibold text-ink-accent underline-offset-2 hover:underline"
+                onClick={() => {
+                  setMode('sign-up')
+                  setError(null)
+                  setInfo(null)
+                }}
+              >
+                S'inscrire
+              </button>
+            </>
+          ) : (
+            <>
+              Déjà inscrit ?{' '}
+              <button
+                type="button"
+                className="font-semibold text-ink-accent underline-offset-2 hover:underline"
+                onClick={() => {
+                  setMode('sign-in')
+                  setError(null)
+                  setInfo(null)
+                }}
+              >
+                Se connecter
+              </button>
+            </>
+          )}
+        </p>
       </div>
     </main>
   )
