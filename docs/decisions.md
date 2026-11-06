@@ -180,6 +180,10 @@ Every public tile shows the cover as a square (`object-cover`). Picking a file i
 
 The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Clair (white, no pattern) and Sombre (purple + pixel background). 1, 2 or 4 posters per page (cut from one sheet). Optional "Une affiche par jeu": multi-select games, each poster shows the game name, puts the cover in the QR centre (ECC H), and links to `/score?game=<slug>`. A pack becomes a multipage PDF when it needs more than one sheet. Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
 
+## 2026-11-07: admin clair / sombre preference
+
+The admin stays on the `console` route theme by default (light management screens). A Clair / Sombre control in the pink app bar maps sombre to the existing `arcade` tokens (no fourth theme). The choice is kept in `localStorage` under `mdlr-highscores-admin-appearance` and applied in `__root.tsx` only when the route theme is `console`. Public and player routes are unchanged. The app bar (and sign-in lockup) uses Brand Color dark (`/mdlr-logo-color-dark.svg`): transparent background with a white block under « dans le rétro », same as Tournois.
+
 ## 2026-11-06: QR on the records wall, optional `?game=<slug>`
 
 The wall had no QR while empty "À prendre !" cards begged for one. Light UX shipped:

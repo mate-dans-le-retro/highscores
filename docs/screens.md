@@ -32,11 +32,11 @@ Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and 
 3. **Consent** ("Tes autorisations", "Deux cases, et un mot sur ce qu'on fait de ta photo."). In this order: the checkbox "Affichage sur l'écran", ticked by default ("J'accepte que ma photo, mon nom et mon score soient affichés sur l'écran de l'événement."); when ticked, the field "Ton nom ou pseudo (facultatif)" ("Laisse vide et on t'invente un nom."), when unticked "On t'invente un nom au hasard et on n'affiche pas ta photo."; the preview "Sur l'écran, ça donnera :" (photo or masked bust, real name or generated nickname, game, score); the checkbox "Instagram (facultatif)" ("J'accepte que Mate dans le Rétro… Gaming publie ma photo et mon score sur son compte @mate_dans_le_retro."), and only when it is ticked the field "Ton compte Instagram, pour te taguer (facultatif)". "Tu changes d'avis ? Dis-le à un bénévole, on retire ta photo." Button "Envoyer mon score".
 4. **Sent** ("MERCI !", "Score envoyé"). "Un bénévole vérifie ton score. Une fois validé, tu apparais sur l'écran, près de la scène." Status pill "En attente de validation", button "Envoyer un autre score".
 
-## Admin (`/admin`, `console` theme, desktop)
+## Admin (`/admin`, `console` theme by default, desktop)
 
-Pink top bar (aligned with Tournois): MDLR logo, stacked "MDLR" / "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Utilisateurs", truncated email linking to Mon compte, Admin pill, "Ouvrir l'écran public", and logout.
+Pink top bar (aligned with Tournois): Brand Color dark logo (white block under « dans le rétro »), stacked "MDLR" / "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Utilisateurs", truncated email linking to Mon compte, Admin pill, Clair / Sombre theme toggle (stored in `localStorage`), "Ouvrir l'écran public", and logout. Sombre remaps the admin to `arcade` tokens; public routes stay on their own themes.
 
-**Sign-in.** Arcade pink-framed card (like Tournois): logo, "Connexion" / "Inscription", Google first, then email/password. The line "Ton accès admin sera disponible après validation d'un admin" shows in sign-up mode only. A new Auth account lands on "Pas encore admin" until an admin promotes it; from that page (and from Mon compte), they can set a password after a Google sign-up.
+**Sign-in.** Arcade pink-framed card (like Tournois): Color dark logo, "Connexion" / "Inscription", Google first, then email/password. The line "Ton accès admin sera disponible après validation d'un admin" shows in sign-up mode only. A new Auth account lands on "Pas encore admin" until an admin promotes it; from that page (and from Mon compte), they can set a password after a Google sign-up.
 
 **Utilisateurs.** List of Auth users (email, providers, admin flag, sign-up date). "Promouvoir admin" / "Retirer admin".
 

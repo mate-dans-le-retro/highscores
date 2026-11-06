@@ -9,6 +9,7 @@ import {
 } from '#/components/admin/realtime-provider'
 import { SetPasswordForm } from '#/components/admin/set-password-form'
 import { SignIn } from '#/components/admin/sign-in'
+import { ThemeToggle } from '#/components/admin/theme-toggle'
 import { Button } from '#/components/ui/button'
 import {
   sessionHasPassword,
@@ -110,6 +111,7 @@ function AdminTopBar({ email }: { email: string }) {
         <span className="hidden rounded-full border-2 border-brand-purple bg-transparent px-3 py-0.5 text-caption font-extrabold text-ink-on-accent sm:inline">
           Admin
         </span>
+        <ThemeToggle />
         <Button
           asChild
           variant="outline"

@@ -9,6 +9,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import { DemoWatermark } from '#/components/demo-watermark'
+import { adminAppearanceToTheme, useAdminAppearance } from '#/lib/admin-theme'
 
 import appCss from '../styles.css?url'
 
@@ -85,13 +86,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootDocument,
 })
 
-function useTheme(): MdlrTheme {
+function useRouteTheme(): MdlrTheme {
   const matches = useMatches()
   for (let i = matches.length - 1; i >= 0; i--) {
     const theme = matches[i].staticData.theme
     if (theme) return theme
   }
   return 'arcade'
+}
+
+/** Admin routes declare `console`; honor the clair/sombre preference on top. */
+function useTheme(): MdlrTheme {
+  const routeTheme = useRouteTheme()
+  const appearance = useAdminAppearance()
+  if (routeTheme === 'console') return adminAppearanceToTheme(appearance)
+  return routeTheme
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {

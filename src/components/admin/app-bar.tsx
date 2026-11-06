@@ -7,7 +7,7 @@ import { cn } from '#/lib/utils'
 type AppBarProps = {
   title: string
   homeTo?: '/admin'
-  /** Lockup for the pink bar (fond clair / color dark). */
+  /** Brand Color dark: transparent lockup, white block under « dans le rétro ». */
   logoSrc?: string
   showLogo?: boolean
   children?: ReactNode
@@ -21,7 +21,7 @@ type AppBarProps = {
 export function AppBar({
   title,
   homeTo = '/admin',
-  logoSrc = '/mdlr-logo.svg',
+  logoSrc = '/mdlr-logo-color-dark.svg',
   showLogo = true,
   children,
   className,
