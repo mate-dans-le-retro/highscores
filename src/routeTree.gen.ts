@@ -15,6 +15,7 @@ import { Route as DevRouteImport } from './routes/dev'
 import { Route as ScoreRouteImport } from './routes/score'
 import { Route as ScoresRouteImport } from './routes/scores'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminAccountRouteImport } from './routes/admin/account'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminGamesIndexRouteImport } from './routes/admin/games/index'
@@ -50,6 +51,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAccountRoute = AdminAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin': typeof AdminIndexRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/dev': typeof DevRoute
   '/score': typeof ScoreRoute
   '/scores': typeof ScoresRoute
+  '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
   '/admin/': typeof AdminIndexRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/score'
     | '/scores'
+    | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
     | '/admin/'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/score'
     | '/scores'
+    | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
     | '/admin'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/dev'
     | '/score'
     | '/scores'
+    | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
     | '/admin/'
@@ -197,6 +209,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/account': {
+      id: '/admin/account'
+      path: '/account'
+      fullPath: '/admin/account'
+      preLoaderRoute: typeof AdminAccountRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -229,6 +248,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminAccountRoute: typeof AdminAccountRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -237,6 +257,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAccountRoute: AdminAccountRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { LogOut, MonitorPlay } from 'lucide-react'
 
+import { AppBar } from '#/components/admin/app-bar'
 import {
   AdminRealtimeProvider,
   useAdminRefetchInterval,
@@ -43,11 +44,11 @@ function AdminLayout() {
       <main className="grid min-h-screen place-items-center px-4 py-8">
         <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
           <div className="flex flex-col items-center gap-4">
-            <h1 className="text-h3">Pas encore bénévole</h1>
+            <h1 className="text-h3">Pas encore admin</h1>
             <p className="text-body-ui text-ink-secondary">
-              Ton compte ({auth.session.user.email}) existe, mais il n'est pas
-              encore dans la liste des bénévoles. Demande à Clément de te
-              promouvoir depuis l'onglet Bénévoles.
+              Ton compte ({auth.session.user.email}) existe, mais il n'a pas
+              encore le rôle admin. Demande à un admin de te promouvoir depuis
+              l'onglet Utilisateurs.
             </p>
             <Button variant="outline" onClick={() => void signOut()}>
               Se déconnecter
@@ -75,9 +76,8 @@ function AdminLayout() {
   )
 }
 
-// TanStack Router sets data-status="active" on the link of the current page.
-const tabClass =
-  'inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink-on-accent transition-colors hover:bg-surface-inverse/10 data-[status=active]:bg-surface-inverse data-[status=active]:text-ink-inverse'
+const navPillBase =
+  'inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-extrabold leading-none no-underline transition-colors'
 
 function AdminTopBar({ email }: { email: string }) {
   const refetchInterval = useAdminRefetchInterval()
@@ -85,64 +85,89 @@ function AdminTopBar({ email }: { email: string }) {
   const pending = counts.data?.pending ?? 0
 
   return (
-    <header className="sticky top-0 z-10 bg-primary">
-      <div className="mx-auto flex w-full max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 md:px-8">
-        <Link
-          to="/admin"
-          className="flex items-center gap-3 text-ink-on-accent"
-        >
-          <span className="font-display text-xs">MDLR</span>
-          <span className="text-h6">Highscores</span>
-        </Link>
-        <nav className="order-last flex w-full items-center gap-1 overflow-x-auto md:order-none md:w-auto md:flex-1 md:justify-end">
+    <AppBar title="Highscores">
+      <nav
+        className="mr-1 hidden items-center gap-1 md:flex"
+        aria-label="Sections"
+      >
+        <NavTab to="/admin" exact pending={pending}>
+          Soumissions
+        </NavTab>
+        <NavTab to="/admin/games">Jeux</NavTab>
+        <NavTab to="/admin/settings">Écran</NavTab>
+        <NavTab to="/admin/users">Utilisateurs</NavTab>
+      </nav>
+      <div className="flex items-center gap-2 text-ink-on-accent sm:gap-3">
+        {email ? (
           <Link
-            to="/admin"
-            activeOptions={{ exact: true }}
-            className={tabClass}
+            to="/admin/account"
+            className="hidden max-w-56 truncate text-body-sm text-ink-on-accent no-underline hover:underline md:inline"
+            title="Mon compte"
           >
-            Soumissions
-            {pending > 0 && (
-              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-surface-raised px-1.5 text-xs text-ink-primary">
-                {pending}
-              </span>
-            )}
+            {email}
           </Link>
-          <Link to="/admin/games" className={tabClass}>
-            Jeux
-          </Link>
-          <Link to="/admin/settings" className={tabClass}>
-            Écran
-          </Link>
-          <Link to="/admin/users" className={tabClass}>
-            Bénévoles
-          </Link>
-        </nav>
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="border-line-strong bg-transparent text-ink-on-accent hover:bg-surface-inverse/10"
-          >
-            <a href="/" target="_blank" rel="noreferrer">
-              <MonitorPlay />
-              <span className="sr-only sm:not-sr-only">
-                Ouvrir l'écran public
-              </span>
-            </a>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-ink-on-accent hover:bg-surface-inverse/10"
-            title={`Se déconnecter (${email})`}
-            aria-label="Se déconnecter"
-            onClick={() => void signOut()}
-          >
-            <LogOut />
-          </Button>
-        </div>
+        ) : null}
+        <span className="hidden rounded-full border-2 border-brand-purple bg-transparent px-3 py-0.5 text-caption font-extrabold text-ink-on-accent sm:inline">
+          Admin
+        </span>
+        <Button
+          asChild
+          variant="outline"
+          size="sm"
+          className="border-brand-purple bg-transparent text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
+        >
+          <a href="/" target="_blank" rel="noreferrer">
+            <MonitorPlay />
+            <span className="sr-only xl:not-sr-only">
+              Ouvrir l'écran public
+            </span>
+          </a>
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
+          title={`Se déconnecter (${email})`}
+          aria-label="Se déconnecter"
+          onClick={() => void signOut()}
+        >
+          <LogOut />
+        </Button>
       </div>
-    </header>
+    </AppBar>
+  )
+}
+
+function NavTab({
+  to,
+  children,
+  exact = false,
+  pending,
+}: {
+  to: '/admin' | '/admin/games' | '/admin/settings' | '/admin/users'
+  children: string
+  exact?: boolean
+  pending?: number
+}) {
+  return (
+    <Link
+      to={to}
+      activeOptions={exact ? { exact: true } : undefined}
+      className={navPillBase}
+      inactiveProps={{
+        className: 'text-ink-on-accent hover:bg-brand-purple/25',
+      }}
+      activeProps={{
+        className:
+          'bg-brand-purple text-ink-on-accent-large hover:bg-brand-purple',
+      }}
+    >
+      {children}
+      {pending != null && pending > 0 ? (
+        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-surface-raised px-1.5 text-xs text-ink-primary">
+          {pending}
+        </span>
+      ) : null}
+    </Link>
   )
 }

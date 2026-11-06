@@ -18,6 +18,9 @@ const buttonVariants = cva(
         ghost:
           'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
         link: 'text-primary underline-offset-4 hover:underline',
+        /** Arcade register only — never on management screens. */
+        pixel:
+          'rounded-none border-4 border-line-strong bg-surface-accent font-display text-[10px] uppercase tracking-wide text-ink-on-accent shadow-pixel hover:translate-x-px hover:translate-y-px hover:shadow-none active:translate-x-0.5 active:translate-y-0.5',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
