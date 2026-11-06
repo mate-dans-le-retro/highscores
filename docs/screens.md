@@ -21,6 +21,8 @@ In the app (see docs/decisions.md, "public screen after the visual review"): the
 
 Rotation: the mode "Alterner les deux" shows the wall, then each game in turn. Durations and number of rows are settings (see admin). After a new record, the screen shows that game; a click on a pill shows that slide from the start of its time.
 
+While the tab is visible, the public screen asks for a Screen Wake Lock so the projector laptop stays awake. Missing API or a denied permission leaves the screen running as before (admin and `/score` do not request it).
+
 ## Player form (`/score`, `arcade` theme, phone)
 
 Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and a three-segment progress bar.

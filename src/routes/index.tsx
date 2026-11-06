@@ -32,6 +32,7 @@ import { FRESH_MS, findFreshScores } from '#/lib/fresh-scores'
 import type { DisplayedGame, GameRecord, NewRecord } from '#/lib/highscores'
 import { screenOptions, screenSearchSchema } from '#/lib/screen-options'
 import { useSubmitScoreUrl } from '#/lib/submit-url'
+import { useScreenWakeLock } from '#/lib/wake-lock'
 import {
   DOUBLE_CLICK_MS,
   INITIAL_ROTATION,
@@ -64,6 +65,7 @@ export const Route = createFileRoute('/')({
 })
 
 function PublicScreen() {
+  useScreenWakeLock()
   useHighscoresRealtime({ reloadAfterMs: RECONNECT_RELOAD_MS })
   const games = useQuery(visibleGamesQuery)
   const settings = useQuery(settingsQuery)

@@ -154,6 +154,10 @@ Reject alone left college-test junk in the database (only Records deleted approv
 
 Product idea "photo next to the record": each `ScoreTable` row shows a 48px square photo between the cup and the name, with the same anonymity rule as the wall and the record panel. `public_scores()` already strips name and photo of an off-screen score; the UI never rebuilds a URL from a null path. No migration.
 
+## 2026-11-06: Screen Wake Lock on the public screen, failsafe
+
+The projected public screen (`/`) requests a screen wake lock while the tab is visible, so the laptop does not sleep the display during the event. Admin and player routes do not. The request is failsafe: missing API, denied permission or any error leaves the screen running; the lock is released on unmount and re-acquired when the tab becomes visible again. Windows kiosk settings and Chrome `--kiosk` remain the primary procedure; the lock is only an extra safeguard.
+
 ## 2026-11-05: game covers are cropped square before upload
 
 Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. No migration.
