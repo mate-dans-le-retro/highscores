@@ -8,7 +8,7 @@ The reference mockups are the "MDLR – Highscores" design canvas (https://claud
 
 Three views. Volunteers choose which ones run in the admin ("Écran et Instagram").
 
-**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
+**One game** ("Un jeu à la fois"). Header with the "HIGHSCORES" title and the logo on the right, over the pixel pattern background. Left: a `ScoreTable` panel with the machine as eyebrow ("Borne 3"), the game name, then the rows: `RankBadge` (pixel cups for the top three, numbered squares after), a square player photo (same Incognito / Sans photo bust as the wall when the score is anonymous or has no photo), player name and score in `font-display`. The newest score is highlighted (`fresh`). Right column, 560px wide:
 
 - "LE RECORD": the photo of the record holder, with "Julie · samedi à 14h32" under it.
 - "À TOI DE JOUER": the QR code to `/score`, "Un record à afficher ?" and "Scanne, prends ta photo, c'est parti !".

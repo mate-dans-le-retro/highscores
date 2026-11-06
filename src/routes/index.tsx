@@ -622,6 +622,9 @@ function GameLeaderboard({
       rank: row.rank,
       player: row.player_name,
       score: formatScore(row.score, game.score_type),
+      // Same wall rule: never a photo URL for an anonymous score.
+      photoSrc: row.anonymous ? null : photoUrl(row.photo_path),
+      anonymous: row.anonymous,
       dimmed: row.dimmed,
       fresh: fresh.has(row.id),
       meta: [formatScoreWhen(row.created_at), row.dimmed && row.event_name]
