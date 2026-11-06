@@ -46,7 +46,7 @@ Built (no mockup for it): a fourth filter "À publier" lists approved scores who
 
 **Games.** Table: drag handle (order), initials thumbnail, name, score type ("Points · le plus haut gagne", "Temps · le plus bas gagne"), number of records, best score, "Affiché"/"Masqué" switch, edit, delete (with confirm; blocked when the game still has scores of any status, with a nudge to hide it instead), "Records". Button "Ajouter un jeu".
 
-**Add a game** (dialog). Name, thumbnail (initials by default, or an uploaded image), score type "Points" / "Temps" / "Autre", "Le meilleur score est" "Le plus haut" / "Le plus bas", "Affiché" switch. Picking a cover opens a square crop step (`react-easy-crop`) before the file is kept for save; the uploaded file is a JPEG.
+**Add a game** (dialog). Name, thumbnail (initials by default, or an uploaded image), score type "Points" / "Temps" / "Autre", "Le meilleur score est" "Le plus haut" / "Le plus bas", "Affiché" switch. Picking a cover opens a square crop step (`react-easy-crop`) before the file is kept for save; the uploaded file is a PNG when the source has transparency, otherwise a JPEG.
 
 **Records of a game.** "Record all-time" line (with the event it comes from), then the current event's ranking: rank, photo, player (masked names shown greyed with a "Masqué" tag), score, origin ("Soumission validée" or "Saisie à la main"), edit, delete. Side panels: "Ajouter un record à la main" (name, score, optional photo, show on screen) and "Archiver l'évènement" (archive the current event: scores are kept and still count for the all-time record, the leaderboard starts from zero), with "Voir les évènements archivés".
 

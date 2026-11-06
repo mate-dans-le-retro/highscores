@@ -6,18 +6,22 @@ import {
   coverMaxZoom,
   coverMinZoom,
   drawCoverCrop,
+  ensureCoverName,
+  pixelDataHasAlpha,
   scaledCropSize,
 } from './cover-crop'
 
 function mockContext() {
   const drawImage = vi.fn()
   const fillRect = vi.fn()
+  const clearRect = vi.fn()
   const context = {
     fillStyle: '',
     fillRect,
+    clearRect,
     drawImage,
   } as unknown as CanvasRenderingContext2D
-  return { context, drawImage, fillRect }
+  return { context, drawImage, fillRect, clearRect }
 }
 
 function fakeImage(naturalWidth: number, naturalHeight: number) {
@@ -97,9 +101,31 @@ describe('coverFitCropArea', () => {
   })
 })
 
+describe('pixelDataHasAlpha', () => {
+  it('is false for fully opaque RGBA', () => {
+    expect(pixelDataHasAlpha([10, 20, 30, 255, 40, 50, 60, 255])).toBe(false)
+  })
+
+  it('is true when any alpha is below 255', () => {
+    expect(pixelDataHasAlpha([10, 20, 30, 255, 0, 0, 0, 0])).toBe(true)
+  })
+})
+
+describe('ensureCoverName', () => {
+  it('swaps the extension for the export format', () => {
+    expect(ensureCoverName('Donkey_Konga_Logo.png', 'png')).toBe(
+      'Donkey_Konga_Logo.png',
+    )
+    expect(ensureCoverName('Donkey_Konga_Logo.png', 'jpg')).toBe(
+      'Donkey_Konga_Logo.jpg',
+    )
+    expect(ensureCoverName('cover', 'png')).toBe('cover.png')
+  })
+})
+
 describe('drawCoverCrop', () => {
   it('letterboxes a zoomed-out landscape crop with black bands', () => {
-    const { context, drawImage, fillRect } = mockContext()
+    const { context, drawImage, fillRect, clearRect } = mockContext()
     const crop = coverFitCropArea(1600, 600)
     const size = scaledCropSize(crop, COVER_SIZE)
 
@@ -107,6 +133,7 @@ describe('drawCoverCrop', () => {
 
     expect(context.fillStyle).toBe('#000')
     expect(fillRect).toHaveBeenCalledWith(0, 0, size, size)
+    expect(clearRect).not.toHaveBeenCalled()
     expect(size).toBe(COVER_SIZE)
     // Full width drawn, vertically centered: (1024 - 384) / 2 = 320.
     expect(drawImage).toHaveBeenCalledWith(
@@ -120,6 +147,17 @@ describe('drawCoverCrop', () => {
       1024,
       384,
     )
+  })
+
+  it('clears instead of filling black when preserving alpha', () => {
+    const { context, fillRect, clearRect } = mockContext()
+    const crop = coverFitCropArea(800, 400)
+    const size = scaledCropSize(crop, COVER_SIZE)
+
+    drawCoverCrop(context, fakeImage(800, 400), crop, size, 'transparent')
+
+    expect(clearRect).toHaveBeenCalledWith(0, 0, size, size)
+    expect(fillRect).not.toHaveBeenCalled()
   })
 
   it('does not leave black when the crop sits inside the image', () => {
