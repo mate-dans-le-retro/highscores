@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute, Navigate } from '@tanstack/react-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { ConsentStep } from '@/components/score/consent-step'
 import { DetailsStep } from '@/components/score/details-step'
@@ -11,6 +11,7 @@ import { useDraftPhoto } from '#/lib/draft-photo'
 import { readScoreDraft, writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import { resolveScoreStep, scoreSearchSchema } from '#/lib/score-step'
+import { seedGameFromSearch } from '#/lib/seed-game-from-search'
 import { settingsQuery, visibleGamesQuery } from '#/lib/highscores'
 
 export const Route = createFileRoute('/score')({
@@ -31,6 +32,13 @@ function SubmitScore() {
     writeScoreDraft(next)
     setDraft(next)
   }, [])
+
+  // QR `?game=<slug>`: prefill step 2 when the draft has no game yet.
+  useEffect(() => {
+    if (!games.data) return
+    const next = seedGameFromSearch(draft, games.data, search.game)
+    if (next) onDraftChange(next)
+  }, [draft, games.data, onDraftChange, search.game])
 
   if (settings.data && !settings.data.submissions_open && step !== 'done') {
     return (
