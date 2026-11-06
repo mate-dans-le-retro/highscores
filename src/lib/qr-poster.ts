@@ -1,10 +1,12 @@
 import { encode } from 'uqr'
 
 import { pixelCaps } from './format'
+import { submitScoreUrl } from './submit-url'
 
 /**
  * Printable A4 poster sheet for the submission QR. Drawn at 300 DPI, then
- * downloaded as PDF (preferred) or PNG.
+ * downloaded as PDF (preferred) or PNG. One sheet can hold 1, 2 or 4 posters;
+ * a game pack spans as many pages as needed.
  */
 
 export const POSTER_WIDTH = 2480
@@ -23,18 +25,34 @@ export const POSTER_STYLES: Array<{
   hint: string
 }> = [
   {
-    value: 'branded',
-    label: 'Full MDLR',
-    hint: 'Fond violet et motif pixel.',
+    value: 'plain',
+    label: 'Clair',
+    hint: 'Fond blanc, économe en encre.',
   },
   {
-    value: 'plain',
-    label: 'Économe en encre',
-    hint: 'Fond blanc, sans motif.',
+    value: 'branded',
+    label: 'Sombre',
+    hint: 'Fond violet et motif pixel MDLR.',
   },
 ]
 
-export const POSTERS_PER_PAGE: Array<PostersPerPage> = [1, 2, 4]
+export const POSTERS_PER_PAGE: Array<{
+  value: PostersPerPage
+  label: string
+}> = [
+  { value: 1, label: 'Grande (1 par page)' },
+  { value: 2, label: 'Moyenne (2 par page)' },
+  { value: 4, label: 'Petite (4 par page)' },
+]
+
+/** Game branding drawn on a per-game poster (name + cover in the QR). */
+export type PosterGame = {
+  slug: string
+  name: string
+  shortLabel: string
+  /** Absolute cover URL, or null to fall back to the short label. */
+  coverUrl: string | null
+}
 
 const LOGO_ON_DARK_SRC = '/mdlr-logo-couleur-fond-sombre.svg'
 const LOGO_ON_LIGHT_SRC = '/mdlr-logo.svg'
@@ -71,9 +89,10 @@ function readTokens(theme: 'arcade' = 'arcade'): Tokens {
   return tokens
 }
 
-async function loadImage(src: string) {
+async function loadImage(src: string, cors = false) {
   const image = new Image()
   image.decoding = 'async'
+  if (cors) image.crossOrigin = 'anonymous'
   image.src = src
   await image.decode()
   return image
@@ -119,6 +138,30 @@ export function loadPosterAssets(): Promise<PosterAssets> {
   return staticAssets
 }
 
+/** Cover image for the QR centre; fails soft so a missing file still prints. */
+export async function loadPosterCover(
+  coverUrl: string | null,
+): Promise<HTMLImageElement | null> {
+  if (!coverUrl) return null
+  try {
+    return await loadImage(coverUrl, true)
+  } catch {
+    return null
+  }
+}
+
+export async function loadPosterCovers(
+  games: Array<PosterGame>,
+): Promise<Map<string, HTMLImageElement | null>> {
+  const entries = await Promise.all(
+    games.map(
+      async (game) =>
+        [game.slug, await loadPosterCover(game.coverUrl)] as const,
+    ),
+  )
+  return new Map(entries)
+}
+
 function drawCover(
   ctx: CanvasRenderingContext2D,
   image: HTMLImageElement,
@@ -150,8 +193,13 @@ function drawQr(
   size: number,
   dark: string,
   light: string,
+  /** Higher ECC when a centre thumb covers modules. */
+  withCentreThumb: boolean,
 ) {
-  const { data, size: modules } = encode(value, { ecc: 'M', border: 4 })
+  const { data, size: modules } = encode(value, {
+    ecc: withCentreThumb ? 'H' : 'M',
+    border: 4,
+  })
   const module = size / modules
   ctx.fillStyle = light
   ctx.fillRect(x, y, size, size)
@@ -168,6 +216,49 @@ function drawQr(
       }
     }
   }
+}
+
+function drawQrCentreThumb(
+  ctx: CanvasRenderingContext2D,
+  qrX: number,
+  qrY: number,
+  qrSize: number,
+  cover: HTMLImageElement | null,
+  shortLabel: string,
+  purple: string,
+) {
+  const thumb = qrSize * 0.28
+  const pad = qrSize * 0.04
+  const box = thumb + pad * 2
+  const left = qrX + (qrSize - box) / 2
+  const top = qrY + (qrSize - box) / 2
+
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(left, top, box, box)
+
+  const innerX = left + pad
+  const innerY = top + pad
+  if (cover) {
+    ctx.save()
+    ctx.beginPath()
+    ctx.rect(innerX, innerY, thumb, thumb)
+    ctx.clip()
+    drawCover(ctx, cover, innerX, innerY, thumb, thumb)
+    ctx.restore()
+    return
+  }
+
+  ctx.fillStyle = purple
+  ctx.fillRect(innerX, innerY, thumb, thumb)
+  const label = shortLabel.slice(0, 3).toUpperCase()
+  const fontSize = Math.min(thumb * 0.34, 72)
+  ctx.font = `700 ${fontSize}px ${SANS_FONT}`
+  ctx.fillStyle = '#ffffff'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(label, innerX + thumb / 2, innerY + thumb / 2)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
 }
 
 function fitFont(
@@ -201,11 +292,25 @@ export function sheetGrid(perPage: PostersPerPage) {
   return { cols: 2, rows: 2 }
 }
 
+/** Split selected games into pages of `perPage` posters. */
+export function chunkPosterGames(
+  games: Array<PosterGame>,
+  perPage: PostersPerPage,
+): Array<Array<PosterGame>> {
+  if (games.length === 0) return []
+  const pages: Array<Array<PosterGame>> = []
+  for (let i = 0; i < games.length; i += perPage) {
+    pages.push(games.slice(i, i + perPage))
+  }
+  return pages
+}
+
 /** File stem shared by PNG and PDF downloads. */
 export function posterFileStem(
   submitUrl: string,
   style: PosterStyle,
   perPage: PostersPerPage,
+  kind: 'generic' | 'games' = 'generic',
 ) {
   let host = 'affiche'
   try {
@@ -213,7 +318,8 @@ export function posterFileStem(
   } catch {
     /* keep default */
   }
-  return `mdlr-highscores-affiche-${host}-${style}-x${perPage}`
+  const suffix = kind === 'games' ? '-jeux' : ''
+  return `mdlr-highscores-affiche-${host}-${style}-x${perPage}${suffix}`
 }
 
 export function posterFileName(
@@ -221,8 +327,9 @@ export function posterFileName(
   style: PosterStyle,
   perPage: PostersPerPage,
   extension: 'png' | 'pdf',
+  kind: 'generic' | 'games' = 'generic',
 ) {
-  return `${posterFileStem(submitUrl, style, perPage)}.${extension}`
+  return `${posterFileStem(submitUrl, style, perPage, kind)}.${extension}`
 }
 
 /**
@@ -238,6 +345,8 @@ export function drawQrPosterInRect(
   y: number,
   width: number,
   height: number,
+  game: PosterGame | null = null,
+  cover: HTMLImageElement | null = null,
 ) {
   const tokens = readTokens()
   const scale = Math.min(width / POSTER_WIDTH, height / POSTER_HEIGHT)
@@ -306,7 +415,7 @@ export function drawQrPosterInRect(
   let cursorY = top + margin + 40 * scale
 
   if (logo) {
-    const logoHeight = 220 * scale
+    const logoHeight = (game ? 180 : 220) * scale
     const logoWidth = (logoHeight * logo.naturalWidth) / logo.naturalHeight
     ctx.drawImage(
       logo,
@@ -315,7 +424,7 @@ export function drawQrPosterInRect(
       logoWidth,
       logoHeight,
     )
-    cursorY += logoHeight + 80 * scale
+    cursorY += logoHeight + (game ? 56 : 80) * scale
   }
 
   const pixelFont = (size: number) => `${size}px ${PIXEL_FONT}`
@@ -327,8 +436,8 @@ export function drawQrPosterInRect(
     ctx,
     title,
     pixelFont,
-    96 * scale,
-    56 * scale,
+    (game ? 80 : 96) * scale,
+    48 * scale,
     W - margin * 2,
   )
   ctx.font = pixelFont(titleSize)
@@ -336,23 +445,23 @@ export function drawQrPosterInRect(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'top'
   ctx.fillText(title, left + W / 2, cursorY)
-  cursorY += titleSize + 48 * scale
+  cursorY += titleSize + 40 * scale
 
-  const subtitle = 'Highscores'
+  const subtitle = game?.name ?? 'Highscores'
   const subSize = fitFont(
     ctx,
     subtitle,
     sansFont(700),
-    64 * scale,
-    40 * scale,
+    (game ? 56 : 64) * scale,
+    32 * scale,
     W - margin * 2,
   )
   ctx.font = sansFont(700)(subSize)
   ctx.fillStyle = subtitleColor
   ctx.fillText(subtitle, left + W / 2, cursorY)
-  cursorY += subSize + 100 * scale
+  cursorY += subSize + (game ? 72 : 100) * scale
 
-  const qrSize = Math.min(1480 * scale, W - margin * 2)
+  const qrSize = Math.min((game ? 1320 : 1480) * scale, W - margin * 2)
   const qrX = left + (W - qrSize) / 2
   const mat = 36 * scale
   const border = 16 * scale
@@ -365,7 +474,10 @@ export function drawQrPosterInRect(
   )
   ctx.fillStyle = '#ffffff'
   ctx.fillRect(qrX - mat, cursorY - mat, qrSize + mat * 2, qrSize + mat * 2)
-  drawQr(ctx, submitUrl, qrX, cursorY, qrSize, qrDark, '#ffffff')
+  drawQr(ctx, submitUrl, qrX, cursorY, qrSize, qrDark, '#ffffff', Boolean(game))
+  if (game) {
+    drawQrCentreThumb(ctx, qrX, cursorY, qrSize, cover, game.shortLabel, purple)
+  }
   cursorY += qrSize + mat + border + 90 * scale
 
   const hook = 'Un record à afficher ?'
@@ -402,7 +514,7 @@ export function drawQrPosterInRect(
     host,
     sansFont(600),
     36 * scale,
-    24 * scale,
+    22 * scale,
     W - margin * 2,
   )
   ctx.font = sansFont(600)(hostSize)
@@ -417,42 +529,123 @@ export function drawQrPosterInRect(
   ctx.textAlign = 'left'
 }
 
-/** Fills the canvas with an A4 sheet of 1, 2 or 4 posters. */
+function paintSheetBackground(
+  ctx: CanvasRenderingContext2D,
+  style: PosterStyle,
+) {
+  ctx.fillStyle = style === 'branded' ? '#331655' : '#ffffff'
+  ctx.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT)
+}
+
+/**
+ * Fills the canvas with an A4 sheet. Without games, every cell repeats the
+ * same generic poster. With games, each cell is one game (fewer than `perPage`
+ * leaves the remaining cells blank on that page).
+ */
+function gameSubmitUrl(submitUrl: string, gameSlug: string) {
+  try {
+    const parsed = new URL(submitUrl)
+    const mock = parsed.searchParams.get('mock') === '1'
+    return submitScoreUrl(parsed.origin, mock, { gameSlug })
+  } catch {
+    return submitUrl
+  }
+}
+
 export function drawPosterSheet(
   canvas: HTMLCanvasElement,
   submitUrl: string,
   assets: PosterAssets,
   style: PosterStyle,
   perPage: PostersPerPage,
+  games: Array<PosterGame> = [],
+  covers: Map<string, HTMLImageElement | null> = new Map(),
 ) {
   canvas.width = POSTER_WIDTH
   canvas.height = POSTER_HEIGHT
   const ctx = canvas.getContext('2d')
   if (!ctx) return
 
-  ctx.fillStyle = style === 'branded' ? '#331655' : '#ffffff'
-  ctx.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT)
+  paintSheetBackground(ctx, style)
 
   const { cols, rows } = sheetGrid(perPage)
   const cellW = (POSTER_WIDTH - GAP * (cols + 1)) / cols
   const cellH = (POSTER_HEIGHT - GAP * (rows + 1)) / rows
+  const withGames = games.length > 0
 
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
+      const index = row * cols + col
       const cellX = GAP + col * (cellW + GAP)
       const cellY = GAP + row * (cellH + GAP)
-      drawQrPosterInRect(
-        ctx,
-        submitUrl,
-        assets,
-        style,
-        cellX,
-        cellY,
-        cellW,
-        cellH,
-      )
+
+      if (withGames) {
+        const game = games.at(index)
+        if (!game) continue
+        drawQrPosterInRect(
+          ctx,
+          gameSubmitUrl(submitUrl, game.slug),
+          assets,
+          style,
+          cellX,
+          cellY,
+          cellW,
+          cellH,
+          game,
+          covers.get(game.slug) ?? null,
+        )
+      } else {
+        drawQrPosterInRect(
+          ctx,
+          submitUrl,
+          assets,
+          style,
+          cellX,
+          cellY,
+          cellW,
+          cellH,
+        )
+      }
     }
   }
+}
+
+/** Build every A4 canvas needed for a game pack (or one generic sheet). */
+export async function buildPosterCanvases(input: {
+  submitUrl: string
+  assets: PosterAssets
+  style: PosterStyle
+  perPage: PostersPerPage
+  games?: Array<PosterGame>
+}): Promise<Array<HTMLCanvasElement>> {
+  const games = input.games ?? []
+  if (games.length === 0) {
+    const canvas = document.createElement('canvas')
+    drawPosterSheet(
+      canvas,
+      input.submitUrl,
+      input.assets,
+      input.style,
+      input.perPage,
+    )
+    return [canvas]
+  }
+
+  const covers = await loadPosterCovers(games)
+  const pages = chunkPosterGames(games, input.perPage)
+  return pages.map((pageGames) => {
+    const canvas = document.createElement('canvas')
+    drawPosterSheet(
+      canvas,
+      input.submitUrl,
+      input.assets,
+      input.style,
+      input.perPage,
+      pageGames,
+      covers,
+    )
+    return canvas
+  })
 }
 
 /** Single full-page poster (preview helper). */
@@ -461,7 +654,21 @@ export function drawQrPoster(
   submitUrl: string,
   assets: PosterAssets,
   style: PosterStyle = 'branded',
+  game: PosterGame | null = null,
+  cover: HTMLImageElement | null = null,
 ) {
+  if (game) {
+    drawPosterSheet(
+      canvas,
+      submitUrl,
+      assets,
+      style,
+      1,
+      [game],
+      new Map([[game.slug, cover]]),
+    )
+    return
+  }
   drawPosterSheet(canvas, submitUrl, assets, style, 1)
 }
 
@@ -495,15 +702,21 @@ export function canvasToJpegBytes(
   })
 }
 
+type PdfPage = {
+  jpeg: Uint8Array
+  widthPx: number
+  heightPx: number
+}
+
 /**
- * One-page A4 PDF that embeds the sheet as a JPEG (no dependency). The page
+ * Multipage A4 PDF that embeds each sheet as a JPEG (no dependency). Page
  * size matches ISO A4 so printers pick the right paper.
  */
-export function jpegToA4Pdf(
-  jpeg: Uint8Array,
-  widthPx: number,
-  heightPx: number,
-): Blob {
+export function jpegPagesToA4Pdf(pages: Array<PdfPage>): Blob {
+  if (pages.length === 0) {
+    throw new Error('PDF needs at least one page')
+  }
+
   const encoder = new TextEncoder()
   const objects: Array<string | Uint8Array> = []
 
@@ -514,29 +727,37 @@ export function jpegToA4Pdf(
 
   const catalogId = add('')
   const pagesId = add('')
-  const pageId = add('')
-  const contentId = add('')
-  const imageId = add('')
+  const pageRefs = pages.map((page) => ({
+    pageId: add(''),
+    contentId: add(''),
+    imageId: add(''),
+    page,
+  }))
 
   objects[catalogId - 1] = `<< /Type /Catalog /Pages ${pagesId} 0 R >>`
-  objects[pagesId - 1] = `<< /Type /Pages /Kids [${pageId} 0 R] /Count 1 >>`
-  objects[pageId - 1] =
-    `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${A4_WIDTH_PT} ${A4_HEIGHT_PT}] /Contents ${contentId} 0 R /Resources << /XObject << /Im0 ${imageId} 0 R >> >> >>`
-  const contentStream = `q\n${A4_WIDTH_PT} 0 0 ${A4_HEIGHT_PT} 0 0 cm\n/Im0 Do\nQ\n`
-  objects[contentId - 1] =
-    `<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream`
+  objects[pagesId - 1] =
+    `<< /Type /Pages /Kids [${pageRefs.map(({ pageId }) => `${pageId} 0 R`).join(' ')}] /Count ${pages.length} >>`
 
-  const imageHeader = encoder.encode(
-    `<< /Type /XObject /Subtype /Image /Width ${widthPx} /Height ${heightPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.byteLength} >>\nstream\n`,
-  )
-  const imageEnd = encoder.encode('\nendstream')
-  const imageBody = new Uint8Array(
-    imageHeader.byteLength + jpeg.byteLength + imageEnd.byteLength,
-  )
-  imageBody.set(imageHeader, 0)
-  imageBody.set(jpeg, imageHeader.byteLength)
-  imageBody.set(imageEnd, imageHeader.byteLength + jpeg.byteLength)
-  objects[imageId - 1] = imageBody
+  const contentStream = `q\n${A4_WIDTH_PT} 0 0 ${A4_HEIGHT_PT} 0 0 cm\n/Im0 Do\nQ\n`
+
+  for (const { pageId, contentId, imageId, page } of pageRefs) {
+    objects[pageId - 1] =
+      `<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${A4_WIDTH_PT} ${A4_HEIGHT_PT}] /Contents ${contentId} 0 R /Resources << /XObject << /Im0 ${imageId} 0 R >> >> >>`
+    objects[contentId - 1] =
+      `<< /Length ${contentStream.length} >>\nstream\n${contentStream}endstream`
+
+    const imageHeader = encoder.encode(
+      `<< /Type /XObject /Subtype /Image /Width ${page.widthPx} /Height ${page.heightPx} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpeg.byteLength} >>\nstream\n`,
+    )
+    const imageEnd = encoder.encode('\nendstream')
+    const imageBody = new Uint8Array(
+      imageHeader.byteLength + page.jpeg.byteLength + imageEnd.byteLength,
+    )
+    imageBody.set(imageHeader, 0)
+    imageBody.set(page.jpeg, imageHeader.byteLength)
+    imageBody.set(imageEnd, imageHeader.byteLength + page.jpeg.byteLength)
+    objects[imageId - 1] = imageBody
+  }
 
   const headerBytes = encoder.encode('%PDF-1.4\n')
   const chunks: Array<Uint8Array> = [headerBytes]
@@ -581,7 +802,27 @@ export function jpegToA4Pdf(
   return new Blob([pdf], { type: 'application/pdf' })
 }
 
+/** One-page helper kept for callers that already have a single canvas. */
+export function jpegToA4Pdf(
+  jpeg: Uint8Array,
+  widthPx: number,
+  heightPx: number,
+): Blob {
+  return jpegPagesToA4Pdf([{ jpeg, widthPx, heightPx }])
+}
+
 export async function canvasToA4PdfBlob(canvas: HTMLCanvasElement) {
   const jpeg = await canvasToJpegBytes(canvas)
   return jpegToA4Pdf(jpeg, canvas.width, canvas.height)
+}
+
+export async function canvasesToA4PdfBlob(canvases: Array<HTMLCanvasElement>) {
+  const pages = await Promise.all(
+    canvases.map(async (canvas) => ({
+      jpeg: await canvasToJpegBytes(canvas),
+      widthPx: canvas.width,
+      heightPx: canvas.height,
+    })),
+  )
+  return jpegPagesToA4Pdf(pages)
 }
