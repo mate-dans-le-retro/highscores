@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import { Download } from 'lucide-react'
 import { useState } from 'react'
 
 import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
@@ -18,6 +19,12 @@ import {
 } from '#/lib/admin'
 import type { AdminSettings, SettingsChanges } from '#/lib/admin'
 import type { ScreenMode } from '#/lib/data/types'
+import {
+  canvasToPngBlob,
+  drawQrPoster,
+  loadPosterAssets,
+  posterFileName,
+} from '#/lib/qr-poster'
 import { useSubmitScoreUrl } from '#/lib/submit-url'
 import { cn } from '#/lib/utils'
 
@@ -232,6 +239,32 @@ function SelectSetting({
 function SubmitQrCode() {
   // The admin always reads the real backend, so its QR code never carries the demo.
   const url = useSubmitScoreUrl(false)
+  const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+
+  const downloadPoster = async () => {
+    if (!url || busy) return
+    setBusy(true)
+    setFailed(false)
+    try {
+      const assets = await loadPosterAssets()
+      const canvas = document.createElement('canvas')
+      drawQrPoster(canvas, url, assets)
+      const blob = await canvasToPngBlob(canvas)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = posterFileName(url)
+      link.click()
+      URL.revokeObjectURL(objectUrl)
+    } catch (error) {
+      console.warn('QR poster: download failed', error)
+      setFailed(true)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section className="flex flex-col gap-4 rounded-xl bg-surface-raised p-4 shadow-card sm:flex-row sm:items-center md:p-6">
       <div className="aspect-square w-40 shrink-0 border border-line-subtle">
@@ -243,13 +276,35 @@ function SubmitQrCode() {
           />
         )}
       </div>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-h5">QR code d'envoi</h2>
-        <p className="text-body-sm text-ink-secondary">
-          Ouvre le formulaire joueur
-          {url ? ` (${url.replace(/^https?:\/\//, '')})` : ''}. À imprimer près
-          de chaque borne.
-        </p>
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-h5">QR code d'envoi</h2>
+          <p className="text-body-sm text-ink-secondary">
+            Ouvre le formulaire joueur
+            {url ? ` (${url.replace(/^https?:\/\//, '')})` : ''}. À imprimer
+            près de chaque borne.
+          </p>
+        </div>
+        <div className="flex flex-col items-start gap-2">
+          <Button
+            type="button"
+            disabled={!url || busy}
+            onClick={() => void downloadPoster()}
+          >
+            <Download />
+            {busy ? 'Préparation…' : "Télécharger l'affiche"}
+          </Button>
+          <p className="text-caption text-ink-secondary">
+            PNG A4 (300 dpi). Ouvre-le et imprime en « Ajuster à la page », sans
+            marges si tu peux. Depuis l'admin de prod pour que le QR pointe bien
+            vers scores.matedansleretro.fr.
+          </p>
+          {failed && (
+            <p role="alert" className="text-caption text-destructive">
+              L'affiche n'est pas partie. Réessaie dans un instant.
+            </p>
+          )}
+        </div>
       </div>
     </section>
   )
