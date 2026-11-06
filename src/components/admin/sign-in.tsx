@@ -4,10 +4,16 @@ import type { FormEvent } from 'react'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
+import { Logo } from '#/components/logo'
+import { PixelGrid } from '#/components/pixel-grid'
+import { PixelPanel } from '#/components/pixel-panel'
 import { signIn, signInWithGoogle, signUp } from '#/lib/admin'
 import { oauthErrorMessage, withoutOAuthError } from '#/lib/oauth-error'
 
 type Mode = 'sign-in' | 'sign-up'
+
+const SIGN_UP_HINT =
+  "Ton accès admin sera disponible après validation d'un admin."
 
 export function SignIn() {
   const [mode, setMode] = useState<Mode>('sign-in')
@@ -39,13 +45,13 @@ export function SignIn() {
       const data = await signUp(email, password)
       if (!data.session) {
         setInfo(
-          'Compte créé. Si on te demande de confirmer ton email, ouvre le lien puis reconnecte-toi. Ensuite, demande à Clément de te promouvoir bénévole.',
+          `Compte créé. Si on te demande de confirmer ton email, ouvre le lien puis reconnecte-toi. ${SIGN_UP_HINT}`,
         )
         setMode('sign-in')
         setPassword('')
         return
       }
-      // Session present: AuthLayout will show "Pas encore bénévole".
+      // Session present: AdminLayout will show "Pas encore admin".
     } catch (caught) {
       const message =
         caught instanceof Error ? caught.message.toLowerCase() : ''
@@ -74,112 +80,136 @@ export function SignIn() {
     }
   }
 
+  // PixelPanel is white (surface-inverse) in arcade: ink-inverse = purple text.
   return (
-    <main className="grid min-h-screen place-items-center px-4">
-      <div className="flex w-full max-w-sm flex-col gap-5 rounded-xl bg-surface-raised p-8 shadow-card">
-        <div className="flex flex-col gap-1">
-          <p className="font-display text-xs text-ink-accent">MDLR</p>
-          <h1 className="text-h3">Admin des highscores</h1>
-          <p className="text-body-sm text-ink-secondary">
-            Crée ton compte ou connecte-toi. L'accès bénévole arrive après une
-            promotion par Clément.
-          </p>
-        </div>
-        {error && (
-          <p role="alert" className="text-body-sm text-destructive">
-            {error}
-          </p>
-        )}
-        {info && (
-          <p role="status" className="text-body-sm text-ink-secondary">
-            {info}
-          </p>
-        )}
-        <Button
-          size="lg"
-          disabled={pending}
-          onClick={() => void continueWithGoogle()}
-        >
-          Continuer avec Google
-        </Button>
-        <div className="flex items-center gap-3 text-body-sm text-ink-secondary">
-          <span className="h-px flex-1 bg-border" />
-          ou
-          <span className="h-px flex-1 bg-border" />
-        </div>
-        <form
-          onSubmit={(event) => void submit(event)}
-          className="flex flex-col gap-5"
-        >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="password">Mot de passe</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete={
-                mode === 'sign-up' ? 'new-password' : 'current-password'
-              }
-              required
-              minLength={6}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </div>
-          <Button type="submit" variant="outline" size="lg" disabled={pending}>
-            {pending
-              ? mode === 'sign-up'
-                ? 'Création…'
-                : 'Connexion…'
-              : mode === 'sign-up'
-                ? 'Créer un compte'
-                : 'Se connecter'}
-          </Button>
-        </form>
-        <p className="text-center text-body-sm text-ink-secondary">
-          {mode === 'sign-in' ? (
-            <>
-              Pas encore de compte ?{' '}
-              <button
-                type="button"
-                className="font-semibold text-ink-accent underline-offset-2 hover:underline"
-                onClick={() => {
-                  setMode('sign-up')
-                  setError(null)
-                  setInfo(null)
-                }}
+    <div data-theme="arcade" className="min-h-screen bg-surface-base">
+      <PixelGrid className="grid min-h-screen place-items-center bg-surface-base px-4 py-10">
+        <PixelPanel label="HIGHSCORES" className="w-full max-w-md shadow-pixel">
+          <div className="flex flex-col gap-5 text-ink-inverse">
+            <Logo src="/mdlr-logo.svg" className="m-0 w-48 self-center" />
+            <div className="flex flex-col gap-1 text-center">
+              <h1 className="text-h3 text-ink-inverse">
+                {mode === 'sign-up' ? 'Inscription' : 'Connexion'}
+              </h1>
+              {mode === 'sign-up' ? (
+                <p className="text-body-sm text-ink-inverse/80">
+                  {SIGN_UP_HINT}
+                </p>
+              ) : null}
+            </div>
+            {error ? (
+              <p role="alert" className="text-body-sm text-destructive">
+                {error}
+              </p>
+            ) : null}
+            {info ? (
+              <p role="status" className="text-body-sm text-ink-inverse/80">
+                {info}
+              </p>
+            ) : null}
+            <Button
+              size="lg"
+              variant="pixel"
+              disabled={pending}
+              className="w-full"
+              onClick={() => void continueWithGoogle()}
+            >
+              Continuer avec Google
+            </Button>
+            <div className="flex items-center gap-3 text-body-sm text-ink-inverse/70">
+              <span className="h-px flex-1 bg-line-strong/40" />
+              ou
+              <span className="h-px flex-1 bg-line-strong/40" />
+            </div>
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={(event) => void submit(event)}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email" className="text-ink-inverse">
+                  Email
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  disabled={pending}
+                  className="border-line-strong bg-surface-inverse text-ink-inverse placeholder:text-ink-inverse/50"
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="password" className="text-ink-inverse">
+                  Mot de passe
+                </Label>
+                <Input
+                  id="password"
+                  type="password"
+                  autoComplete={
+                    mode === 'sign-up' ? 'new-password' : 'current-password'
+                  }
+                  required
+                  minLength={6}
+                  value={password}
+                  disabled={pending}
+                  className="border-line-strong bg-surface-inverse text-ink-inverse placeholder:text-ink-inverse/50"
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
+              <Button
+                type="submit"
+                size="lg"
+                variant="pixel"
+                disabled={pending}
+                className="w-full"
               >
-                S'inscrire
-              </button>
-            </>
-          ) : (
-            <>
-              Déjà inscrit ?{' '}
-              <button
-                type="button"
-                className="font-semibold text-ink-accent underline-offset-2 hover:underline"
-                onClick={() => {
-                  setMode('sign-in')
-                  setError(null)
-                  setInfo(null)
-                }}
-              >
-                Se connecter
-              </button>
-            </>
-          )}
-        </p>
-      </div>
-    </main>
+                {pending
+                  ? mode === 'sign-up'
+                    ? 'Création…'
+                    : 'Connexion…'
+                  : mode === 'sign-up'
+                    ? 'Créer un compte'
+                    : 'Se connecter'}
+              </Button>
+            </form>
+            <p className="text-center text-body-sm text-ink-inverse/70">
+              {mode === 'sign-in' ? (
+                <>
+                  Pas encore de compte ?{' '}
+                  <button
+                    type="button"
+                    className="font-extrabold text-ink-inverse underline-offset-2 hover:underline"
+                    onClick={() => {
+                      setMode('sign-up')
+                      setError(null)
+                      setInfo(null)
+                    }}
+                  >
+                    S&apos;inscrire
+                  </button>
+                </>
+              ) : (
+                <>
+                  Déjà inscrit ?{' '}
+                  <button
+                    type="button"
+                    className="font-extrabold text-ink-inverse underline-offset-2 hover:underline"
+                    onClick={() => {
+                      setMode('sign-in')
+                      setError(null)
+                      setInfo(null)
+                    }}
+                  >
+                    Se connecter
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        </PixelPanel>
+      </PixelGrid>
+    </div>
   )
 }

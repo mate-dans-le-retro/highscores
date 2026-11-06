@@ -28,12 +28,12 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 
 ### 3. Admin (`/admin`, `console` theme)
 
-Reserved for MDLR volunteers. Sign-up is open (Google or email/password); an Auth account alone grants nothing until an existing admin promotes it from **Bénévoles**. After Google, a volunteer can set a password as a fallback.
+Reserved for MDLR admins. Sign-up is open (Google or email/password); an Auth account alone grants nothing until an existing admin promotes it from **Utilisateurs**. After Google, an admin can set a password as a fallback from **Mon compte**.
 
 - **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, **show or hide** a game on the public screen, and **delete** a game that has no scores left (otherwise hide it).
 - **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason), and **delete** a pending or rejected submission for good (college tests, junk cleanup).
 - **Scores**: enter a score by hand (approved right away), fix or delete an existing score.
-- **Bénévoles**: list registered Auth users, promote or demote admin (cannot demote yourself or the last admin).
+- **Utilisateurs**: list registered Auth users, promote or demote admin (cannot demote yourself or the last admin).
 - **Instagram** (bonus): when approving a submission whose player gave consent, post the photo and score on the MDLR Instagram account. If the Meta API is not ready in time, fall back to a "Download the visual" button to post by hand.
 
 ## Business rules
