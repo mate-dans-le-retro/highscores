@@ -15,6 +15,7 @@ import { ScoreTable } from '#/components/score-table'
 import type { ScoreTableRow } from '#/components/score-table'
 import {
   DEFAULT_SETTINGS,
+  PUBLIC_RELOAD_AFTER_MS,
   findNewRecords,
   formatScore,
   formatScoreWhen,
@@ -23,6 +24,7 @@ import {
   leaderboardQuery,
   photoUrl,
   pixelCaps,
+  realtimeFallbackInterval,
   recordsQuery,
   settingsQuery,
   useHighscoresRealtime,
@@ -51,8 +53,6 @@ import { wallPages } from '#/lib/wall-pages'
 const FADE_MS = 300
 /** How long the "Nouveau record" takeover stays on screen. */
 const NEW_RECORD_MS = 12_000
-/** Reload the screen when the live connection stays lost this long. */
-const RECONNECT_RELOAD_MS = 60_000
 
 type Slide =
   | { kind: 'game'; game: DisplayedGame }
@@ -66,10 +66,13 @@ export const Route = createFileRoute('/')({
 
 function PublicScreen() {
   useScreenWakeLock()
-  useHighscoresRealtime({ reloadAfterMs: RECONNECT_RELOAD_MS })
-  const games = useQuery(visibleGamesQuery)
-  const settings = useQuery(settingsQuery)
-  const records = useQuery(recordsQuery)
+  const realtime = useHighscoresRealtime({
+    reloadAfterMs: PUBLIC_RELOAD_AFTER_MS,
+  })
+  const refetchInterval = realtimeFallbackInterval(realtime)
+  const games = useQuery({ ...visibleGamesQuery, refetchInterval })
+  const settings = useQuery({ ...settingsQuery, refetchInterval })
+  const records = useQuery({ ...recordsQuery, refetchInterval })
   const {
     gameDurationMs,
     wallDurationMs,
@@ -295,6 +298,7 @@ function PublicScreen() {
                   celebratedId={
                     celebrated?.gameId === game.id ? celebrated.scoreId : null
                   }
+                  refetchInterval={refetchInterval}
                 />
               )}
             </div>
@@ -603,16 +607,19 @@ function GameLeaderboard({
   minAllTimeRows,
   paused,
   celebratedId,
+  refetchInterval,
 }: {
   game: DisplayedGame
   rows: number
   minAllTimeRows: number
   paused: boolean
   celebratedId: string | null
+  refetchInterval: number | false
 }) {
-  const board = useQuery(
-    leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
-  )
+  const board = useQuery({
+    ...leaderboardQuery(game.id, { rows: rowsShown, minAllTimeRows }),
+    refetchInterval,
+  })
   const fresh = useFreshScores(game.id, board.data?.rows, paused, celebratedId)
   const separatorAt = board.data?.separator_at ?? null
 

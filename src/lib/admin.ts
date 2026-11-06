@@ -44,9 +44,6 @@ export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 /** Approved submissions whose player agreed to a post, not posted yet. */
 export type SubmissionFilter = SubmissionStatus | 'to_post'
 
-/** The queue refreshes on its own: the public cannot listen to scores. */
-const QUEUE_REFRESH_MS = 10_000
-
 // ---------------------------------------------------------------------------
 // Session
 // ---------------------------------------------------------------------------
@@ -207,7 +204,6 @@ export const submissionsQuery = (filter: SubmissionFilter) =>
       if (error) throw error
       return data as Array<AdminScore>
     },
-    refetchInterval: QUEUE_REFRESH_MS,
   })
 
 export const submissionCountsQuery = queryOptions({
@@ -237,7 +233,6 @@ export const submissionCountsQuery = queryOptions({
     ])
     return { pending, approved, rejected, to_post }
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 /**
@@ -259,7 +254,6 @@ export const anonymousSeedsQuery = queryOptions({
       ),
     )
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 /** Approved scores of every event, for the records, rankings and game table. */
@@ -273,7 +267,6 @@ export const approvedScoresQuery = queryOptions({
     if (error) throw error
     return data as Array<AdminScore>
   },
-  refetchInterval: QUEUE_REFRESH_MS,
 })
 
 export const adminSettingsQuery = queryOptions({

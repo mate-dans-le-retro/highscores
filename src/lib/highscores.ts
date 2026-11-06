@@ -1,8 +1,9 @@
 import { queryOptions, useQueryClient } from '@tanstack/react-query'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import { isMock, source } from './data'
 import { mockTools } from './data/mock/mock-source'
+import type { ConnectionStatus } from './data/realtime-connection'
 import type { LeaderboardQueryOptions } from './data/source'
 import type { ChangedTable, SubmissionInput } from './data/types'
 import { reloadWhenReachable } from './reload-when-reachable'
@@ -41,6 +42,16 @@ export {
 export { isMock }
 export type { MockPendingScore } from './data/mock/mock-source'
 export { mockTools }
+export type { ConnectionStatus }
+
+/** Public screen: hard reload after this long without realtime. */
+export const PUBLIC_RELOAD_AFTER_MS = 60_000
+
+/** Admin: warn once after this long disconnected; keep polling forever. */
+export const ADMIN_WARN_AFTER_MS = 60_000
+
+/** Poll while realtime is reconnecting (public + admin fallback). */
+export const REALTIME_POLL_MS = 10_000
 
 export const visibleGamesQuery = queryOptions({
   queryKey: ['games', 'visible'],
@@ -84,40 +95,75 @@ export const submitScore = (input: SubmissionInput) => source.submitScore(input)
 export const photoUrl = (path: string | null) => source.photoUrl(path)
 
 const invalidatedBy: Record<ChangedTable, Array<string>> = {
-  games: ['games', 'leaderboard', 'records', 'pending'],
-  scores: ['leaderboard', 'records', 'pending'],
-  settings: ['settings'],
+  games: ['games', 'leaderboard', 'records', 'pending', 'admin'],
+  scores: ['leaderboard', 'records', 'pending', 'admin'],
+  settings: ['settings', 'admin'],
+}
+
+export type HighscoresRealtimeOptions = {
+  /** Public screen: full page reload after this long disconnected. */
+  reloadAfterMs?: number
+  /** Admin: fire once after this long disconnected; keep trying forever. */
+  warnAfterMs?: number
+  onDisconnectedTooLong?: () => void
 }
 
 /**
  * Refreshes the queries as soon as a score, a game or a setting changes.
- * When the live connection comes back after a drop, refetches everything to
- * catch up on the signals missed meanwhile. With `reloadAfterMs`, reloads the
- * page if the connection stays lost that long.
+ * On disconnect: keepSubscribed reconnects; callers should poll meanwhile.
+ * On reconnect: refetch once to catch events missed while down.
+ * Public: optional hard reload after `reloadAfterMs`.
+ * Admin: optional one-shot warn after `warnAfterMs` (no reload).
  */
-export function useHighscoresRealtime({
-  reloadAfterMs,
-}: { reloadAfterMs?: number } = {}) {
+export function useHighscoresRealtime(
+  options: HighscoresRealtimeOptions = {},
+): ConnectionStatus {
   const queryClient = useQueryClient()
+  const [status, setStatus] = useState<ConnectionStatus>('disconnected')
+  const { reloadAfterMs, warnAfterMs, onDisconnectedTooLong } = options
 
   useEffect(() => {
     let lost = false
     let cancelReload: (() => void) | null = null
+    let warnTimer: ReturnType<typeof setTimeout> | null = null
+    let warned = false
+
+    const clearWarn = () => {
+      if (warnTimer !== null) {
+        clearTimeout(warnTimer)
+        warnTimer = null
+      }
+    }
 
     const unsubscribe = source.subscribe(
       (table) => {
         for (const key of invalidatedBy[table])
           void queryClient.invalidateQueries({ queryKey: [key] })
       },
-      (status) => {
-        if (status === 'disconnected') {
+      (next) => {
+        setStatus(next)
+        if (next === 'disconnected') {
           lost = true
-          if (reloadAfterMs !== undefined && !cancelReload)
+          if (reloadAfterMs !== undefined && !cancelReload) {
             cancelReload = reloadWhenReachable({ delayMs: reloadAfterMs })
+          }
+          if (
+            warnAfterMs !== undefined &&
+            onDisconnectedTooLong &&
+            !warned &&
+            warnTimer === null
+          ) {
+            warnTimer = setTimeout(() => {
+              warned = true
+              warnTimer = null
+              onDisconnectedTooLong()
+            }, warnAfterMs)
+          }
           return
         }
         cancelReload?.()
         cancelReload = null
+        clearWarn()
         if (!lost) return
         lost = false
         void queryClient.invalidateQueries()
@@ -126,7 +172,25 @@ export function useHighscoresRealtime({
 
     return () => {
       cancelReload?.()
+      clearWarn()
       unsubscribe()
     }
-  }, [queryClient, reloadAfterMs])
+  }, [
+    queryClient,
+    reloadAfterMs,
+    warnAfterMs,
+    onDisconnectedTooLong,
+  ])
+
+  return status
+}
+
+/**
+ * Poll while realtime is down; stop when connected (change_signals cover it).
+ */
+export function realtimeFallbackInterval(
+  status: ConnectionStatus,
+  pollMs = REALTIME_POLL_MS,
+): number | false {
+  return status === 'connected' ? false : pollMs
 }

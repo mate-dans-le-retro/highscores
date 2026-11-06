@@ -77,11 +77,11 @@ A function rather than a view with the owner's rights: same filtering through Po
 
 ## 2026-11-05: realtime through `change_signals`
 
-Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Pending submissions send no signal, so the public cannot even tell that someone submitted.
+Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Superseded for pending scores by "Realtime fallback aligned with Tournaments" below: every score write now bumps `scores` so the admin queue updates live; the public still only sees approved rows via `public_scores()`.
 
 ## 2026-11-05: the public screen reconnects, then reloads
 
-A projected tab never gets a focus event, so TanStack Query never refetches on its own: if realtime drops, the screen freezes without telling anyone. The screen detects the drop from the channel status and the browser's network events, resubscribes with a backoff, and refetches everything once it is back. After 60 seconds without a connection, it reloads the page, as long as the site answers. We chose detection over a blind reload every few rotations because Supabase reports every way a channel can fail (error, timeout, close) and its heartbeat catches a socket that dies silently.
+A projected tab never gets a focus event, so TanStack Query never refetches on its own: if realtime drops, the screen freezes without telling anyone. The screen detects the drop from the channel status and the browser's network events, resubscribes with a backoff, and refetches everything once it is back. After 60 seconds without a connection, it reloads the page, as long as the site answers. We chose detection over a blind reload every few rotations because Supabase reports every way a channel can fail (error, timeout, close) and its heartbeat catches a socket that dies silently. Superseded by "Realtime fallback aligned with Tournaments" below (polling while reconnecting; admin warns instead of reloading).
 
 ## 2026-11-05: a global flood guard, not a per-device limit
 
@@ -94,7 +94,7 @@ A photo is never refused: some phones send `image/heif` or no type at all. The b
 ## 2026-11-05: an admin for the weekend, simple first
 
 - Volunteers sign in with an email and a password, created by hand in Supabase: no email links to configure before Saturday. Superseded by "Google sign-in for volunteers, sign-ups still closed" below, with email and password kept as a fallback.
-- The submissions queue refreshes every 10 seconds instead of listening to realtime: the public must not receive score rows, and a short delay is fine for a volunteer.
+- The submissions queue used to refresh every 10 seconds instead of listening to realtime. Superseded by "Realtime fallback aligned with Tournaments" below: the admin listens to `change_signals` and only polls while reconnecting.
 - Games are reordered with up and down arrows, not by dragging rows as in the mockup: it works the same on a phone.
 - A free game name ("Un autre jeu") is either created as a new game from the submission, or linked to an existing game by picking it in the list.
 - Instagram: the admin shows the player's consent and handle, but does not publish yet. Superseded by "Instagram posts are made by hand, from the admin" below.
@@ -157,6 +157,16 @@ Product idea "photo next to the record": each `ScoreTable` row shows a 48px squa
 ## 2026-11-06: Screen Wake Lock on the public screen, failsafe
 
 The projected public screen (`/`) requests a screen wake lock while the tab is visible, so the laptop does not sleep the display during the event. Admin and player routes do not. The request is failsafe: missing API, denied permission or any error leaves the screen running; the lock is released on unmount and re-acquired when the tab becomes visible again. Windows kiosk settings and Chrome `--kiosk` remain the primary procedure; the lock is only an extra safeguard.
+
+## 2026-11-06: realtime fallback aligned with Tournaments
+
+Venue wifi drops the Supabase channel; a phone admin that was backgrounded can look "connected" with a dead socket, so a new pending score never appeared without a hard refresh.
+
+- Public `/` and admin both subscribe to `change_signals` through `useHighscoresRealtime`.
+- While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
+- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
+- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
+- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there.
 
 ## 2026-11-05: game covers are cropped square before upload
 
