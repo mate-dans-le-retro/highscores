@@ -32,6 +32,38 @@ export function coverMaxZoom(
   return Math.max(maxZoom, minZoom)
 }
 
+/**
+ * Pixel crop that frames the whole image in an `aspect` box (letterbox).
+ * Matches what react-easy-crop reports at `coverMinZoom` when
+ * `restrictPosition` is false (x/y may be negative, size may exceed the media).
+ */
+export function coverFitCropArea(
+  width: number,
+  height: number,
+  aspect: number = COVER_ASPECT,
+): Area {
+  if (width <= 0 || height <= 0 || aspect <= 0) {
+    return { x: 0, y: 0, width: 1, height: 1 }
+  }
+  const mediaAspect = width / height
+  if (mediaAspect > aspect) {
+    const cropHeight = width / aspect
+    return {
+      x: 0,
+      y: (height - cropHeight) / 2,
+      width,
+      height: cropHeight,
+    }
+  }
+  const cropWidth = height * aspect
+  return {
+    x: (width - cropWidth) / 2,
+    y: 0,
+    width: cropWidth,
+    height,
+  }
+}
+
 /** Output side length: never upscale, never exceed `maxSize`. */
 export function scaledCropSize(
   pixelCrop: Pick<Area, 'width' | 'height'>,
