@@ -175,12 +175,7 @@ export function useHighscoresRealtime(
       clearWarn()
       unsubscribe()
     }
-  }, [
-    queryClient,
-    reloadAfterMs,
-    warnAfterMs,
-    onDisconnectedTooLong,
-  ])
+  }, [queryClient, reloadAfterMs, warnAfterMs, onDisconnectedTooLong])
 
   return status
 }
