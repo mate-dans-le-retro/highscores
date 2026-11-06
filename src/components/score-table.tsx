@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { RankBadge } from '#/components/rank-badge'
 import { pixelCaps } from '#/lib/highscores'
 import { cn } from '#/lib/utils'
@@ -10,6 +11,13 @@ export type ScoreTableRow = {
   player: string
   /** Number → French thousands; string kept as-is (times, combos). */
   score: number | string
+  /**
+   * Resolved photo URL. Null when the score is anonymous or has no photo:
+   * the cell then shows the same Incognito / Sans photo bust as the wall.
+   */
+  photoSrc: string | null
+  /** Player kept the score off screen: masked bust, never a real photo. */
+  anonymous: boolean
   /** Passing highlight for a score that just landed. */
   fresh?: boolean
   /** Past-event rows on the public screen. */
@@ -72,13 +80,46 @@ function placeLabel(rank: number) {
   return rank === 1 ? '1re place' : `${rank}e place`
 }
 
+function RowPhoto({
+  photoSrc,
+  anonymous,
+}: {
+  photoSrc: string | null
+  anonymous: boolean
+}) {
+  const label = anonymous ? 'Incognito' : photoSrc ? undefined : 'Sans photo'
+  return (
+    <span
+      aria-label={label}
+      className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base"
+    >
+      {photoSrc ? (
+        <img
+          src={photoSrc}
+          alt=""
+          className="size-full object-contain"
+          draggable={false}
+        />
+      ) : (
+        <PhotoPlaceholder
+          anonymous={anonymous}
+          size="xs"
+          className="gap-0 p-1"
+        />
+      )}
+    </span>
+  )
+}
+
 /**
- * Pixel-register highscores table: rank, player, score.
+ * Pixel-register highscores table: rank, photo, player, score.
  * Lives on a projected screen (`scene`) by default. It fills the height it is
  * given: rows are bars that share it, so 5 or 10 rows always fit the stage.
  *
  * Rows under the separator keep their all-time rank in a plain square: the
- * cups belong to the podium at the top.
+ * cups belong to the podium at the top. Photos follow the wall rule: real
+ * thumbnail when the player is on screen, masked Incognito bust when not,
+ * plain bust when there is no photo.
  *
  * Note: the Highscores mockup paints this panel on a dark surface with a
  * light border (not PixelPanel's surface-inverse), as Clément chose.
@@ -132,6 +173,7 @@ export function ScoreTable({
             const content = (
               <>
                 <RankBadge rank={row.rank} size="md" plain={belowSeparator} />
+                <RowPhoto photoSrc={row.photoSrc} anonymous={row.anonymous} />
                 <div className={cn('min-w-0', dimmedText)}>
                   <p className="truncate font-display text-scene-pixel leading-7">
                     {row.player}
@@ -158,7 +200,7 @@ export function ScoreTable({
               </>
             )
             const bar = cn(
-              'grid min-h-0 w-full flex-1 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-6 px-5 text-left transition-[background-color,color] duration-1000 ease-out',
+              'grid min-h-0 w-full flex-1 grid-cols-[auto_auto_minmax(0,1fr)_auto] items-center gap-5 px-5 text-left transition-[background-color,color] duration-1000 ease-out',
               BAR[tone],
             )
 

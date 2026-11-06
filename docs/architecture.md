@@ -95,9 +95,13 @@ The rotation and the number of rows come from the settings (15 s and 10 rows by 
 
 ## Realtime
 
-Only `change_signals` is in the `supabase_realtime` publication: triggers bump its `games`, `scores` or `settings` row when something the public screen shows changes (approved scores only). `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to it and invalidates the matching TanStack Query queries. No score row travels through realtime.
+Only `change_signals` is in the `supabase_realtime` publication: triggers bump its `games`, `scores` or `settings` row when games, setups, events, settings or any score write change. `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to it on the public screen and in the admin shell, and invalidates the matching TanStack Query queries (including `admin`). No score row travels through realtime.
 
-The connection can drop on the venue wifi, and the signals sent meanwhile are lost. `keepSubscribed()` (`src/lib/data/realtime-connection.ts`) watches the channel status (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`) and the browser's `offline` and `online` events. It replaces a lost channel with a new one after 1 s, 2 s, 4 s and so on (30 s at most), or as soon as the browser is back online. When the connection comes back, the hook refetches every query to catch up. On the public screen, if the connection is still lost after 60 seconds, the page reloads, but only once the site answers a `HEAD` request: reloading while offline would leave the browser's error page on the projector. The mock source has no socket; it goes through the same path, so the browser's offline mode exercises it.
+The connection can drop on the venue wifi, and the signals sent meanwhile are lost. `keepSubscribed()` (`src/lib/data/realtime-connection.ts`) watches the channel status (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`), the browser's `offline` / `online` events, and tab resume (`visibilitychange` / `focus`). It replaces a lost channel with a new one after 1 s, 2 s, 4 s and so on (30 s at most), or at once on `online` or resume. While disconnected, callers poll every 10 seconds via `realtimeFallbackInterval`. When the connection comes back, the hook refetches every query to catch up. On the public screen, if the connection is still lost after 60 seconds, the page reloads, but only once the site answers a `HEAD` request. In the admin, the same 60 second mark opens a dialog once and keeps polling (no reload). The mock source has no socket; it goes through the same path, so the browser's offline mode exercises it.
+
+## Public screen wake lock
+
+`useScreenWakeLock()` (`src/lib/wake-lock.ts`) runs only on `/`. It calls `navigator.wakeLock.request('screen')` while the tab is visible, releases on unmount, and asks again after `visibilitychange` (browsers drop the lock when the page is hidden). Every failure path returns without throwing, so a browser without the API or a denied permission still shows the scores.
 
 ## Storage
 

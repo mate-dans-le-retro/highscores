@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { LogOut, MonitorPlay } from 'lucide-react'
 
+import {
+  AdminRealtimeProvider,
+  useAdminRefetchInterval,
+} from '#/components/admin/realtime-provider'
 import { SetPasswordForm } from '#/components/admin/set-password-form'
 import { SignIn } from '#/components/admin/sign-in'
 import { Button } from '#/components/ui/button'
@@ -60,12 +64,14 @@ function AdminLayout() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AdminTopBar email={auth.session.user.email ?? ''} />
-      <div className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 md:px-8">
-        <Outlet />
+    <AdminRealtimeProvider>
+      <div className="flex min-h-screen flex-col">
+        <AdminTopBar email={auth.session.user.email ?? ''} />
+        <div className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-8 md:px-8">
+          <Outlet />
+        </div>
       </div>
-    </div>
+    </AdminRealtimeProvider>
   )
 }
 
@@ -74,7 +80,8 @@ const tabClass =
   'inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-semibold text-ink-on-accent transition-colors hover:bg-surface-inverse/10 data-[status=active]:bg-surface-inverse data-[status=active]:text-ink-inverse'
 
 function AdminTopBar({ email }: { email: string }) {
-  const counts = useQuery(submissionCountsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const counts = useQuery({ ...submissionCountsQuery, refetchInterval })
   const pending = counts.data?.pending ?? 0
 
   return (
