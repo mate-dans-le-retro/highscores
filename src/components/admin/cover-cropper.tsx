@@ -92,6 +92,9 @@ export function CoverCropper({
           onCropComplete={onCropComplete}
           onMediaLoaded={onMediaLoaded}
           objectFit="contain"
+          // Without this, zoom < 1 clamps croppedAreaPixels to the image
+          // bounds (tight center square) while the preview still letterboxes.
+          restrictPosition={false}
           showGrid
         />
       </div>
