@@ -175,7 +175,7 @@ enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project. Existing users can still sign in.
 # Open so colleagues can create an Auth account (Google or password). Rights still
-# come only from public.admins: a new account sees /admin as "Pas encore bénévole"
+# come only from public.admins: a new account sees /admin as "Pas encore admin"
 # until an existing admin promotes them.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.

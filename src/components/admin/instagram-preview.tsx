@@ -205,7 +205,7 @@ export function InstagramPreview() {
       <div className="flex flex-col gap-1">
         <h2 className="text-h4">Visuel Instagram</h2>
         <p className="text-body-ui text-ink-secondary">
-          Ce que voit un bénévole sous « À publier » dans l&apos;admin, avec des
+          Ce que voit un admin sous « À publier » dans l&apos;admin, avec des
           scores de démo. Rien n&apos;est enregistré.
         </p>
       </div>

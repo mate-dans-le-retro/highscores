@@ -1,11 +1,9 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 
-import { SetPasswordForm } from '#/components/admin/set-password-form'
 import { Button } from '#/components/ui/button'
 import {
   registeredUsersQuery,
-  sessionHasPassword,
   setUserAdmin,
   useAdminAuth,
   useInvalidateAdmin,
@@ -22,8 +20,6 @@ function AdminUsers() {
   const users = useQuery(registeredUsersQuery)
   const invalidate = useInvalidateAdmin()
   const selfId = auth.status === 'admin' ? auth.session.user.id : null
-  const showSetPassword =
-    auth.status === 'admin' && !sessionHasPassword(auth.session)
 
   const promote = useMutation({
     mutationFn: ({ id, makeAdmin }: { id: string; makeAdmin: boolean }) =>
@@ -34,18 +30,12 @@ function AdminUsers() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-h3">Bénévoles</h1>
+        <h1 className="text-h3">Utilisateurs</h1>
         <p className="text-body-sm text-ink-secondary">
           Les comptes inscrits (Google ou email). Un compte seul n'ouvre pas
           l'admin : il faut le promouvoir ici.
         </p>
       </div>
-
-      {showSetPassword && (
-        <section className="max-w-md rounded-xl bg-surface-raised p-4 shadow-card md:p-6">
-          <SetPasswordForm />
-        </section>
-      )}
 
       {users.isError && (
         <p role="alert" className="text-body-sm text-destructive">
@@ -113,7 +103,7 @@ function UserRow({
           {isSelf ? ' (toi)' : ''}
         </p>
         <p className="text-body-sm text-ink-secondary">
-          {user.is_admin ? 'Bénévole' : 'En attente'}
+          {user.is_admin ? 'Admin' : 'En attente'}
           {' · '}
           {providers}
           {user.has_password ? ' · mot de passe' : ''}
@@ -135,7 +125,7 @@ function UserRow({
             title={
               isSelf
                 ? 'Tu ne peux pas te retirer toi-même'
-                : 'Retirer le rôle bénévole'
+                : 'Retirer le rôle admin'
             }
             onClick={onDemote}
           >
@@ -154,13 +144,13 @@ function UserRow({
 function promoteErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   if (/cannot demote yourself/i.test(message)) {
-    return 'Tu ne peux pas te retirer toi-même de la liste des bénévoles.'
+    return 'Tu ne peux pas te retirer toi-même de la liste des admins.'
   }
   if (/cannot demote the last admin/i.test(message)) {
-    return 'Impossible de retirer le dernier bénévole.'
+    return 'Impossible de retirer le dernier admin.'
   }
   if (/not authorized|42501/i.test(message)) {
-    return "Tu n'as pas le droit de modifier les bénévoles."
+    return "Tu n'as pas le droit de modifier les utilisateurs."
   }
   return "La modification n'a pas abouti. Réessaie !"
 }
