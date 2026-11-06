@@ -254,11 +254,16 @@ function PublicScreen() {
               showHeader ? 'pt-10' : 'pt-24',
             )}
           >
-            {showHeader ? null : (
-              <h1 className="shrink-0 font-display text-scene-pixel text-ink-accent">
-                {pixelCaps('Les records')}
-              </h1>
-            )}
+            <div className="flex shrink-0 items-start justify-between gap-8">
+              {showHeader ? (
+                <div className="min-w-0 flex-1" />
+              ) : (
+                <h1 className="min-w-0 font-display text-scene-pixel text-ink-accent">
+                  {pixelCaps('Les records')}
+                </h1>
+              )}
+              <GlobalSubmitQr />
+            </div>
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
             {records.isError && (
               <p className="text-scene-row">
@@ -266,7 +271,10 @@ function PublicScreen() {
               </p>
             )}
             {records.isSuccess && (
-              <RecordsWall records={wallPages(records.data)[wallPage] ?? []} />
+              <RecordsWall
+                records={wallPages(records.data)[wallPage] ?? []}
+                showGameQr
+              />
             )}
           </div>
         ) : (
@@ -305,7 +313,7 @@ function PublicScreen() {
             {emptyGame ? null : (
               <aside className="flex min-h-0 w-140 shrink-0 flex-col gap-8">
                 {game && <RecordPanel game={game} record={record} />}
-                <SubmitScorePanel />
+                <SubmitScorePanel gameSlug={game?.slug} />
               </aside>
             )}
           </div>
@@ -482,8 +490,43 @@ function WallThumb({ active, page }: { active: boolean; page: number | null }) {
   )
 }
 
-function SubmitScorePanel() {
+/**
+ * Always-on QR to `/score` (no game). Lives on the wall so a player can send
+ * any score without waiting for a game slide.
+ */
+function GlobalSubmitQr() {
   const submitUrl = useSubmitScoreUrl(isMock)
+
+  return (
+    <div className="flex shrink-0 items-center gap-4 rounded-none border-4 border-line-accent bg-surface-inverse p-3 shadow-pixel">
+      {submitUrl ? (
+        <QrCode
+          value={submitUrl}
+          label="QR code pour envoyer ton score"
+          className="size-28 shrink-0"
+        />
+      ) : (
+        <div className="size-28 shrink-0" aria-hidden="true" />
+      )}
+      <div className="flex min-w-0 max-w-56 flex-col gap-1 text-left">
+        <p className="text-scene-meta font-extrabold text-ink-inverse">
+          Un record ?
+        </p>
+        <p className="text-h4 font-semibold text-ink-inverse">
+          Scanne, c&apos;est parti !
+        </p>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Side-panel QR on a game slide. Prefills that game via `?game=<slug>` when
+ * known; the player can still change it on the phone. No second global QR
+ * here: the wall already carries the unscoped one, and the aside is tight.
+ */
+function SubmitScorePanel({ gameSlug }: { gameSlug?: string }) {
+  const submitUrl = useSubmitScoreUrl(isMock, { gameSlug })
 
   return (
     <PixelPanel label="À toi de jouer" className="shrink-0">
@@ -511,8 +554,8 @@ function SubmitScorePanel() {
 }
 
 /** A game nobody has played yet: the QR code takes the whole table. */
-function EmptyGameInvite() {
-  const submitUrl = useSubmitScoreUrl(isMock)
+function EmptyGameInvite({ gameSlug }: { gameSlug: string }) {
+  const submitUrl = useSubmitScoreUrl(isMock, { gameSlug })
 
   return (
     <div className="flex min-h-0 flex-1 items-center justify-center gap-16 px-12 pb-12">
@@ -650,7 +693,9 @@ function GameLeaderboard({
           ? null
           : (board.data?.rows[separatorAt]?.event_name ?? null)
       }
-      empty={board.data?.empty ? <EmptyGameInvite /> : undefined}
+      empty={
+        board.data?.empty ? <EmptyGameInvite gameSlug={game.slug} /> : undefined
+      }
       className="flex-1"
     />
   )

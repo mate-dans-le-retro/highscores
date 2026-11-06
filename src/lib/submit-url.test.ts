@@ -23,4 +23,33 @@ describe('submitScoreUrl', () => {
       'http://localhost:3000/score?mock=1',
     )
   })
+
+  it('adds ?game=<slug> when a game is known', () => {
+    expect(
+      submitScoreUrl('https://scores.matedansleretro.fr', false, {
+        gameSlug: 'duck-hunt',
+      }),
+    ).toBe('https://scores.matedansleretro.fr/score?game=duck-hunt')
+  })
+
+  it('keeps mock and game together', () => {
+    expect(
+      submitScoreUrl('http://localhost:3000', true, {
+        gameSlug: 'super-mario-bros',
+      }),
+    ).toBe('http://localhost:3000/score?mock=1&game=super-mario-bros')
+  })
+
+  it('ignores an empty game slug', () => {
+    expect(
+      submitScoreUrl('https://scores.matedansleretro.fr', false, {
+        gameSlug: null,
+      }),
+    ).toBe('https://scores.matedansleretro.fr/score')
+    expect(
+      submitScoreUrl('https://scores.matedansleretro.fr', false, {
+        gameSlug: '',
+      }),
+    ).toBe('https://scores.matedansleretro.fr/score')
+  })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  findGameIdBySlug,
   formStepNumber,
   resolveScoreStep,
   scoreSearchSchema,
@@ -17,6 +18,16 @@ describe('scoreSearchSchema', () => {
   it('drops unknown steps', () => {
     expect(scoreSearchSchema.parse({ step: 'nope' }).step).toBeUndefined()
   })
+
+  it('keeps a game slug', () => {
+    expect(scoreSearchSchema.parse({ game: 'duck-hunt' }).game).toBe(
+      'duck-hunt',
+    )
+  })
+
+  it('drops an empty game slug', () => {
+    expect(scoreSearchSchema.parse({ game: '' }).game).toBeUndefined()
+  })
 })
 
 describe('resolveScoreStep', () => {
@@ -31,5 +42,21 @@ describe('formStepNumber', () => {
     expect(formStepNumber('details')).toBe(2)
     expect(formStepNumber('consent')).toBe(3)
     expect(formStepNumber('done')).toBeNull()
+  })
+})
+
+describe('findGameIdBySlug', () => {
+  const games = [
+    { id: 'g1', slug: 'duck-hunt' },
+    { id: 'g2', slug: 'tetris' },
+  ]
+
+  it('returns the id of a visible slug', () => {
+    expect(findGameIdBySlug(games, 'tetris')).toBe('g2')
+  })
+
+  it('ignores unknown or missing slugs', () => {
+    expect(findGameIdBySlug(games, 'missing')).toBeNull()
+    expect(findGameIdBySlug(games, undefined)).toBeNull()
   })
 })

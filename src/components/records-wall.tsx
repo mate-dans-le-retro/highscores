@@ -1,13 +1,16 @@
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
 import { PixelStar } from '#/components/pixel-star'
+import { QrCode } from '#/components/qr-code'
 import {
   formatScore,
   formatScoreWhen,
+  isMock,
   photoUrl,
   pixelCaps,
 } from '#/lib/highscores'
 import type { GameRecord } from '#/lib/highscores'
+import { useSubmitScoreUrl } from '#/lib/submit-url'
 import { cn } from '#/lib/utils'
 import { wallCardView } from '#/lib/wall-card'
 import { wallCells } from '#/lib/wall-pages'
@@ -15,6 +18,11 @@ import { wallCells } from '#/lib/wall-pages'
 type RecordsWallProps = {
   /** One page of the wall: six records at most. */
   records: Array<GameRecord>
+  /**
+   * When true, empty "À prendre !" cards show a per-game QR (`?game=<slug>`).
+   * Filled cards stay as they are: no room next to the photo.
+   */
+  showGameQr?: boolean
   className?: string
 }
 
@@ -38,7 +46,11 @@ const ROW_START: Record<number, string> = {
  * Cards keep the same size on every page; the rows of a partial page are
  * centred.
  */
-export function RecordsWall({ records, className }: RecordsWallProps) {
+export function RecordsWall({
+  records,
+  showGameQr = false,
+  className,
+}: RecordsWallProps) {
   const cells = wallCells(records.length)
   return (
     <div
@@ -51,6 +63,7 @@ export function RecordsWall({ records, className }: RecordsWallProps) {
         <RecordCard
           key={record.game.id}
           record={record}
+          showGameQr={showGameQr}
           className={cn(
             'col-span-2 row-span-2',
             COLUMN_START[cells[i].column],
@@ -62,11 +75,33 @@ export function RecordsWall({ records, className }: RecordsWallProps) {
   )
 }
 
+function EmptyGameQr({
+  gameSlug,
+  gameName,
+}: {
+  gameSlug: string
+  gameName: string
+}) {
+  const submitUrl = useSubmitScoreUrl(isMock, { gameSlug })
+  if (!submitUrl) return <div className="size-24 shrink-0" aria-hidden="true" />
+  return (
+    <div className="rounded-none border-4 border-line-accent bg-surface-inverse p-1.5 shadow-pixel">
+      <QrCode
+        value={submitUrl}
+        label={`QR code pour envoyer un score sur ${gameName}`}
+        className="size-24"
+      />
+    </div>
+  )
+}
+
 function RecordCard({
   record,
+  showGameQr,
   className,
 }: {
   record: GameRecord
+  showGameQr: boolean
   className?: string
 }) {
   const { game } = record
@@ -75,13 +110,16 @@ function RecordCard({
   if (view.kind === 'empty') {
     return (
       <PixelPanel label={game.name} className={cn('min-w-0', className)}>
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 overflow-hidden px-4 py-2 text-center">
           <p className="font-display text-scene-pixel text-ink-inverse">
             {pixelCaps('À prendre !')}
           </p>
           <p className="text-scene-meta text-ink-inverse">
             Pas encore de record sur ce jeu.
           </p>
+          {showGameQr ? (
+            <EmptyGameQr gameSlug={game.slug} gameName={game.name} />
+          ) : null}
         </div>
       </PixelPanel>
     )

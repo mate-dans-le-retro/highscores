@@ -16,7 +16,7 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 - Shows the leaderboard of one game at a time: game name and console at the top, then rank, player photo, player, score. Ten rows max. An anonymous score (display unticked) shows the masked Incognito bust instead of the photo; a score without a photo shows the plain bust.
 - Rotates through the visible games every 15 seconds.
 - Updates by itself when a score is approved (Supabase Realtime). A new score can be highlighted for a few seconds (a passing pink row); that is the only movement allowed.
-- Always shows a QR code to `/score` next to the leaderboard.
+- Always shows a QR code to `/score` (on the wall: a global one; on a game slide: that game via `?game=<slug>`). Empty wall cards and an empty game also show a per-game QR.
 - Ideas for later: a podium of the top three.
 
 ### 2. Score submission (`/score`, `arcade` theme)
