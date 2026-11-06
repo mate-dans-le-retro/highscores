@@ -4,6 +4,7 @@ import {
   ExternalLink,
   Plus,
   Sparkles,
+  Trash2,
   Trophy,
   Undo2,
   X,
@@ -20,6 +21,7 @@ import { Label } from '#/components/ui/label'
 import { NativeSelect } from '#/components/ui/native-select'
 import {
   approveScore,
+  deleteScore,
   parseScore,
   placeFor,
   proofUrl,
@@ -60,6 +62,7 @@ export function SubmissionDetail({
     submission.display_on_screen,
   )
   const [creatingGame, setCreatingGame] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const score = game ? parseScore(scoreText, game.score_type) : null
   const detectedGame = games.find(
@@ -72,6 +75,10 @@ export function SubmissionDetail({
       ? placeFor(score, ranking, game.score_order, submission.id)
       : null
   const pending = submission.status === 'pending'
+  // Approved scores stay deletable from Records; pending/rejected need it
+  // here so college tests can wipe junk without SQL.
+  const canDelete =
+    submission.status === 'pending' || submission.status === 'rejected'
   const photo = proofUrl(submission.photo_path)
   const photoSrc = useReadablePhotoUrl(photo)
 
@@ -93,7 +100,15 @@ export function SubmissionDetail({
     mutationFn: () => reopenScore(submission.id),
     onSuccess: invalidate,
   })
-  const busy = approve.isPending || reject.isPending || reopen.isPending
+  const remove = useMutation({
+    mutationFn: () => deleteScore(submission.id),
+    onSuccess: invalidate,
+  })
+  const busy =
+    approve.isPending ||
+    reject.isPending ||
+    reopen.isPending ||
+    remove.isPending
   const canApprove = Boolean(game) && score !== null
 
   return (
@@ -301,15 +316,44 @@ export function SubmissionDetail({
               : 'pas d’accord, on ne publie pas.'}
           </p>
 
-          {(approve.isError || reject.isError || reopen.isError) && (
+          {(approve.isError ||
+            reject.isError ||
+            reopen.isError ||
+            remove.isError) && (
             <p role="alert" className="text-body-sm text-destructive">
               Ça n'est pas passé. Réessaie dans un instant.
             </p>
           )}
 
           <div className="mt-auto flex flex-wrap justify-end gap-2">
-            {pending ? (
+            {confirmDelete ? (
               <>
+                <Button
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(false)}
+                >
+                  Garder
+                </Button>
+                <Button
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() => remove.mutate()}
+                >
+                  <Trash2 />
+                  Supprimer
+                </Button>
+              </>
+            ) : pending ? (
+              <>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 />
+                  Supprimer
+                </Button>
                 <Button
                   variant="outline"
                   disabled={busy}
@@ -327,14 +371,26 @@ export function SubmissionDetail({
                 </Button>
               </>
             ) : (
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => reopen.mutate()}
-              >
-                <Undo2 />
-                Remettre à valider
-              </Button>
+              <>
+                {canDelete && (
+                  <Button
+                    variant="outline"
+                    disabled={busy}
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 />
+                    Supprimer
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => reopen.mutate()}
+                >
+                  <Undo2 />
+                  Remettre à valider
+                </Button>
+              </>
             )}
           </div>
         </div>

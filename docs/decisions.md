@@ -146,6 +146,10 @@ No Meta API before the event: a volunteer posts by hand, and the admin gives the
 
 Volunteers can remove a game from the list for good (SQL delete), not only hide it with `visible = false`. `scores.game_id` cascades on delete, so a live weekend must not wipe records by accident: `deleteGame` counts every score on that game (pending, approved, rejected) and throws `GameHasScoresError` when the count is not zero. The UI confirms before calling it, and on that error tells the volunteer to hide the game or delete the scores first. No migration: the existing `admins manage games` policy already allows delete; `game_event_setups` cascade and `detected_game_id` is set null.
 
+## 2026-11-06: delete pending and rejected submissions from the queue
+
+Reject alone left college-test junk in the database (only Records deleted approved scores). The submission detail now offers "Supprimer" for pending and rejected rows, with the same inline "Garder" / "Supprimer" confirm as records. Approved scores stay deletable from Records only. No migration: `deleteScore` and the existing `admins manage scores` policy already allow it.
+
 ## 2026-11-05: game covers are cropped square before upload
 
 Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. No migration.
