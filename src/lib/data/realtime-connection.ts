@@ -14,6 +14,15 @@ export interface NetworkSignal {
   ) => void
 }
 
+/**
+ * Tab / window resume signal: after background, lock screen or another app,
+ * the Realtime socket may be dead without a channel error.
+ */
+export interface PageSignal {
+  addEventListener: (type: 'resume', listener: () => void) => void
+  removeEventListener: (type: 'resume', listener: () => void) => void
+}
+
 export interface KeepSubscribedOptions {
   /** Opens one subscription attempt and returns the function that closes it. */
   open: (report: (status: AttemptStatus) => void) => () => void
@@ -21,6 +30,7 @@ export interface KeepSubscribedOptions {
   /** Delay before retry number `attempt` (0 for the first retry). */
   backoffMs?: (attempt: number) => number
   network?: NetworkSignal | null
+  page?: PageSignal | null
 }
 
 /** 1 s, 2 s, 4 s… capped at 30 s. */
@@ -40,16 +50,49 @@ export function browserNetwork(): NetworkSignal | null {
   }
 }
 
+export function browserPage(): PageSignal | null {
+  if (typeof window === 'undefined' || typeof document === 'undefined')
+    return null
+
+  const listeners = new Set<() => void>()
+  const emit = () => {
+    if (document.visibilityState === 'hidden') return
+    listeners.forEach((listener) => listener())
+  }
+  const onVisibility = () => {
+    if (document.visibilityState === 'visible') emit()
+  }
+
+  return {
+    addEventListener: (_type, listener) => {
+      if (listeners.size === 0) {
+        document.addEventListener('visibilitychange', onVisibility)
+        window.addEventListener('focus', emit)
+      }
+      listeners.add(listener)
+    },
+    removeEventListener: (_type, listener) => {
+      listeners.delete(listener)
+      if (listeners.size === 0) {
+        document.removeEventListener('visibilitychange', onVisibility)
+        window.removeEventListener('focus', emit)
+      }
+    },
+  }
+}
+
 /**
  * Keeps a subscription open: when an attempt drops, closes it and opens a new
  * one after a growing delay. While the browser says it is offline, waits for
- * the `online` event instead of retrying. Returns the function that stops it all.
+ * the `online` event instead of retrying. On tab resume (visible / focus),
+ * resubscribes immediately to heal zombie sockets. Returns the stop function.
  */
 export function keepSubscribed({
   open,
   onStatus,
   backoffMs = reconnectDelayMs,
   network = browserNetwork(),
+  page = browserPage(),
 }: KeepSubscribedOptions): () => void {
   let attempt = 0
   let generation = 0
@@ -110,13 +153,24 @@ export function keepSubscribed({
     connect()
   }
 
+  // Phone locked, tab backgrounded, then reopened: socket may be dead without
+  // CHANNEL_ERROR. Mark disconnected so polling starts, then resubscribe.
+  const onResume = () => {
+    attempt = 0
+    emit('disconnected')
+    if (network && !network.online) return
+    connect()
+  }
+
   network?.addEventListener('online', onOnline)
   network?.addEventListener('offline', lose)
+  page?.addEventListener('resume', onResume)
   connect()
 
   return () => {
     network?.removeEventListener('online', onOnline)
     network?.removeEventListener('offline', lose)
+    page?.removeEventListener('resume', onResume)
     clearRetry()
     closeCurrent()
   }

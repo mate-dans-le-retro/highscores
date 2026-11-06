@@ -2,6 +2,8 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 
+import { QrPosterDownload } from '#/components/admin/qr-poster-download'
+import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { QrCode } from '#/components/qr-code'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
@@ -43,7 +45,8 @@ const modes: Array<{ value: ScreenMode; label: string; hint: string }> = [
 ]
 
 function ScreenSettings() {
-  const settings = useQuery(adminSettingsQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const settings = useQuery({ ...adminSettingsQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const save = useMutation({
     mutationFn: (changes: SettingsChanges) => updateSettings(changes),
@@ -231,7 +234,7 @@ function SubmitQrCode() {
   // The admin always reads the real backend, so its QR code never carries the demo.
   const url = useSubmitScoreUrl(false)
   return (
-    <section className="flex flex-col gap-4 rounded-xl bg-surface-raised p-4 shadow-card sm:flex-row sm:items-center md:p-6">
+    <section className="flex flex-col gap-4 rounded-xl bg-surface-raised p-4 shadow-card sm:flex-row sm:items-start md:p-6">
       <div className="aspect-square w-40 shrink-0 border border-line-subtle">
         {url && (
           <QrCode
@@ -241,20 +244,24 @@ function SubmitQrCode() {
           />
         )}
       </div>
-      <div className="flex flex-col gap-1">
-        <h2 className="text-h5">QR code d'envoi</h2>
-        <p className="text-body-sm text-ink-secondary">
-          Ouvre le formulaire joueur
-          {url ? ` (${url.replace(/^https?:\/\//, '')})` : ''}. À imprimer près
-          de chaque borne.
-        </p>
+      <div className="flex min-w-0 flex-1 flex-col gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-h5">QR code d'envoi</h2>
+          <p className="text-body-sm text-ink-secondary">
+            Ouvre le formulaire joueur
+            {url ? ` (${url.replace(/^https?:\/\//, '')})` : ''}. À imprimer
+            près de chaque borne.
+          </p>
+        </div>
+        <QrPosterDownload url={url} />
       </div>
     </section>
   )
 }
 
 function EventName() {
-  const event = useQuery(currentEventQuery)
+  const refetchInterval = useAdminRefetchInterval()
+  const event = useQuery({ ...currentEventQuery, refetchInterval })
   const invalidate = useInvalidateAdmin()
   const [name, setName] = useState<string | null>(null)
   const rename = useMutation({

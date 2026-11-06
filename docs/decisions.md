@@ -16,7 +16,7 @@ A player submission and a score entered by a volunteer are the same object at di
 
 ## 2026-11-04: sign-ups closed, volunteers in `public.admins`
 
-No public sign-up. An Auth account alone grants nothing: it has to be in `public.admins`. This way, sign-ups opened by mistake would not give access to the admin.
+No public sign-up. An Auth account alone grants nothing: it has to be in `public.admins`. This way, sign-ups opened by mistake would not give access to the admin. Superseded for the sign-up policy by "Open sign-ups, promote from the admin" (2026-11-06); the fail-closed rule (rights only from `public.admins`) stays.
 
 ## 2026-11-04: public repository
 
@@ -77,11 +77,11 @@ A function rather than a view with the owner's rights: same filtering through Po
 
 ## 2026-11-05: realtime through `change_signals`
 
-Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Pending submissions send no signal, so the public cannot even tell that someone submitted.
+Realtime respects RLS, and the public cannot read `scores` any more. Triggers bump one row per topic (`games`, `scores`, `settings`) in `change_signals`, the only table in the publication; the screen refetches on each signal. Superseded for pending scores by "Realtime fallback aligned with Tournaments" below: every score write now bumps `scores` so the admin queue updates live; the public still only sees approved rows via `public_scores()`.
 
 ## 2026-11-05: the public screen reconnects, then reloads
 
-A projected tab never gets a focus event, so TanStack Query never refetches on its own: if realtime drops, the screen freezes without telling anyone. The screen detects the drop from the channel status and the browser's network events, resubscribes with a backoff, and refetches everything once it is back. After 60 seconds without a connection, it reloads the page, as long as the site answers. We chose detection over a blind reload every few rotations because Supabase reports every way a channel can fail (error, timeout, close) and its heartbeat catches a socket that dies silently.
+A projected tab never gets a focus event, so TanStack Query never refetches on its own: if realtime drops, the screen freezes without telling anyone. The screen detects the drop from the channel status and the browser's network events, resubscribes with a backoff, and refetches everything once it is back. After 60 seconds without a connection, it reloads the page, as long as the site answers. We chose detection over a blind reload every few rotations because Supabase reports every way a channel can fail (error, timeout, close) and its heartbeat catches a socket that dies silently. Superseded by "Realtime fallback aligned with Tournaments" below (polling while reconnecting; admin warns instead of reloading).
 
 ## 2026-11-05: a global flood guard, not a per-device limit
 
@@ -94,14 +94,18 @@ A photo is never refused: some phones send `image/heif` or no type at all. The b
 ## 2026-11-05: an admin for the weekend, simple first
 
 - Volunteers sign in with an email and a password, created by hand in Supabase: no email links to configure before Saturday. Superseded by "Google sign-in for volunteers, sign-ups still closed" below, with email and password kept as a fallback.
-- The submissions queue refreshes every 10 seconds instead of listening to realtime: the public must not receive score rows, and a short delay is fine for a volunteer.
+- The submissions queue used to refresh every 10 seconds instead of listening to realtime. Superseded by "Realtime fallback aligned with Tournaments" below: the admin listens to `change_signals` and only polls while reconnecting.
 - Games are reordered with up and down arrows, not by dragging rows as in the mockup: it works the same on a phone.
 - A free game name ("Un autre jeu") is either created as a new game from the submission, or linked to an existing game by picking it in the list.
 - Instagram: the admin shows the player's consent and handle, but does not publish yet. Superseded by "Instagram posts are made by hand, from the admin" below.
 
 ## 2026-11-05: Google sign-in for volunteers, sign-ups still closed
 
-Volunteers sign in with Google, so they have no password to remember. Sign-ups stay closed: we create each volunteer's user first, and their Google identity links to it through the email. With sign-ups open, any Google account could create a user. That user would have no rights, but we would have to check every policy against a signed-in stranger. Rights still come only from `public.admins`. Email and password stay as a fallback, in case Google fails on the venue network during the event.
+Volunteers sign in with Google, so they have no password to remember. Sign-ups stay closed: we create each volunteer's user first, and their Google identity links to it through the email. With sign-ups open, any Google account could create a user. That user would have no rights, but we would have to check every policy against a signed-in stranger. Rights still come only from `public.admins`. Email and password stay as a fallback, in case Google fails on the venue network during the event. Superseded by "Open sign-ups, promote from the admin" below.
+
+## 2026-11-06: Open sign-ups, promote from the admin
+
+Sign-ups are open so colleagues can create an Auth account themselves (Google or email/password). Fail-closed stays: Auth alone grants nothing; `/admin` only opens for rows in `public.admins`. Clément (or any admin) promotes from `/admin/users` (`list_registered_users` / `set_user_admin`), without SQL. Demotion is supported, except for yourself and the last admin. After a Google sign-up, the signed-in user can set a password for the venue wifi. Linking Google onto a password-only account is deferred.
 
 ## 2026-11-05: public screen after the visual review
 
@@ -111,7 +115,7 @@ Clément's calls on the review of the public screens, and how we applied them.
 - **Pink and white.** A row that just came in is pink for 30 seconds of screen time (the clock waits while a "Nouveau record" covers the table), then fades back. The first place is white, faded like the other past-event rows when it comes from an older event. Pink stays rare, as the design system asks, and the record still stands out.
 - **Record panel.** Titled "Record évènement", with the photo, the name, the score and the time. When nobody has scored yet this event, it shows the all-time record as "Record absolu", with its date and event. Both titles fit on one line. On screen, "absolu" replaces "de tous les temps" everywhere. A game with no score at all drops both side panels and puts a large QR code in the table.
 - **Labels.** Panel titles sit inside the white frame, in 28px pixel type (the design system's projected minimum) and in `brand-pink`, which the design system allows on white from 24px; a label too long for its column wraps on two balanced lines. Titles above the frame, on a dark chip, were tried and dropped. The game eyebrow ("GAME BOY · BORNE 3") stays at 22px, under the 28px game name. Capitals in the pixel font drop their accents (`pixelCaps()`), since Press Start 2P draws É and À as lowercase letters.
-- **No photo.** An anonymous record shows a masked pixel bust and "INCOGNITO !"; a record without a photo shows the bust and "SANS PHOTO". Never "Photo de Un …". Record photos are contained, not cropped, on a dark surface: a phone photo held upright keeps the player and the score.
+- **No photo.** An anonymous record shows a masked pixel bust and "INCOGNITO !"; a record without a photo shows the bust and "SANS PHOTO". Never "Photo de Un …". Record photos are contained, not cropped, on a dark surface: a phone photo held upright keeps the player and the score. The same rule applies to every row of the `ScoreTable`: a 48px square next to the cup, real thumbnail when the player is on screen, Incognito bust when anonymous, plain bust when there is no photo (caption omitted in the tight cell; `aria-label` carries it).
 - **Rotation.** After a "Nouveau record", the screen shows that game from the start of its time, with the new row in pink. A click on a pill shows that slide from the start. A double click holds it: the progress bar goes away and a still "PAUSE" button sits beside the pills (no blinking, since the projected screen has no looping animation). A click changes slide at once, but the bar only starts over once the 400 ms double-click window is over, so it never shows at zero before a pause hides it. While held, a click on any pill, the current one included, resumes from the start of that slide; a click on "PAUSE" resumes the slide on screen from zero (`src/lib/rotation-control.ts`). Realtime keeps running: a "Nouveau record" still takes over, then the screen goes back to the held slide, still held. Pills are 96px clear of the bottom edge.
 - **Wall.** Games are shared evenly between pages (7 → 4 + 3) and each row of cards is centred. The photo takes two fifths of a card at most, so names and scores fit without the header. Without the header, the wall still has its "LES RECORDS" title. A card says when its record is also the all-time one (`wallCardView()`): a large gold pixel star left of the player's name, where the mockup has the cup, drawn on the pixel font's own grid and centred on its letters, when the event record is the best ever; no star but the "★ Alex · 520 000" line under the score, with a small star, when the all-time record is another score; the star plus the event and date of origin when nobody has scored this event yet. Wall cards have no cup: the star always means "the all-time record". The wall pills use the same pixel star, centred with the page number.
 - **"NOUVEAU RECORD !"** is in `brand-pink`, as on the mockup (the design system allows it from 24px).
@@ -146,6 +150,32 @@ No Meta API before the event: a volunteer posts by hand, and the admin gives the
 
 Volunteers can remove a game from the list for good (SQL delete), not only hide it with `visible = false`. `scores.game_id` cascades on delete, so a live weekend must not wipe records by accident: `deleteGame` counts every score on that game (pending, approved, rejected) and throws `GameHasScoresError` when the count is not zero. The UI confirms before calling it, and on that error tells the volunteer to hide the game or delete the scores first. No migration: the existing `admins manage games` policy already allows delete; `game_event_setups` cascade and `detected_game_id` is set null.
 
+## 2026-11-06: delete pending and rejected submissions from the queue
+
+Reject alone left college-test junk in the database (only Records deleted approved scores). The submission detail now offers "Supprimer" for pending and rejected rows, with the same inline "Garder" / "Supprimer" confirm as records. Approved scores stay deletable from Records only. No migration: `deleteScore` and the existing `admins manage scores` policy already allow it.
+
+## 2026-11-06: player photo on every public ranking row
+
+Product idea "photo next to the record": each `ScoreTable` row shows a 48px square photo between the cup and the name, with the same anonymity rule as the wall and the record panel. `public_scores()` already strips name and photo of an off-screen score; the UI never rebuilds a URL from a null path. No migration.
+
+## 2026-11-06: Screen Wake Lock on the public screen, failsafe
+
+The projected public screen (`/`) requests a screen wake lock while the tab is visible, so the laptop does not sleep the display during the event. Admin and player routes do not. The request is failsafe: missing API, denied permission or any error leaves the screen running; the lock is released on unmount and re-acquired when the tab becomes visible again. Windows kiosk settings and Chrome `--kiosk` remain the primary procedure; the lock is only an extra safeguard.
+
+## 2026-11-06: realtime fallback aligned with Tournaments
+
+Venue wifi drops the Supabase channel; a phone admin that was backgrounded can look "connected" with a dead socket, so a new pending score never appeared without a hard refresh.
+
+- Public `/` and admin both subscribe to `change_signals` through `useHighscoresRealtime`.
+- While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
+- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
+- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
+- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there.
+
 ## 2026-11-05: game covers are cropped square before upload
 
 Every public tile shows the cover as a square (`object-cover`). Picking a file in the admin game dialog opens a crop step (`react-easy-crop`, aspect 1:1) before the image is kept for save. Confirm encodes a JPEG (~1024 px, quality 0.85) that is what gets uploaded to the `covers` bucket; cancel discards the selection. `minZoom` is computed from the image size (`onMediaLoaded`) so a wide cover (Guitar Hero) can sit fully in the square, with black letterbox bands if needed. No migration.
+
+## 2026-11-06: printable submission QR poster from the admin
+
+The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Full MDLR (purple + pixel background) and printer-friendly (white, no pattern). 1, 2 or 4 posters per page (cut from one sheet). Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`; print from the production admin so it hits `scores.matedansleretro.fr`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").

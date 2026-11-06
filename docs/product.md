@@ -13,11 +13,11 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 ### 1. Public screen (`/`, `scene` theme; `/scores` redirects to it)
 
 - Projected or shown on a TV in the room, watched from afar, without a mouse.
-- Shows the leaderboard of one game at a time: game name and console at the top, then rank, player, score. Ten rows max.
+- Shows the leaderboard of one game at a time: game name and console at the top, then rank, player photo, player, score. Ten rows max. An anonymous score (display unticked) shows the masked Incognito bust instead of the photo; a score without a photo shows the plain bust.
 - Rotates through the visible games every 15 seconds.
 - Updates by itself when a score is approved (Supabase Realtime). A new score can be highlighted for a few seconds (a passing pink row); that is the only movement allowed.
 - Always shows a QR code to `/score` next to the leaderboard.
-- Ideas for later: the player's photo next to the record, a podium of the top three.
+- Ideas for later: a podium of the top three.
 
 ### 2. Score submission (`/score`, `arcade` theme)
 
@@ -28,11 +28,12 @@ The reference mockups detail each screen: see [screens.md](screens.md).
 
 ### 3. Admin (`/admin`, `console` theme)
 
-Reserved for MDLR volunteers (Google sign-in, email and password as a fallback, public sign-ups closed).
+Reserved for MDLR volunteers. Sign-up is open (Google or email/password); an Auth account alone grants nothing until an existing admin promotes it from **Bénévoles**. After Google, a volunteer can set a password as a fallback.
 
 - **Games**: add, rename, choose the console, the score type (points, time or other), the score order (higher or lower wins), the display order, **show or hide** a game on the public screen, and **delete** a game that has no scores left (otherwise hide it).
-- **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason).
+- **Submissions**: see the queue of pending scores with the photo, **approve** or **reject** (with an optional reason), and **delete** a pending or rejected submission for good (college tests, junk cleanup).
 - **Scores**: enter a score by hand (approved right away), fix or delete an existing score.
+- **Bénévoles**: list registered Auth users, promote or demote admin (cannot demote yourself or the last admin).
 - **Instagram** (bonus): when approving a submission whose player gave consent, post the photo and score on the MDLR Instagram account. If the Meta API is not ready in time, fall back to a "Download the visual" button to post by hand.
 
 ## Business rules

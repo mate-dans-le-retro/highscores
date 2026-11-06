@@ -10,9 +10,9 @@ describe('oauthErrorMessage', () => {
     expect(oauthErrorMessage(new URL(`${ADMIN}?code=abc`))).toBeNull()
   })
 
-  it('explains that an unknown Google account is not a volunteer', () => {
+  it('explains that Auth sign-ups are still closed on the project', () => {
     const message =
-      "Ce compte Google n'est pas encore bénévole. Demande à Clément de t'ajouter."
+      'Les inscriptions sont encore fermées côté Auth. Demande à Clément de les ouvrir, puis réessaie.'
     expect(
       oauthErrorMessage(
         new URL(`${ADMIN}?error=access_denied&error_code=signup_disabled`),
