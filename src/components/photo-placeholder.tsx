@@ -5,11 +5,13 @@ import { cn } from '#/lib/utils'
 type PhotoPlaceholderProps = {
   /** The player kept the score off screen: masked bust, « Incognito ! ». */
   anonymous: boolean
-  size?: 'sm' | 'md' | 'lg'
+  /** `xs` and `sm` drop the caption (tight cells); the parent sets aria-label. */
+  size?: 'xs' | 'sm' | 'md' | 'lg'
   className?: string
 }
 
 const SIZES = {
+  xs: { art: 'size-8', caption: 'text-arcade-label' },
   sm: { art: 'size-20', caption: 'text-arcade-label' },
   md: { art: 'size-32', caption: 'text-scene-pixel' },
   lg: { art: 'size-72', caption: 'text-scene-pixel' },
@@ -25,6 +27,7 @@ export function PhotoPlaceholder({
   className,
 }: PhotoPlaceholderProps) {
   const { art, caption } = SIZES[size]
+  const showCaption = size !== 'xs' && size !== 'sm'
   return (
     <div
       className={cn(
@@ -72,11 +75,11 @@ export function PhotoPlaceholder({
             ))
           : null}
       </svg>
-      {size === 'sm' ? null : (
+      {showCaption ? (
         <p className={cn('font-display text-ink-secondary', caption)}>
           {pixelCaps(anonymous ? 'Incognito !' : 'Sans photo')}
         </p>
-      )}
+      ) : null}
     </div>
   )
 }
