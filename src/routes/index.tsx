@@ -71,6 +71,7 @@ function PublicScreen() {
   const games = useQuery({ ...visibleGamesQuery, refetchInterval })
   const settings = useQuery({ ...settingsQuery, refetchInterval })
   const records = useQuery({ ...recordsQuery, refetchInterval })
+  const search = Route.useSearch()
   const {
     gameDurationMs,
     wallDurationMs,
@@ -81,7 +82,9 @@ function PublicScreen() {
     rows,
     minAllTimeRows,
     showHeader,
-  } = screenOptions(settings.data ?? DEFAULT_SETTINGS, Route.useSearch())
+  } = screenOptions(settings.data ?? DEFAULT_SETTINGS, search)
+  /** Forced wall kiosk: cards drill into that game's locked view. */
+  const wallGameLinks = search.mode === 'wall'
 
   const slides = useMemo<Array<Slide>>(() => {
     const list = games.data ?? []
@@ -265,18 +268,18 @@ function PublicScreen() {
         ) : null}
 
         {showWall ? (
-          <div className="relative flex min-h-0 flex-1 flex-col px-24 pt-6">
+          <div className="relative flex min-h-0 flex-1 flex-col px-24">
             {/*
-              Title + global QR are absolute: they must not consume vertical
-              space, or a centred single row of cards sits too close to the
-              pills (pt here matches the pills' pt below).
+              Title + global QR are absolute at the 96px overscan
+              (`top-24` / `left-24` / `right-24`, 10-screens.md). RecordsWall
+              keeps a matching top band so cards clear the QR with air under it.
             */}
             {showHeader ? null : (
-              <h1 className="pointer-events-none absolute top-6 left-24 z-10 font-display text-scene-pixel text-ink-accent">
+              <h1 className="pointer-events-none absolute top-24 left-24 z-10 font-display text-scene-pixel text-ink-accent">
                 {pixelCaps('Les records')}
               </h1>
             )}
-            <div className="absolute top-6 right-24 z-10">
+            <div className="absolute top-24 right-24 z-10">
               <GlobalSubmitQr />
             </div>
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
@@ -289,6 +292,7 @@ function PublicScreen() {
               <RecordsWall
                 records={wallPages(records.data)[wallPage] ?? []}
                 showGameQr
+                linkToGame={wallGameLinks}
               />
             )}
           </div>
@@ -344,15 +348,12 @@ function PublicScreen() {
           />
         ) : null}
         {/*
-          Locked views hide the nav thumbnails. Keep the same vertical chrome
-          (pt-6 + thumb row + pb-24 overscan from 10-screens.md) so the wall /
-          game content stays balanced top and bottom instead of hugging the
-          lower edge.
+          Locked views hide the nav thumbnails. Keep only the 96px overscan
+          (`pb-24`, 10-screens.md). A fake thumb row left a large empty band
+          under the wall; cards now clear the QR and share the remaining height.
         */}
         {displayLocked ? (
-          <div aria-hidden="true" className="shrink-0 pt-6 pb-24">
-            <div className="h-16" />
-          </div>
+          <div aria-hidden="true" className="shrink-0 pb-24" />
         ) : null}
 
         {celebration ? <NewRecordScreen entry={celebration} /> : null}
