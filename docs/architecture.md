@@ -97,7 +97,7 @@ The rotation and the number of rows come from the settings (15 s and 10 rows by 
 
 ## Realtime
 
-Only `change_signals` is in the `supabase_realtime` publication: triggers bump its `games`, `scores` or `settings` row when games, setups, events, settings or any score write change. `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes to it on the public screen and in the admin shell, and invalidates the matching TanStack Query queries (including `admin`). No score row travels through realtime.
+Only `change_signals` is in the `supabase_realtime` publication. Triggers bump `games`, `settings`, and (for approved scores only) `scores`. Every score write also bumps `admin_scores`, which RLS exposes only to `public.is_admin()`. Anon therefore does not learn the timing of pending submissions. `useHighscoresRealtime()` (in `src/lib/highscores.ts`) subscribes on the public screen and in the admin shell, maps `admin_scores` to the `scores` query keys, and invalidates the matching TanStack Query queries (including `admin`). No score row travels through realtime.
 
 The connection can drop on the venue wifi, and the signals sent meanwhile are lost. `keepSubscribed()` (`src/lib/data/realtime-connection.ts`) watches the channel status (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`), the browser's `offline` / `online` events, and tab resume (`visibilitychange` / `focus`). It replaces a lost channel with a new one after 1 s, 2 s, 4 s and so on (30 s at most), or at once on `online` or resume. While disconnected, callers poll every 10 seconds via `realtimeFallbackInterval`. When the connection comes back, the hook refetches every query to catch up. On the public screen, if the connection is still lost after 60 seconds, the page reloads, but only once the site answers a `HEAD` request. In the admin, the same 60 second mark opens a dialog once and keeps polling (no reload). The mock source has no socket; it goes through the same path, so the browser's offline mode exercises it.
 
@@ -107,11 +107,11 @@ The connection can drop on the venue wifi, and the signals sent meanwhile are lo
 
 ## Storage
 
-- `photos` (public, 10 MB max, any image type): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail), hand-entered ones under `admin/`.
+- `photos` (public, 10 MB max, MIME `image/jpeg|png|webp|heic|heif` only; no SVG): player photos under `submissions/<uuid>.<ext>` (proof) and `submissions/<uuid>.thumb.<ext>` (thumbnail), hand-entered ones under `admin/`.
 
 Photos are prepared on the phone by `preparePhoto()` (`src/lib/data/photo.ts`): a JPEG proof (~2000 px) and thumbnail (~800 px). A HEIC the browser cannot decode loads `heic-to` (WebAssembly, its own chunk) on demand. If nothing can read the file, the original is uploaded alone (no thumbnail) and the admin converts a stored `.heic` on display (`useReadablePhotoUrl()`). While the player fills in the form, the photo lives in memory and IndexedDB (`src/lib/draft-photo.ts`); the sessionStorage draft only keeps its id.
 
-- `covers` (public, 5 MB max): game covers, managed from the admin.
+- `covers` (public, 5 MB max, MIME `image/jpeg|png|webp` only; no SVG): game covers, managed from the admin.
 
 ## Environment variables
 
@@ -139,3 +139,5 @@ Secrets (service role, Instagram, AI) stay in variables **without** the `VITE_` 
 ## Deployment
 
 Vercel, MDLR team, connected to the GitHub repository `mate-dans-le-retro/highscores`. The `main` branch is preprod (`scores.preview.matedansleretro.fr`), the `prod` branch is production (`scores.matedansleretro.fr`), as for `website` and `tournaments`. Nitro detects the Vercel environment at build time. The Supabase database comes from the Vercel Marketplace Supabase integration (Storage tab of the project), as for `tournaments`: a single database for preprod and production. Migrations are applied to the MDLR Supabase project with `pnpm supabase db push` (or Supabase's GitHub integration).
+
+`vercel.json` sets baseline security headers on every response: a Content-Security-Policy (self, Google Fonts, Supabase HTTPS/WSS, inline boot script for the admin theme), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` (camera allowed for the player form), and `Cross-Origin-Opener-Policy: same-origin`.

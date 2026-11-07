@@ -89,7 +89,11 @@ Everyone at the venue shares one wifi, so a limit per IP would block the room. A
 
 ## 2026-11-05: the photos bucket accepts any image type
 
-A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one.
+A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one. Superseded by "Storage MIME without SVG" below.
+
+## 2026-11-07: Storage MIME without SVG
+
+Opening an SVG from the public Storage origin can run script there. The `photos` bucket is limited to JPEG, PNG, WebP, HEIC and HEIF; `covers` to JPEG, PNG and WebP. The player form and admin file pickers use the same lists. Demo placeholders under `photos/demo/` are PNG.
 
 ## 2026-11-05: an admin for the weekend, simple first
 
@@ -178,7 +182,11 @@ Venue wifi drops the Supabase channel; a phone admin that was backgrounded can l
 - While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
 - After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
 - `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
-- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there.
+- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there. Superseded by "admin_scores topic for pending Realtime" below.
+
+## 2026-11-07: admin_scores topic for pending Realtime
+
+Pending score writes used to bump the public `scores` topic, which leaked submission timing to anon through Realtime. Approved changes still bump `scores`. Every score write bumps `admin_scores`, readable only when `public.is_admin()`. The client maps `admin_scores` to the same query invalidation as `scores`.
 
 ## 2026-11-05: game covers are cropped square before upload
 

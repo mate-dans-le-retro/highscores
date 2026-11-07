@@ -42,7 +42,7 @@
 -- fixed id, which puts the demo rows back in their initial state (pending
 -- submissions pending again, dates relative to now() refreshed).
 --
--- Photos: SQL cannot upload files. A score points to photos/demo/<name>.svg
+-- Photos: SQL cannot upload files. A score points to photos/demo/<name>.png
 -- only when that file is already in the bucket (demo-photos.ps1 uploads
 -- them); otherwise it has no photo and the screen shows its placeholder. Run
 -- this script again after uploading the photos to link them.
@@ -250,7 +250,7 @@ as $$
     custom_game_name,
     player_name,
     score,
-    (select p.name from demo_seed_photos p where p.name = 'demo/' || photo || '.svg'),
+    (select p.name from demo_seed_photos p where p.name = 'demo/' || photo || '.png'),
     null,
     display_on_screen,
     instagram_consent,

@@ -155,5 +155,8 @@ describe('photo helpers', () => {
     expect(
       photoFileType(new File([], 'photo.png', { type: 'image/png' })),
     ).toEqual({ extension: 'png', contentType: 'image/png' })
+    expect(() =>
+      photoFileType(new File([], 'x.svg', { type: 'image/svg+xml' })),
+    ).toThrow(/Unsupported photo type/)
   })
 })
