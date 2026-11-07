@@ -180,13 +180,24 @@ Venue wifi drops the Supabase channel; a phone admin that was backgrounded can l
 
 - Public `/` and admin both subscribe to `change_signals` through `useHighscoresRealtime`.
 - While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
-- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
-- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
+- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin. Superseded by "public screen trusts poll over hard-reload" below.
+- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins. Superseded by "soft resume + freshness watchdog" below.
 - Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there. Superseded by "admin_scores topic for pending Realtime" below.
 
 ## 2026-11-07: admin_scores topic for pending Realtime
 
 Pending score writes used to bump the public `scores` topic, which leaked submission timing to anon through Realtime. Approved changes still bump `scores`. Every score write bumps `admin_scores`, readable only when `public.is_admin()`. The client maps `admin_scores` to the same query invalidation as `scores`.
+
+## 2026-11-07: public screen trusts poll over hard-reload
+
+A Realtime-only outage (Vercel still up) used to hard-reload the projector every ~60 s. `pageIsReachable` only HEADs the app HTML, so the poll already kept scores fresh while the reload blinked the screen, cut rotation and dumped the "nouveau record" queue. The public screen no longer passes `reloadAfterMs`: it keeps the 10 s TanStack poll and `keepSubscribed` reconnect. Admin still warns once after 60 s disconnected (no reload). Optional reload-on-sustained-fetch-failure was left out; a quiet poll is enough for the weekend.
+
+## 2026-11-07: soft resume + freshness watchdog
+
+Two Realtime flaps on the projector / phone admin:
+
+- Tab resume (`visibilitychange` / `focus`) used to emit `disconnected` before resubscribing, even when the channel was healthy, which armed poll (and the old public reload timer). Resume now soft-resubscribes and only marks lost if the new attempt fails or the browser is offline.
+- A channel can stay `connected` as a zombie without `CHANNEL_ERROR`. Prefer a light freshness watchdog over a permanent micro-poll: while connected, if no join or `change_signals` activity arrives for `REALTIME_FRESHNESS_MS` (3 min), force `disconnected` so the 10 s poll starts and reconnect runs. Activity reports reset the timer.
 
 ## 2026-11-05: game covers are cropped square before upload
 

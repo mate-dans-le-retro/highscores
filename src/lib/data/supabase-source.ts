@@ -4,7 +4,7 @@ import { CHARACTERS_BY_SLUG } from './anonymous-name'
 import { displayedPlayerName } from './anonymize'
 import { isOriginalPhoto, photoFileType } from './photo'
 import { rankScores } from './ranking'
-import { keepSubscribed } from './realtime-connection'
+import { keepSubscribed, REALTIME_FRESHNESS_MS } from './realtime-connection'
 import { buildScreenLeaderboard } from './screen-leaderboard'
 import type { ScoreForScreen } from './screen-leaderboard'
 import type { HighscoresSource, LeaderboardQueryOptions } from './source'
@@ -243,6 +243,7 @@ export const supabaseSource: HighscoresSource = {
   subscribe: (onChange, onStatus) => {
     const supabase = getSupabase()
     return keepSubscribed({
+      freshnessMs: REALTIME_FRESHNESS_MS,
       onStatus: (status) => onStatus?.(status),
       open: (report) => {
         // supabase.channel() hands back an existing channel of the same name,
@@ -264,7 +265,10 @@ export const supabaseSource: HighscoresSource = {
                       topic === 'settings'
                     ? topic
                     : undefined
-              if (table) onChange(table)
+              if (table) {
+                report('activity')
+                onChange(table)
+              }
             },
           )
           .subscribe((status) => {

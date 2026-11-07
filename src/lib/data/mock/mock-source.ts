@@ -1,5 +1,5 @@
 import { toPublicRow } from '../anonymize'
-import { keepSubscribed } from '../realtime-connection'
+import { keepSubscribed, REALTIME_FRESHNESS_MS } from '../realtime-connection'
 import { buildScreenLeaderboard } from '../screen-leaderboard'
 import type { HighscoresSource } from '../source'
 import type {
@@ -188,10 +188,14 @@ export const mockSource: HighscoresSource = {
   // offline/online events drive the same reconnection path as Supabase.
   subscribe: (onChange, onStatus) =>
     keepSubscribed({
+      freshnessMs: REALTIME_FRESHNESS_MS,
       onStatus: (status) => onStatus?.(status),
       open: (report) => {
         const joined = setTimeout(() => report('joined'), 0)
-        const unsubscribe = subscribeToStore(onChange)
+        const unsubscribe = subscribeToStore((table) => {
+          report('activity')
+          onChange(table)
+        })
         return () => {
           clearTimeout(joined)
           unsubscribe()
