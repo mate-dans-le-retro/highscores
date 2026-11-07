@@ -46,6 +46,7 @@ export function ThanksStep({ draft, onDraftChange }: ThanksStepProps) {
             onDraftChange(next)
             void navigate({
               search: (prev) => ({ ...prev, step: 'photo' }),
+              replace: true,
             })
           }}
         >

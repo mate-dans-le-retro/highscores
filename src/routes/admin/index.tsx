@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { AtSign, Camera, Check, EyeOff, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -7,6 +7,7 @@ import { GameThumb } from '#/components/admin/game-thumb'
 import { useAdminRefetchInterval } from '#/components/admin/realtime-provider'
 import { ScoreInstagram } from '#/components/admin/score-instagram'
 import { SubmissionDetail } from '#/components/admin/submission-detail'
+import { Button } from '#/components/ui/button'
 import { Switch } from '#/components/ui/switch'
 import {
   adminGamesQuery,
@@ -41,7 +42,7 @@ function Submissions() {
   const [status, setStatus] = useState<SubmissionFilter>('pending')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const refetchInterval = useAdminRefetchInterval()
-  const submissions = useQuery({
+  const submissions = useInfiniteQuery({
     ...submissionsQuery(status),
     refetchInterval,
   })
@@ -50,8 +51,12 @@ function Submissions() {
   const approved = useQuery({ ...approvedScoresQuery, refetchInterval })
   const event = useQuery({ ...currentEventQuery, refetchInterval })
 
-  const list = submissions.data ?? []
+  const list = submissions.data?.pages.flat() ?? []
   const selected = list.find(({ id }) => id === selectedId) ?? list.at(0)
+  const totalForFilter = counts.data?.[status]
+  const canLoadMore =
+    submissions.hasNextPage &&
+    (totalForFilter == null || list.length < totalForFilter)
 
   // When the selected submission leaves the list (approved, rejected), the
   // next one takes its place.
@@ -129,6 +134,18 @@ function Submissions() {
             </li>
           ))}
         </ul>
+
+        {canLoadMore ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={submissions.isFetchingNextPage}
+            onClick={() => void submissions.fetchNextPage()}
+          >
+            {submissions.isFetchingNextPage ? 'Chargement…' : 'Charger plus'}
+          </Button>
+        ) : null}
 
         <SubmissionsSwitch />
       </section>

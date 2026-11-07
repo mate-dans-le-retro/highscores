@@ -69,6 +69,16 @@ function SubmitScore() {
     )
   }
 
+  if (step === 'done' && !draft.sent) {
+    return (
+      <Navigate
+        to="/score"
+        search={(prev) => ({ ...prev, step: 'photo' })}
+        replace
+      />
+    )
+  }
+
   if (step === 'consent') {
     const scoreFilled = draft.scoreText.trim().length > 0
     const gameFilled = draft.customGame
@@ -103,11 +113,16 @@ function SubmitScore() {
           puis recharge la page.
         </p>
       )}
-      {step === 'details' && photo && (
+      {step === 'details' && photo && !games.isSuccess && !games.isError && (
+        <p className="text-body text-ink-secondary" aria-live="polite">
+          Chargement des jeux…
+        </p>
+      )}
+      {step === 'details' && photo && games.isSuccess && (
         <DetailsStep
           draft={draft}
           photo={photo}
-          games={games.data ?? []}
+          games={games.data}
           onDraftChange={onDraftChange}
         />
       )}
@@ -119,7 +134,7 @@ function SubmitScore() {
           onDraftChange={onDraftChange}
         />
       )}
-      {step === 'done' && (
+      {step === 'done' && draft.sent && (
         <ThanksStep draft={draft} onDraftChange={onDraftChange} />
       )}
     </ScoreFlowShell>

@@ -179,3 +179,35 @@ export function parseScoreInput(raw: string, type: ScoreType): number | null {
   const time = parseTimeInput(trimmed)
   return time.ok ? time.ms : null
 }
+
+/**
+ * True when the text carries time units or separators (1'32"48, 1:32.48,
+ * 1min32s…). Pure digit runs stay false: for a custom game those are points.
+ */
+export function looksLikeTimeInput(raw: string): boolean {
+  const text = normalizeTime(raw)
+  if (!text || /^\d+$/.test(text)) return false
+  return /[h'":.,]/.test(text)
+}
+
+export type CustomScoreParse =
+  { ok: true; value: number; scoreType: 'points' | 'time' } | { ok: false }
+
+/**
+ * Custom ("Un autre jeu") scores: digits are points; a recognizable time
+ * spelling is stored in milliseconds so linking a Temps game later keeps rank.
+ */
+export function parseCustomScoreInput(raw: string): CustomScoreParse {
+  const trimmed = raw.trim()
+  if (!trimmed) return { ok: false }
+  if (looksLikeTimeInput(trimmed)) {
+    const time = parseTimeInput(trimmed)
+    return time.ok
+      ? { ok: true, value: time.ms, scoreType: 'time' }
+      : { ok: false }
+  }
+  const points = parseScoreInput(trimmed, 'points')
+  return points === null
+    ? { ok: false }
+    : { ok: true, value: points, scoreType: 'points' }
+}

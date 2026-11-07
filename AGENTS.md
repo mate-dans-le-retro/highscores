@@ -31,7 +31,7 @@ pnpm build          # production build (.output/)
 pnpm lint           # ESLint (@tanstack/eslint-config)
 pnpm check          # Prettier check
 pnpm format         # Prettier + ESLint --fix
-pnpm test           # Vitest (src/**/*.test.ts)
+pnpm test           # Vitest (src/**/*.test.ts and *.test.tsx)
 pnpm test:e2e:install  # once: Playwright Chromium
 pnpm test:e2e       # Playwright smoke (builds, then preview on :4173, ?mock=1)
 pnpm typecheck      # type check (tsc --noEmit)
@@ -39,6 +39,11 @@ pnpm typecheck      # type check (tsc --noEmit)
 pnpm vercel:login   # Vercel CLI login, once per machine
 pnpm vercel:link    # link the checkout to the Vercel project (.vercel/)
 pnpm env:pull       # Vercel development variables into .env.local, overwrites it
+
+pnpm supabase:login         # Supabase CLI login, once per machine (before gen types)
+pnpm supabase:link          # link the checkout to the Supabase project (before gen types)
+pnpm supabase:types         # local Docker → `src/lib/database.types.ts` (needs `pnpm supabase start`)
+pnpm supabase:types:remote  # same file from the linked remote project
 
 pnpm supabase start  # local Supabase (Docker), applies migrations + seed
 pnpm supabase db reset   # replays migrations + seed on the local database

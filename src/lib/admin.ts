@@ -1,8 +1,14 @@
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 import { randomUuid } from './random-uuid'
+import { parseScoreInput } from './parse-score'
 import { getSupabase } from './supabase'
 import {
   isAllowedCoverMime,
@@ -355,11 +361,25 @@ export const adminGamesQuery = queryOptions({
   },
 })
 
-/** Player submissions of one filter, newest first (posts to make: oldest first). */
+/** Page size for the admin submission queues (pending / rejected stay reachable). */
+export const SUBMISSIONS_PAGE_SIZE = 200
+
+/**
+ * Queue order: pending, rejected and to_post are oldest-first so volunteers
+ * clear the backlog; approved stays newest-first for a recent history.
+ */
+export function submissionsSortAscending(filter: SubmissionFilter): boolean {
+  return filter !== 'approved'
+}
+
+/** Player submissions of one filter, paginated in pages of {@link SUBMISSIONS_PAGE_SIZE}. */
 export const submissionsQuery = (filter: SubmissionFilter) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: ['admin', 'submissions', filter],
-    queryFn: async (): Promise<Array<AdminScore>> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<Array<AdminScore>> => {
+      const from = pageParam
+      const to = from + SUBMISSIONS_PAGE_SIZE - 1
       const base = getSupabase()
         .from('scores')
         .select('*')
@@ -372,11 +392,15 @@ export const submissionsQuery = (filter: SubmissionFilter) =>
               .is('instagram_post_id', null)
           : base.eq('status', filter)
       const { data, error } = await query
-        .order('created_at', { ascending: filter === 'to_post' })
-        .limit(200)
+        .order('created_at', { ascending: submissionsSortAscending(filter) })
+        .range(from, to)
       if (error) throw error
       return data as Array<AdminScore>
     },
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < SUBMISSIONS_PAGE_SIZE
+        ? undefined
+        : lastPageParam + SUBMISSIONS_PAGE_SIZE,
   })
 
 export const submissionCountsQuery = queryOptions({
@@ -535,10 +559,53 @@ export interface ScoreReview {
   display_on_screen: boolean
 }
 
-export async function approveScore(id: string, review: ScoreReview) {
-  const { error } = await getSupabase()
+/**
+ * Update matched no row: the score is gone, or another volunteer already
+ * moved it out of the expected status (approve/reject need pending, etc.).
+ */
+export class ScoreMutationConflictError extends Error {
+  constructor(action: string) {
+    super(
+      `Could not ${action}: the score is missing or its status already changed`,
+    )
+    this.name = 'ScoreMutationConflictError'
+  }
+}
+
+/** Throws when a status-constrained update matched no row. */
+export function assertScoreUpdated(
+  rows: Array<unknown> | null | undefined,
+  action: string,
+) {
+  if (!rows?.length) throw new ScoreMutationConflictError(action)
+}
+
+/**
+ * Updates a score only when its current status matches. Returns the updated
+ * ids so callers can detect a concurrent status change (0 rows).
+ */
+async function updateScoreWhen(
+  id: string,
+  expected: SubmissionStatus | Array<SubmissionStatus>,
+  row: Record<string, unknown>,
+  action: string,
+) {
+  const filter = Array.isArray(expected) ? expected : [expected]
+  const { data, error } = await getSupabase()
     .from('scores')
-    .update({
+    .update(row)
+    .eq('id', id)
+    .in('status', filter)
+    .select('id')
+  if (error) throw error
+  assertScoreUpdated(data, action)
+}
+
+export async function approveScore(id: string, review: ScoreReview) {
+  await updateScoreWhen(
+    id,
+    'pending',
+    {
       ...review,
       player_name: review.player_name?.trim() || null,
       custom_game_name: null,
@@ -546,37 +613,39 @@ export async function approveScore(id: string, review: ScoreReview) {
       rejection_reason: null,
       reviewed_at: new Date().toISOString(),
       reviewed_by: await currentUserId(),
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'approve',
+  )
 }
 
 export async function rejectScore(id: string, reason?: string | null) {
   const rejection_reason = reason?.trim() || null
-  const { error } = await getSupabase()
-    .from('scores')
-    .update({
+  await updateScoreWhen(
+    id,
+    'pending',
+    {
       status: 'rejected',
       rejection_reason,
       reviewed_at: new Date().toISOString(),
       reviewed_by: await currentUserId(),
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'reject',
+  )
 }
 
 /** Puts a reviewed submission back in the queue. */
 export async function reopenScore(id: string) {
-  const { error } = await getSupabase()
-    .from('scores')
-    .update({
+  await updateScoreWhen(
+    id,
+    ['approved', 'rejected'],
+    {
       status: 'pending',
       rejection_reason: null,
       reviewed_at: null,
       reviewed_by: null,
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'reopen',
+  )
 }
 
 export async function updateScore(
@@ -585,11 +654,7 @@ export async function updateScore(
     Pick<ScoreReview, 'score' | 'player_name' | 'display_on_screen'>
   >,
 ) {
-  const { error } = await getSupabase()
-    .from('scores')
-    .update(changes)
-    .eq('id', id)
-  if (error) throw error
+  await updateScoreWhen(id, 'approved', changes, 'update')
 }
 
 /** Marks a score as posted by hand on Instagram, or back to post (null). */
@@ -612,6 +677,20 @@ export interface ManualScore {
   score: number
   display_on_screen: boolean
   photo: File | null
+}
+
+/** Storage paths uploaded for a score photo (proof ± thumb). */
+export function scorePhotoPaths(
+  photoPath: string | null,
+  thumbPath: string | null,
+) {
+  return [photoPath, thumbPath].filter((path): path is string => Boolean(path))
+}
+
+/** Best-effort cleanup of photo uploads left without a scores row. */
+async function removeScorePhotos(paths: Array<string>) {
+  if (paths.length === 0) return
+  await getSupabase().storage.from('photos').remove(paths)
 }
 
 /** A score typed by a volunteer: approved right away, in the current event. */
@@ -649,7 +728,11 @@ export async function addManualScore(input: ManualScore) {
     reviewed_at: new Date().toISOString(),
     reviewed_by: await currentUserId(),
   })
-  if (error) throw error
+  if (error) {
+    // Insert failed after a successful upload: drop the orphan objects.
+    await removeScorePhotos(scorePhotoPaths(photoPath, thumbPath))
+    throw error
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -765,14 +848,25 @@ export async function updateGame(game: AdminGame, input: GameInput) {
   const cover_path = input.cover
     ? await uploadCover(game.slug, input.cover)
     : game.cover_path
+  // Lock type/order once any score exists: changing them would misread rankings.
+  const scoreCount = await countGameScores(game.id)
+  const scoreFields =
+    scoreCount > 0
+      ? {
+          score_type: game.score_type,
+          score_order: game.score_order,
+        }
+      : {
+          score_type: input.score_type,
+          score_order: input.score_order,
+        }
   const { error } = await getSupabase()
     .from('games')
     .update({
       name: input.name.trim(),
       short_label: input.short_label.trim().toUpperCase(),
       console: input.console?.trim() || null,
-      score_type: input.score_type,
-      score_order: input.score_order,
+      ...scoreFields,
       visible: input.visible,
       cover_path,
     })
@@ -802,6 +896,31 @@ export class GameHasScoresError extends Error {
 }
 
 /**
+ * Counts every score for a game (pending, approved, rejected; any event).
+ * Same filter as deleteGame / score-type lock.
+ */
+export async function countGameScores(gameId: string) {
+  const { count, error } = await getSupabase()
+    .from('scores')
+    .select('id', { count: 'exact', head: true })
+    .eq('game_id', gameId)
+  if (error) throw error
+  return count ?? 0
+}
+
+/** True once any score exists: score_type / score_order must stay fixed. */
+export function isScoreRuleLocked(scoreCount: number) {
+  return scoreCount > 0
+}
+
+/** French copy when delete is blocked because scores still point at the game. */
+export function deleteGameBlockedMessage(count: number) {
+  return count === 1
+    ? 'Ce jeu a encore 1 score (validé, en attente ou refusé). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
+    : `Ce jeu a encore ${count} scores (validés, en attente ou refusés). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`
+}
+
+/**
  * Deletes a game for good. Refuses when any score still points at it
  * (pending, approved or rejected): `scores.game_id` cascades on delete.
  * Station labels for the game go away with it (`game_event_setups` cascade).
@@ -809,12 +928,8 @@ export class GameHasScoresError extends Error {
  */
 export async function deleteGame(game: Pick<AdminGame, 'id' | 'cover_path'>) {
   const supabase = getSupabase()
-  const { count, error: countError } = await supabase
-    .from('scores')
-    .select('id', { count: 'exact', head: true })
-    .eq('game_id', game.id)
-  if (countError) throw countError
-  if ((count ?? 0) > 0) throw new GameHasScoresError(count ?? 0)
+  const count = await countGameScores(game.id)
+  if (count > 0) throw new GameHasScoresError(count)
 
   const { error } = await supabase.from('games').delete().eq('id', game.id)
   if (error) throw error
@@ -824,19 +939,12 @@ export async function deleteGame(game: Pick<AdminGame, 'id' | 'cover_path'>) {
   }
 }
 
-/** Saves a new display order: positions 1, 2, 3… */
+/** Saves a new display order: positions 1, 2, 3… (one atomic Postgres update). */
 export async function reorderGames(ids: Array<string>) {
-  const supabase = getSupabase()
-  const results = await Promise.all(
-    ids.map((id, index) =>
-      supabase
-        .from('games')
-        .update({ position: index + 1 })
-        .eq('id', id),
-    ),
-  )
-  const failed = results.find((result) => result.error)
-  if (failed?.error) throw failed.error
+  const { error } = await getSupabase().rpc('reorder_games', {
+    ordered_ids: ids,
+  })
+  if (error) throw error
 }
 
 export function coverUrl(path: string | null) {
@@ -899,23 +1007,9 @@ export async function renameEvent(id: string, name: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Reads what a volunteer typed. Points: digits, spaces allowed ("128 400").
- * Time: 1'32"48, 1:32.48, 1'32 or 92.48 (seconds), stored in milliseconds.
+ * Reads what a volunteer typed in review or manual entry. Same rules as the
+ * player form ({@link parseScoreInput}): stopwatch digits, 1:32:48, etc.
  */
 export function parseScore(raw: string, type: ScoreType): number | null {
-  const value = raw.trim()
-  if (!value) return null
-  if (type !== 'time') {
-    const digits = value.replace(/[\s.]/g, '')
-    return /^\d{1,15}$/.test(digits) ? Number(digits) : null
-  }
-  const match =
-    /^(?:(\d+)\s*['’:])?\s*(\d{1,2})(?:\s*(?:["”.,])\s*(\d{1,3}))?\s*"?$/.exec(
-      value,
-    )
-  if (!match) return null
-  const [, minutes = '0', seconds, fraction = ''] = match
-  if (Number(seconds) >= 60 && minutes !== '0') return null
-  const ms = Number(fraction.padEnd(3, '0').slice(0, 3))
-  return Number(minutes) * 60_000 + Number(seconds) * 1000 + ms
+  return parseScoreInput(raw, type)
 }

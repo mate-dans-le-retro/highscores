@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { findNewRecords } from './records'
-import type { DisplayedGame, GameRecord, LeaderboardRow } from './types'
+import { findNewRecords, keepNewestCelebration } from './records'
+import type {
+  DisplayedGame,
+  GameRecord,
+  LeaderboardRow,
+  NewRecord,
+} from './types'
 
 const game = (
   id: string,
@@ -151,5 +156,34 @@ describe('findNewRecords', () => {
     expect(
       findNewRecords([record(tetris, julie)], [record(tetris, julie)]),
     ).toEqual([])
+  })
+})
+
+describe('keepNewestCelebration', () => {
+  const celebration = (
+    gameId: string,
+    scoreId: string,
+    created_at: string,
+  ): NewRecord => {
+    const g = game(gameId)
+    const current = { ...row(scoreId, gameId, 100), created_at }
+    return {
+      game: g,
+      record: current,
+      previous: null,
+      all_time: false,
+    }
+  }
+
+  it('leaves the queue alone when nothing new was found', () => {
+    const queued = celebration('tetris', 'a', '2026-11-07T10:00:00Z')
+    expect(keepNewestCelebration([queued], [])).toEqual([queued])
+  })
+
+  it('keeps only the newest across the queue and the new finds', () => {
+    const older = celebration('tetris', 'a', '2026-11-07T10:00:00Z')
+    const mid = celebration('kart', 'b', '2026-11-07T11:00:00Z')
+    const newest = celebration('pong', 'c', '2026-11-07T12:00:00Z')
+    expect(keepNewestCelebration([older], [mid, newest])).toEqual([newest])
   })
 })
