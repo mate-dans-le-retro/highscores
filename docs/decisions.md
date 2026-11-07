@@ -107,6 +107,10 @@ Volunteers sign in with Google, so they have no password to remember. Sign-ups s
 
 Sign-ups are open so colleagues can create an Auth account themselves (Google or email/password). Fail-closed stays: Auth alone grants nothing; `/admin` only opens for rows in `public.admins`. Clément (or any admin) promotes from `/admin/users` (`list_registered_users` / `set_user_admin`), without SQL. Demotion is supported, except for yourself and the last admin. After a Google sign-up, the signed-in user can set a password for the venue wifi. Linking Google onto a password-only account is deferred.
 
+## 2026-11-07: Password presence from encrypted_password, not identities
+
+`auth.updateUser({ password })` on a Google-only account sets `encrypted_password` without adding an `email` identity. Inferring "has a password" from `session.user.identities` stayed false after a successful save, so `/admin/account` kept offering "Définir un mot de passe" and a second submit of the same value failed with Auth `same_password` under a generic error. The UI now reads `current_user_has_password()` (same rule as `list_registered_users.has_password`) and maps Auth password errors to French copy.
+
 ## 2026-11-05: public screen after the visual review
 
 Clément's calls on the review of the public screens, and how we applied them.
@@ -179,6 +183,10 @@ Every public tile shows the cover as a square (`object-cover`). Picking a file i
 ## 2026-11-06: printable submission QR poster from the admin
 
 The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Clair (white, no pattern) and Sombre (purple + pixel background). 1, 2 or 4 posters per page (cut from one sheet). Optional "Une affiche par jeu": multi-select games, each poster shows the game name, puts the cover in the QR centre (ECC H), and links to `/score?game=<slug>`. A pack becomes a multipage PDF when it needs more than one sheet. Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
+
+## 2026-11-07: Nouveau record duration is a setting
+
+The public "Nouveau record" takeover used a hard-coded 12 s. It is now `settings.new_record_duration_s` (8, 12 or 20 s, default 12), next to game and wall durations in the admin Screen settings. The public screen reads it through `screenOptions` (`newRecordDurationMs`). No URL override: `?rotation=` still only covers game and wall slides.
 
 ## 2026-11-07: admin clair / sombre preference
 

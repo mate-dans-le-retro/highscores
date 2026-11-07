@@ -126,6 +126,8 @@ export interface Settings {
   screen_mode: ScreenMode
   game_duration_s: 15 | 30 | 60
   wall_duration_s: 10 | 20 | 30
+  /** "Nouveau record" takeover on the public screen (default 12). */
+  new_record_duration_s: 8 | 12 | 20
   /** N: total rows on the public screen (default 10). */
   rows_shown: 3 | 5 | 10
   /** M: all-time block never shrinks below this (default 5). */

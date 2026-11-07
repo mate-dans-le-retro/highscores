@@ -1,3 +1,4 @@
+import type { Session } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { LogOut, MonitorPlay } from 'lucide-react'
@@ -12,7 +13,8 @@ import { SignIn } from '#/components/admin/sign-in'
 import { ThemeToggle } from '#/components/admin/theme-toggle'
 import { Button } from '#/components/ui/button'
 import {
-  sessionHasPassword,
+  currentUserHasPasswordQuery,
+  sessionHasPasswordIdentity,
   signOut,
   submissionCountsQuery,
   useAdminAuth,
@@ -40,29 +42,7 @@ function AdminLayout() {
   if (auth.status === 'signed-out') return <SignIn />
 
   if (auth.status === 'not-admin') {
-    const needsPassword = !sessionHasPassword(auth.session)
-    return (
-      <main className="grid min-h-screen place-items-center px-4 py-8">
-        <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
-          <div className="flex flex-col items-center gap-4">
-            <h1 className="text-h3">Pas encore admin</h1>
-            <p className="text-body-ui text-ink-secondary">
-              Ton compte ({auth.session.user.email}) existe, mais il n'a pas
-              encore le rôle admin. Demande à un admin de te promouvoir depuis
-              l'onglet Utilisateurs.
-            </p>
-            <Button variant="outline" onClick={() => void signOut()}>
-              Se déconnecter
-            </Button>
-          </div>
-          {needsPassword && (
-            <div className="w-full rounded-xl bg-surface-raised p-6 text-left shadow-card">
-              <SetPasswordForm />
-            </div>
-          )}
-        </div>
-      </main>
-    )
+    return <NotAdminGate session={auth.session} />
   }
 
   return (
@@ -74,6 +54,40 @@ function AdminLayout() {
         </div>
       </div>
     </AdminRealtimeProvider>
+  )
+}
+
+function NotAdminGate({ session }: { session: Session }) {
+  const userId = session.user.id
+  const hasPasswordQuery = useQuery({
+    ...currentUserHasPasswordQuery(userId),
+    placeholderData: sessionHasPasswordIdentity(session) ? true : undefined,
+  })
+  const checking =
+    hasPasswordQuery.isPending && typeof hasPasswordQuery.data !== 'boolean'
+  const needsPassword = !checking && hasPasswordQuery.data !== true
+
+  return (
+    <main className="grid min-h-screen place-items-center px-4 py-8">
+      <div className="flex w-full max-w-md flex-col items-center gap-6 text-center">
+        <div className="flex flex-col items-center gap-4">
+          <h1 className="text-h3">Pas encore admin</h1>
+          <p className="text-body-ui text-ink-secondary">
+            Ton compte ({session.user.email}) existe, mais il n'a pas encore le
+            rôle admin. Demande à un admin de te promouvoir depuis l'onglet
+            Utilisateurs.
+          </p>
+          <Button variant="outline" onClick={() => void signOut()}>
+            Se déconnecter
+          </Button>
+        </div>
+        {needsPassword ? (
+          <div className="w-full rounded-xl bg-surface-raised p-6 text-left shadow-card">
+            <SetPasswordForm userId={userId} />
+          </div>
+        ) : null}
+      </div>
+    </main>
   )
 }
 
