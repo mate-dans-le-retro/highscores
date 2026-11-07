@@ -412,24 +412,24 @@ export function drawQrPosterInRect(
     ctx.restore()
   }
 
-  let cursorY = top + margin + 40 * scale
-
-  if (logo) {
-    const logoHeight = (game ? 180 : 220) * scale
-    const logoWidth = (logoHeight * logo.naturalWidth) / logo.naturalHeight
-    ctx.drawImage(
-      logo,
-      left + (W - logoWidth) / 2,
-      cursorY,
-      logoWidth,
-      logoHeight,
-    )
-    cursorY += logoHeight + (game ? 56 : 80) * scale
-  }
-
   const pixelFont = (size: number) => `${size}px ${PIXEL_FONT}`
   const sansFont = (weight: number) => (size: number) =>
     `${weight} ${size}px ${SANS_FONT}`
+
+  // Measure then vertically centre the stack so 1/2/4 sheets keep equal air
+  // above and below instead of packing everything under the top frame.
+  const textWidth = W - margin * 2
+  const logoHeight = logo ? (game ? 160 : 200) * scale : 0
+  const logoWidth = logo
+    ? (logoHeight * logo.naturalWidth) / logo.naturalHeight
+    : 0
+  const gapAfterLogo = (game ? 108 : 132) * scale
+  const gapAfterTitle = 72 * scale
+  // A little more air above the QR than below: the frame reads heavier under the title.
+  const gapAfterSubtitle = (game ? 144 : 168) * scale
+  const gapAfterQr = 112 * scale
+  const gapAfterHook = 56 * scale
+  const gapAfterLine = 88 * scale
 
   const title = pixelCaps('À toi de jouer')
   const titleSize = fitFont(
@@ -438,15 +438,8 @@ export function drawQrPosterInRect(
     pixelFont,
     (game ? 80 : 96) * scale,
     48 * scale,
-    W - margin * 2,
+    textWidth,
   )
-  ctx.font = pixelFont(titleSize)
-  ctx.fillStyle = pink
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'top'
-  ctx.fillText(title, left + W / 2, cursorY)
-  cursorY += titleSize + 40 * scale
-
   const subtitle = game?.name ?? 'Highscores'
   const subSize = fitFont(
     ctx,
@@ -454,32 +447,8 @@ export function drawQrPosterInRect(
     sansFont(700),
     (game ? 56 : 64) * scale,
     32 * scale,
-    W - margin * 2,
+    textWidth,
   )
-  ctx.font = sansFont(700)(subSize)
-  ctx.fillStyle = subtitleColor
-  ctx.fillText(subtitle, left + W / 2, cursorY)
-  cursorY += subSize + (game ? 72 : 100) * scale
-
-  const qrSize = Math.min((game ? 1320 : 1480) * scale, W - margin * 2)
-  const qrX = left + (W - qrSize) / 2
-  const mat = 36 * scale
-  const border = 16 * scale
-  ctx.fillStyle = pink
-  ctx.fillRect(
-    qrX - mat - border,
-    cursorY - mat - border,
-    qrSize + (mat + border) * 2,
-    qrSize + (mat + border) * 2,
-  )
-  ctx.fillStyle = '#ffffff'
-  ctx.fillRect(qrX - mat, cursorY - mat, qrSize + mat * 2, qrSize + mat * 2)
-  drawQr(ctx, submitUrl, qrX, cursorY, qrSize, qrDark, '#ffffff', Boolean(game))
-  if (game) {
-    drawQrCentreThumb(ctx, qrX, cursorY, qrSize, cover, game.shortLabel, purple)
-  }
-  cursorY += qrSize + mat + border + 90 * scale
-
   const hook = 'Un record à afficher ?'
   const hookSize = fitFont(
     ctx,
@@ -487,13 +456,8 @@ export function drawQrPosterInRect(
     sansFont(700),
     72 * scale,
     44 * scale,
-    W - margin * 2,
+    textWidth,
   )
-  ctx.font = sansFont(700)(hookSize)
-  ctx.fillStyle = bodyColor
-  ctx.fillText(hook, left + W / 2, cursorY)
-  cursorY += hookSize + 36 * scale
-
   const line = "Scanne, prends ta photo, c'est parti !"
   const lineSize = fitFont(
     ctx,
@@ -501,29 +465,96 @@ export function drawQrPosterInRect(
     sansFont(600),
     48 * scale,
     32 * scale,
-    W - margin * 2,
+    textWidth,
   )
-  ctx.font = sansFont(600)(lineSize)
-  ctx.fillStyle = bodyMuted
-  ctx.fillText(line, left + W / 2, cursorY)
-  cursorY += lineSize + 80 * scale
-
   const host = displayHost(submitUrl)
   const hostSize = fitFont(
     ctx,
     host,
     sansFont(600),
-    36 * scale,
-    22 * scale,
-    W - margin * 2,
+    40 * scale,
+    26 * scale,
+    textWidth,
   )
+
+  const mat = 28 * scale
+  const border = 14 * scale
+  const qrFrame = mat + border
+  const qrMax = Math.min((game ? 1520 : 1640) * scale, textWidth - qrFrame * 2)
+  const qrSize = qrMax
+  const qrBlock = qrFrame * 2 + qrSize
+
+  const stackHeight =
+    (logo ? logoHeight + gapAfterLogo : 0) +
+    titleSize +
+    gapAfterTitle +
+    subSize +
+    gapAfterSubtitle +
+    qrBlock +
+    gapAfterQr +
+    hookSize +
+    gapAfterHook +
+    lineSize +
+    gapAfterLine +
+    hostSize
+
+  const innerTop = top + framePad + 12 * scale
+  const innerBottom = top + H - framePad - 12 * scale
+  const contentPad = 40 * scale
+  const contentTop = innerTop + contentPad
+  const contentBottom = innerBottom - contentPad
+  const contentHeight = contentBottom - contentTop
+  let cursorY = contentTop + Math.max(0, (contentHeight - stackHeight) / 2)
+
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'top'
+
+  if (logo) {
+    ctx.drawImage(
+      logo,
+      left + (W - logoWidth) / 2,
+      cursorY,
+      logoWidth,
+      logoHeight,
+    )
+    cursorY += logoHeight + gapAfterLogo
+  }
+
+  ctx.font = pixelFont(titleSize)
+  ctx.fillStyle = pink
+  ctx.fillText(title, left + W / 2, cursorY)
+  cursorY += titleSize + gapAfterTitle
+
+  ctx.font = sansFont(700)(subSize)
+  ctx.fillStyle = subtitleColor
+  ctx.fillText(subtitle, left + W / 2, cursorY)
+  cursorY += subSize + gapAfterSubtitle
+
+  const qrX = left + (W - qrSize) / 2
+  const qrY = cursorY + qrFrame
+  ctx.fillStyle = pink
+  ctx.fillRect(qrX - qrFrame, cursorY, qrSize + qrFrame * 2, qrBlock)
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(qrX - mat, qrY - mat, qrSize + mat * 2, qrSize + mat * 2)
+  drawQr(ctx, submitUrl, qrX, qrY, qrSize, qrDark, '#ffffff', Boolean(game))
+  if (game) {
+    drawQrCentreThumb(ctx, qrX, qrY, qrSize, cover, game.shortLabel, purple)
+  }
+  cursorY += qrBlock + gapAfterQr
+
+  ctx.font = sansFont(700)(hookSize)
+  ctx.fillStyle = bodyColor
+  ctx.fillText(hook, left + W / 2, cursorY)
+  cursorY += hookSize + gapAfterHook
+
+  ctx.font = sansFont(600)(lineSize)
+  ctx.fillStyle = bodyMuted
+  ctx.fillText(line, left + W / 2, cursorY)
+  cursorY += lineSize + gapAfterLine
+
   ctx.font = sansFont(600)(hostSize)
   ctx.fillStyle = pink
-  ctx.fillText(
-    host,
-    left + W / 2,
-    Math.min(cursorY, top + H - margin - hostSize),
-  )
+  ctx.fillText(host, left + W / 2, cursorY)
 
   ctx.restore()
   ctx.textAlign = 'left'
