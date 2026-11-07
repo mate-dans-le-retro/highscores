@@ -111,6 +111,10 @@ Sign-ups are open so colleagues can create an Auth account themselves (Google or
 
 `auth.updateUser({ password })` on a Google-only account sets `encrypted_password` without adding an `email` identity. Inferring "has a password" from `session.user.identities` stayed false after a successful save, so `/admin/account` kept offering "Définir un mot de passe" and a second submit of the same value failed with Auth `same_password` under a generic error. The UI now reads `current_user_has_password()` (same rule as `list_registered_users.has_password`) and maps Auth password errors to French copy.
 
+## 2026-11-07: Current password required on Highscores Auth
+
+Highscores Auth rejects `updateUser({ password })` with `current_password_required` once a password exists (password or Google session). Tournoi Auth accepts the same call without a current password. After an earlier silent Auth success, volunteers hit that error while the form still looked like a first-time set. The change-password form now sends `current_password`, and alerts keep the Auth code and message.
+
 ## 2026-11-05: public screen after the visual review
 
 Clément's calls on the review of the public screens, and how we applied them.
