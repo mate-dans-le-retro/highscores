@@ -29,6 +29,7 @@ import {
   rankGameScores,
   rejectScore,
   reopenScore,
+  updateScore,
   useInvalidateAdmin,
 } from '#/lib/admin'
 import type { AdminGame, AdminScore } from '#/lib/admin'
@@ -120,12 +121,24 @@ export function SubmissionDetail({
       ? placeFor(score, ranking, game.score_order, submission.id)
       : null
   const pending = submission.status === 'pending'
+  const isApproved = submission.status === 'approved'
+  // Name, score and anonymity stay editable after validation; the game only
+  // while pending (updateScore does not move game_id).
+  const canEditReview = pending || isApproved
   // Approved scores stay deletable from Records; pending/rejected need it
   // here so college tests can wipe junk without SQL.
   const canDelete =
     submission.status === 'pending' || submission.status === 'rejected'
   const photo = proofUrl(submission.photo_path)
   const photoSrc = useReadablePhotoUrl(photo)
+
+  const nextName = playerName.trim() || null
+  const reviewDirty =
+    isApproved &&
+    score !== null &&
+    (nextName !== (submission.player_name?.trim() || null) ||
+      score !== submission.score ||
+      displayOnScreen !== submission.display_on_screen)
 
   const afterLeavingQueue = () => {
     onLeftQueue?.(submission.id)
@@ -154,11 +167,21 @@ export function SubmissionDetail({
     mutationFn: () => deleteScore(submission.id),
     onSuccess: afterLeavingQueue,
   })
+  const saveApproved = useMutation({
+    mutationFn: () =>
+      updateScore(submission.id, {
+        score: score ?? submission.score,
+        player_name: nextName,
+        display_on_screen: displayOnScreen,
+      }),
+    onSuccess: invalidate,
+  })
   const busy =
     approve.isPending ||
     reject.isPending ||
     reopen.isPending ||
-    remove.isPending
+    remove.isPending ||
+    saveApproved.isPending
   const canApprove = Boolean(game) && score !== null
 
   return (
@@ -282,7 +305,7 @@ export function SubmissionDetail({
               id="review-score"
               inputMode={game?.score_type === 'time' ? 'text' : 'numeric'}
               value={scoreText}
-              disabled={!pending}
+              disabled={!canEditReview}
               aria-invalid={Boolean(game) && score === null}
               onChange={(event) => setScoreText(event.target.value)}
             />
@@ -307,12 +330,12 @@ export function SubmissionDetail({
               maxLength={40}
               value={playerName}
               placeholder="Vide : nom inventé à l'affichage"
-              disabled={!pending}
+              disabled={!canEditReview}
               onChange={(event) => setPlayerName(event.target.value)}
             />
           </div>
 
-          {game && pending && (
+          {game && canEditReview && (
             <div className="flex items-center gap-3 rounded-lg bg-surface-sunken p-3">
               <span className="grid size-10 shrink-0 place-items-center rounded-md bg-rank-gold text-ink-primary">
                 <Trophy className="size-5" aria-hidden="true" />
@@ -348,7 +371,7 @@ export function SubmissionDetail({
             <Checkbox
               className="mt-0.5"
               checked={displayOnScreen}
-              disabled={!pending}
+              disabled={!canEditReview}
               onCheckedChange={(checked) =>
                 setDisplayOnScreen(checked === true)
               }
@@ -407,7 +430,8 @@ export function SubmissionDetail({
           {(approve.isError ||
             reject.isError ||
             reopen.isError ||
-            remove.isError) && (
+            remove.isError ||
+            saveApproved.isError) && (
             <p role="alert" className="text-body-sm text-destructive">
               Ça n'est pas passé. Réessaie dans un instant.
             </p>
@@ -499,13 +523,22 @@ export function SubmissionDetail({
                   <Undo2 />
                   Remettre à valider
                 </Button>
+                {isApproved && (
+                  <Button
+                    disabled={busy || !reviewDirty}
+                    onClick={() => saveApproved.mutate()}
+                  >
+                    <Check />
+                    {saveApproved.isPending ? 'Enregistrement…' : 'Enregistrer'}
+                  </Button>
+                )}
               </>
             )}
           </div>
         </div>
       </div>
 
-      {submission.status === 'approved' &&
+      {isApproved &&
         submission.instagram_consent &&
         game && (
           <div className="border-t border-line-subtle pt-6">

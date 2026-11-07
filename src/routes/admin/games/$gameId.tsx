@@ -176,6 +176,22 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
     proofUrl(score.thumb_path ?? score.photo_path),
   )
 
+  function draftFromScore() {
+    setName(score.player_name ?? '')
+    setScoreText(formatScore(score.score, game.score_type))
+    setShown(score.display_on_screen)
+  }
+
+  function beginEdit() {
+    draftFromScore()
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    draftFromScore()
+    setEditing(false)
+  }
+
   const save = useMutation({
     mutationFn: () =>
       updateScore(score.id, {
@@ -267,6 +283,11 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
       <td className="px-2 py-2 text-caption text-ink-secondary">
         {score.source === 'player' ? 'Soumission validée' : 'Saisi à la main'}
         <span className="block">{formatScoreWhen(score.created_at)}</span>
+        {(save.isError || remove.isError) && (
+          <span role="alert" className="mt-1 block text-destructive">
+            Ça n'est pas passé. Réessaie.
+          </span>
+        )}
       </td>
       <td className="py-2 pl-2">
         <div className="flex justify-end gap-1">
@@ -277,7 +298,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 size="icon-sm"
                 aria-label="Annuler"
                 title="Annuler"
-                onClick={() => setEditing(false)}
+                onClick={cancelEdit}
               >
                 <X />
               </Button>
@@ -316,7 +337,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 size="icon-sm"
                 aria-label={`Modifier le score de ${score.player_name ?? 'Sans nom'}`}
                 title={`Modifier le score de ${score.player_name ?? 'Sans nom'}`}
-                onClick={() => setEditing(true)}
+                onClick={beginEdit}
               >
                 <Pencil />
               </Button>
