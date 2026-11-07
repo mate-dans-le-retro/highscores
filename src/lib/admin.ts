@@ -694,7 +694,11 @@ export async function updateScore(
     Pick<ScoreReview, 'score' | 'player_name' | 'display_on_screen'>
   >,
 ) {
-  await updateScoreWhen(id, 'approved', changes, 'update')
+  const row: Record<string, unknown> = { ...changes }
+  if (changes.player_name !== undefined) {
+    row.player_name = changes.player_name?.trim() || null
+  }
+  await updateScoreWhen(id, 'approved', row, 'update')
 }
 
 /** Marks a score as posted by hand on Instagram, or back to post (null). */

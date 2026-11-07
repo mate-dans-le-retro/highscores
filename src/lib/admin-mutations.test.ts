@@ -179,6 +179,15 @@ describe('admin score mutations', () => {
     })
   })
 
+  it('trims player_name on update and stores blank as null', async () => {
+    await updateScore('score-6b', { player_name: '  Clem  ' })
+    expect(fake.state.updates[0]?.row.player_name).toBe('Clem')
+
+    fake.state.updates = []
+    await updateScore('score-6c', { player_name: '   ' })
+    expect(fake.state.updates[0]?.row.player_name).toBeNull()
+  })
+
   it('throws ScoreMutationConflictError when no row matches the status filter', async () => {
     fake.state.updateRows = []
     await expect(
