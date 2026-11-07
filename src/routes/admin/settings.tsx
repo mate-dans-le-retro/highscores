@@ -103,7 +103,7 @@ function ScreenSettings() {
               </label>
             ))}
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:grid-cols-2">
             <SelectSetting
               id="game-duration"
               label="Durée par jeu"
@@ -130,7 +130,7 @@ function ScreenSettings() {
             />
             <SelectSetting
               id="new-record-duration"
-              label="Durée Nouveau record"
+              label="Durée record"
               value={value.new_record_duration_s}
               options={[8, 12, 20]}
               format={(seconds) => `${seconds} secondes`}
