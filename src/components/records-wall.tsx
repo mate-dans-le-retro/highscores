@@ -1,3 +1,5 @@
+import { Link } from '@tanstack/react-router'
+
 import { PhotoPlaceholder } from '#/components/photo-placeholder'
 import { PixelPanel } from '#/components/pixel-panel'
 import { PixelStar } from '#/components/pixel-star'
@@ -24,6 +26,11 @@ type RecordsWallProps = {
    * Filled cards stay as they are: no room next to the photo.
    */
   showGameQr?: boolean
+  /**
+   * When true (forced `?mode=wall` kiosk), each card links to that game's
+   * locked view (`?game=<slug>`).
+   */
+  linkToGame?: boolean
   className?: string
 }
 
@@ -42,72 +49,74 @@ const ROW_START: Record<number, string> = {
 }
 
 /**
+ * Fixed band under the absolute title + QR (`top-24`, QR ~144px → ends
+ * ~240px). 320px leaves ~80px of air under the QR. Spacer is `shrink-0` so
+ * cards keep stretching in the remaining height (`flex-1`), close to the
+ * original projected size.
+ */
+const WALL_TOP_BAND = 'h-80 shrink-0'
+
+/**
  * Projected "mur des records": one card per visible game (mockup p.2).
  * What each card says about the all-time record is in `wallCardView()`.
- * Cards keep the same size on every page; the rows of a partial page are
- * centred.
+ * Cards keep their original stretched size (`flex-1` grid); only the top
+ * band, row gap and bottom overscan are tuned for balance.
  */
 export function RecordsWall({
   records,
   showGameQr = false,
+  linkToGame = false,
   className,
 }: RecordsWallProps) {
   const singleRow = records.length <= WALL_COLUMNS
   const cells = wallCells(records.length)
-  // Two-row pages use grid row 1: clear the floated global QR. Single-row
-  // pages are flex-centred in the full height (QR sits in the empty top).
-  const clearsGlobalQr = !singleRow
 
   if (singleRow) {
     return (
-      <div
-        className={cn(
-          'flex min-h-0 flex-1 items-center justify-center',
-          className,
-        )}
-      >
-        <div
-          className="grid w-full grid-cols-6 gap-x-10"
-          // Match one row of a full 3×2 page. Nudge up 12px so the gap above
-          // the cards equals the gap down to the pills (title/QR are absolute).
-          style={{ height: 'min(100%, 46%)', transform: 'translateY(-12px)' }}
-        >
-          {records.map((record, i) => (
-            <RecordCard
-              key={record.game.id}
-              record={record}
-              showGameQr={showGameQr}
-              className={cn(
-                'col-span-2 min-h-0',
-                COLUMN_START[cells[i].column],
-              )}
-            />
-          ))}
+      <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+        <div className={WALL_TOP_BAND} aria-hidden="true" />
+        <div className="flex min-h-0 flex-1 items-center justify-center pb-24">
+          <div
+            className="grid w-full grid-cols-6 gap-x-10"
+            // Same visual weight as one row of a full 3×2 page.
+            style={{ height: 'min(100%, 46%)' }}
+          >
+            {records.map((record, i) => (
+              <RecordCard
+                key={record.game.id}
+                record={record}
+                showGameQr={showGameQr}
+                linkToGame={linkToGame}
+                className={cn(
+                  'col-span-2 min-h-0',
+                  COLUMN_START[cells[i].column],
+                )}
+              />
+            ))}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div
-      className={cn(
-        'grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-4',
-        clearsGlobalQr && 'pt-36',
-        className,
-      )}
-    >
-      {records.map((record, i) => (
-        <RecordCard
-          key={record.game.id}
-          record={record}
-          showGameQr={showGameQr}
-          className={cn(
-            'col-span-2 row-span-2',
-            COLUMN_START[cells[i].column],
-            ROW_START[cells[i].row],
-          )}
-        />
-      ))}
+    <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+      <div className={WALL_TOP_BAND} aria-hidden="true" />
+      <div className="grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-12 pb-24">
+        {records.map((record, i) => (
+          <RecordCard
+            key={record.game.id}
+            record={record}
+            showGameQr={showGameQr}
+            linkToGame={linkToGame}
+            className={cn(
+              'col-span-2 row-span-2',
+              COLUMN_START[cells[i].column],
+              ROW_START[cells[i].row],
+            )}
+          />
+        ))}
+      </div>
     </div>
   )
 }
@@ -122,7 +131,7 @@ function EmptyGameQr({
   const submitUrl = useSubmitScoreUrl(isMock, { gameSlug })
   if (!submitUrl) return <div className="size-24 shrink-0" aria-hidden="true" />
   // No shadow-pixel: inside a white panel the hard offset clips and reads as
-  // a broken border. `inline-flex` + block SVG avoids the baseline hairline.
+  // a broken border. `inline-flex` + fixed SVG avoids the baseline hairline.
   return (
     <div className="inline-flex shrink-0 rounded-none border-4 border-line-accent bg-surface-inverse p-2">
       <QrCode
@@ -137,23 +146,26 @@ function EmptyGameQr({
 function RecordCard({
   record,
   showGameQr,
+  linkToGame,
   className,
 }: {
   record: GameRecord
   showGameQr: boolean
+  linkToGame: boolean
   className?: string
 }) {
   const { game } = record
   const view = wallCardView(record)
   const { title, subtitle } = splitGameTitle(game.name)
+  const openLabel = `Voir le classement de ${game.name}`
 
-  if (view.kind === 'empty') {
-    return (
-      <PixelPanel
-        label={title}
-        subtitle={subtitle}
-        className={cn('min-w-0', className)}
-      >
+  const panel = (
+    <PixelPanel
+      label={title}
+      subtitle={subtitle}
+      className={cn('min-w-0', linkToGame ? 'size-full' : className)}
+    >
+      {view.kind === 'empty' ? (
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-2 text-center">
           <p className="font-display text-scene-pixel text-ink-inverse">
             {pixelCaps('À prendre !')}
@@ -165,73 +177,94 @@ function RecordCard({
             <EmptyGameQr gameSlug={game.slug} gameName={game.name} />
           ) : null}
         </div>
-      </PixelPanel>
-    )
-  }
+      ) : (
+        <FilledCardBody game={game} view={view} />
+      )}
+    </PixelPanel>
+  )
 
+  if (!linkToGame) return panel
+
+  return (
+    <Link
+      to="/"
+      search={(prev) => ({ ...prev, mode: undefined, game: game.slug })}
+      aria-label={openLabel}
+      title={openLabel}
+      className={cn(
+        'min-h-0 min-w-0 cursor-pointer rounded-none outline-none focus-visible:ring-4 focus-visible:ring-line-accent',
+        className,
+      )}
+    >
+      {panel}
+    </Link>
+  )
+}
+
+function FilledCardBody({
+  game,
+  view,
+}: {
+  game: GameRecord['game']
+  view: Exclude<ReturnType<typeof wallCardView>, { kind: 'empty' }>
+}) {
   const { main, allTimeStar, otherAllTime, origin } = view
   const image = main.anonymous ? null : photoUrl(main.photo_path)
 
   return (
-    <PixelPanel
-      label={title}
-      subtitle={subtitle}
-      className={cn('min-w-0', className)}
-    >
-      <div className="flex min-h-0 flex-1 items-center gap-6">
-        <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
-          {image ? (
-            <img
-              src={image}
-              alt=""
-              className="size-full object-contain"
-              draggable={false}
+    <div className="flex min-h-0 flex-1 items-center gap-6">
+      <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
+        {image ? (
+          <img
+            src={image}
+            alt=""
+            className="size-full object-contain"
+            draggable={false}
+          />
+        ) : (
+          <PhotoPlaceholder anonymous={main.anonymous} size="sm" />
+        )}
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
+        <div className="flex min-w-0 items-center gap-3">
+          {allTimeStar ? (
+            // In em of the pixel font: one star cell is one font pixel
+            // (1/8 em), and the letters fill the top 7/8 of the em, so
+            // their centre is 1/16 em above the line's.
+            <PixelStar
+              label="Record absolu"
+              className="relative -top-[0.0625em] h-[1.25em] text-scene-pixel"
             />
-          ) : (
-            <PhotoPlaceholder anonymous={main.anonymous} size="sm" />
-          )}
+          ) : null}
+          <p className="truncate font-display text-scene-pixel text-ink-inverse">
+            {main.player_name}
+          </p>
         </div>
-        <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-          <div className="flex min-w-0 items-center gap-3">
-            {allTimeStar ? (
-              // In em of the pixel font: one star cell is one font pixel
-              // (1/8 em), and the letters fill the top 7/8 of the em, so
-              // their centre is 1/16 em above the line's.
-              <PixelStar
-                label="Record absolu"
-                className="relative -top-[0.0625em] h-[1.25em] text-scene-pixel"
-              />
+        <p className="font-display text-scene-pixel text-ink-inverse">
+          {formatScore(main.score, game.score_type)}
+        </p>
+        {otherAllTime ? (
+          <p className="flex min-w-0 items-center gap-2 text-h4 text-ink-inverse">
+            <PixelStar className="h-4" />
+            <span className="truncate">
+              <span className="sr-only">Record absolu : </span>
+              {otherAllTime.player_name}
+              {' · '}
+              {formatScore(otherAllTime.score, game.score_type)}
+            </span>
+          </p>
+        ) : null}
+        {origin ? (
+          <div className="text-h4 text-ink-inverse">
+            {origin.event_name ? (
+              <p className="truncate">{origin.event_name}</p>
             ) : null}
-            <p className="truncate font-display text-scene-pixel text-ink-inverse">
-              {main.player_name}
+            <p className="truncate font-semibold">
+              {formatScoreWhen(origin.created_at)}
             </p>
           </div>
-          <p className="font-display text-scene-pixel text-ink-inverse">
-            {formatScore(main.score, game.score_type)}
-          </p>
-          {otherAllTime ? (
-            <p className="flex min-w-0 items-center gap-2 text-h4 text-ink-inverse">
-              <PixelStar className="h-4" />
-              <span className="truncate">
-                <span className="sr-only">Record absolu : </span>
-                {otherAllTime.player_name}
-                {' · '}
-                {formatScore(otherAllTime.score, game.score_type)}
-              </span>
-            </p>
-          ) : null}
-          {origin ? (
-            <div className="text-h4 text-ink-inverse">
-              {origin.event_name ? (
-                <p className="truncate">{origin.event_name}</p>
-              ) : null}
-              <p className="truncate font-semibold">
-                {formatScoreWhen(origin.created_at)}
-              </p>
-            </div>
-          ) : null}
-        </div>
+        ) : null}
       </div>
-    </PixelPanel>
+    </div>
   )
 }
