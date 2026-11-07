@@ -123,16 +123,36 @@ export async function signInWithGoogle() {
  * Highscores Auth has "Secure password change" / require-current enabled
  * (Tournoi does not): once encrypted_password is set, updateUser needs
  * `current_password` or it returns current_password_required.
+ *
+ * First set (no currentPassword): updateUser({ password }) only. If Auth still
+ * returns current_password_required (Google-only account with a leftover hash),
+ * fall back to a service-role update of the same user id.
  */
 export async function setPassword(password: string, currentPassword?: string) {
   const supabase = getSupabase()
-  const { error: userError } = await supabase.auth.getUser()
-  if (userError) throw userError
+  const { data: sessionData, error: sessionError } =
+    await supabase.auth.getSession()
+  if (sessionError) throw sessionError
+  const accessToken = sessionData.session?.access_token
+  if (!accessToken) throw new Error('Not signed in')
+
   const { error } = await supabase.auth.updateUser({
     password,
     ...(currentPassword ? { current_password: currentPassword } : {}),
   })
-  if (error) throw error
+  if (!error) return
+
+  const { code, message } = authErrorFields(error)
+  const needsCurrent =
+    code === 'current_password_required' ||
+    /current password required/i.test(message)
+  if (currentPassword || !needsCurrent) throw error
+
+  const { setOwnPasswordWithServiceRole } =
+    await import('#/lib/set-own-password')
+  await setOwnPasswordWithServiceRole({
+    data: { password, accessToken },
+  })
 }
 
 export async function signOut() {
@@ -227,6 +247,18 @@ export function sessionHasPasswordIdentity(session: Session) {
       (identity) => identity.provider === 'email',
     ) ?? false
   )
+}
+
+/**
+ * Current password is only collected when changing a password the volunteer
+ * can already use via email identity. Google-only first set (and Google-only
+ * recovery while signed in) stays new + confirm, without current_password.
+ */
+export function requiresCurrentPasswordForChange(
+  hasStoredPassword: boolean,
+  session: Session,
+) {
+  return hasStoredPassword && sessionHasPasswordIdentity(session)
 }
 
 /** True when auth.users.encrypted_password is set for the signed-in user. */

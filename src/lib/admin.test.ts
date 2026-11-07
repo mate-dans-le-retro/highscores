@@ -7,6 +7,7 @@ import {
   parseScore,
   passwordUpdateErrorMessage,
   placeFor,
+  requiresCurrentPasswordForChange,
   sessionHasPasswordIdentity,
 } from './admin'
 
@@ -103,6 +104,49 @@ describe('sessionHasPasswordIdentity', () => {
     expect(sessionHasPasswordIdentity(sessionWith(['google', 'email']))).toBe(
       true,
     )
+  })
+})
+
+describe('requiresCurrentPasswordForChange', () => {
+  function sessionWith(providers: Array<string>): Session {
+    return {
+      user: {
+        identities: providers.map((provider) => ({
+          provider,
+          id: provider,
+          user_id: 'u1',
+          identity_id: provider,
+          identity_data: {},
+          created_at: '',
+          last_sign_in_at: '',
+          updated_at: '',
+        })),
+      },
+    } as Session
+  }
+
+  it('is false for a first password set (no stored password)', () => {
+    expect(
+      requiresCurrentPasswordForChange(false, sessionWith(['google'])),
+    ).toBe(false)
+    expect(
+      requiresCurrentPasswordForChange(false, sessionWith(['email'])),
+    ).toBe(false)
+  })
+
+  it('is false for Google-only even when encrypted_password is already set', () => {
+    expect(
+      requiresCurrentPasswordForChange(true, sessionWith(['google'])),
+    ).toBe(false)
+  })
+
+  it('is true when changing a password tied to an email identity', () => {
+    expect(requiresCurrentPasswordForChange(true, sessionWith(['email']))).toBe(
+      true,
+    )
+    expect(
+      requiresCurrentPasswordForChange(true, sessionWith(['google', 'email'])),
+    ).toBe(true)
   })
 })
 

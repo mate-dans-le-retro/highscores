@@ -113,7 +113,7 @@ Sign-ups are open so colleagues can create an Auth account themselves (Google or
 
 ## 2026-11-07: Current password required on Highscores Auth
 
-Highscores Auth rejects `updateUser({ password })` with `current_password_required` once a password exists (password or Google session). Tournoi Auth accepts the same call without a current password. After an earlier silent Auth success, volunteers hit that error while the form still looked like a first-time set. The change-password form now sends `current_password`, and alerts keep the Auth code and message.
+Highscores Auth rejects `updateUser({ password })` with `current_password_required` once a password exists (password or Google session). Tournoi Auth accepts the same call without a current password. After an earlier silent Auth success, volunteers hit that error while the form still looked like a first-time set. The change-password form now sends `current_password` only when an email identity exists (a password the volunteer can already use). Google-only first set stays new + confirm; if Auth still demands a current password for a leftover hash, a service-role server function updates that same user. Alerts keep the Auth code and message.
 
 ## 2026-11-05: public screen after the visual review
 
