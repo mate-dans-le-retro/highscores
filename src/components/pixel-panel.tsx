@@ -6,6 +6,8 @@ import { cn } from '#/lib/utils'
 type PixelPanelProps = {
   /** Display-font title inside the frame. Three words at most. */
   label?: string
+  /** Optional smaller line under the title (wall game names after " - "). */
+  subtitle?: string | null
   /** `accent` (default) uses the pink border; `plain` uses line-strong. */
   tone?: 'accent' | 'plain'
   children: ReactNode
@@ -20,6 +22,7 @@ type PixelPanelProps = {
  */
 export function PixelPanel({
   label,
+  subtitle,
   tone = 'accent',
   className,
   children,
@@ -36,9 +39,16 @@ export function PixelPanel({
     >
       <div className="flex min-h-0 flex-1 flex-col p-6">
         {label ? (
-          <h2 className="mb-4 shrink-0 font-display text-scene-pixel text-balance text-brand-pink">
-            {pixelCaps(label)}
-          </h2>
+          <div className="mb-4 shrink-0 text-brand-pink">
+            <h2 className="font-display text-scene-pixel text-balance">
+              {pixelCaps(label)}
+            </h2>
+            {subtitle ? (
+              <p className="mt-1 font-display text-arcade-title text-balance">
+                {pixelCaps(subtitle)}
+              </p>
+            ) : null}
+          </div>
         ) : null}
         {children}
       </div>

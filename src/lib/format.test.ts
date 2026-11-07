@@ -5,6 +5,7 @@ import {
   formatScoreWhen,
   formatStation,
   pixelCaps,
+  splitGameTitle,
 } from './format'
 
 // Intl uses a narrow no-break space as the French thousands separator.
@@ -49,6 +50,44 @@ describe('pixelCaps', () => {
     expect(pixelCaps('NES · Étage')).toBe('NES · ETAGE')
     expect(pixelCaps('À toi de jouer')).toBe('A TOI DE JOUER')
     expect(pixelCaps('Record évènement')).toBe('RECORD EVENEMENT')
+  })
+})
+
+describe('splitGameTitle', () => {
+  it('splits at the first " - "', () => {
+    expect(splitGameTitle('Street Fighter II - Champion Edition')).toEqual({
+      title: 'Street Fighter II',
+      subtitle: 'Champion Edition',
+    })
+  })
+
+  it('keeps later separators in the subtitle', () => {
+    expect(splitGameTitle('Zelda - A Link - to the Past')).toEqual({
+      title: 'Zelda',
+      subtitle: 'A Link - to the Past',
+    })
+  })
+
+  it('leaves names without " - " as a single title', () => {
+    expect(splitGameTitle('Pac-Man')).toEqual({
+      title: 'Pac-Man',
+      subtitle: null,
+    })
+    expect(splitGameTitle('Duck Hunt')).toEqual({
+      title: 'Duck Hunt',
+      subtitle: null,
+    })
+  })
+
+  it('ignores empty sides around the separator', () => {
+    expect(splitGameTitle(' - Alone')).toEqual({
+      title: ' - Alone',
+      subtitle: null,
+    })
+    expect(splitGameTitle('Alone - ')).toEqual({
+      title: 'Alone - ',
+      subtitle: null,
+    })
   })
 })
 
