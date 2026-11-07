@@ -19,8 +19,8 @@ export function SetPasswordForm({
   heading?: string
   hint?: string
   /**
-   * Highscores Auth requires the current password once one is stored
-   * (Tournoi Auth does not). Pass true for the "change" form.
+   * Pass true only when changing a password tied to an email identity.
+   * Google-only first set (and Google-only recovery) stays false.
    */
   requireCurrentPassword?: boolean
   /** When set, invalidates currentUserHasPasswordQuery after a successful save. */

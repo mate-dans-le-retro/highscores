@@ -5,6 +5,7 @@ import { SetPasswordForm } from '#/components/admin/set-password-form'
 import { Button } from '#/components/ui/button'
 import {
   currentUserHasPasswordQuery,
+  requiresCurrentPasswordForChange,
   sessionHasPasswordIdentity,
   useAdminAuth,
 } from '#/lib/admin'
@@ -31,6 +32,7 @@ function AdminAccount() {
   const hasPassword = hasPasswordQuery.data === true
   const checking =
     hasPasswordQuery.isPending && typeof hasPasswordQuery.data !== 'boolean'
+  const requireCurrent = requiresCurrentPasswordForChange(hasPassword, signedIn)
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col gap-6">
@@ -44,12 +46,18 @@ function AdminAccount() {
       <section className="rounded-xl bg-surface-raised p-4 shadow-card md:p-6">
         {checking ? (
           <p className="text-body-sm text-ink-secondary">Chargement…</p>
-        ) : hasPassword ? (
+        ) : hasPassword && requireCurrent ? (
           <SetPasswordForm
             userId={userId}
             requireCurrentPassword
             heading="Changer le mot de passe"
-            hint="Un mot de passe est déjà défini. Saisis l'actuel, puis le nouveau (ou reconnecte-toi avec Google)."
+            hint="Un mot de passe est déjà défini. Saisis l'actuel, puis le nouveau."
+          />
+        ) : hasPassword ? (
+          <SetPasswordForm
+            userId={userId}
+            heading="Définir un mot de passe"
+            hint="Compte Google : choisis un mot de passe (nouveau + confirmation), sans mot de passe actuel."
           />
         ) : (
           <SetPasswordForm userId={userId} />
