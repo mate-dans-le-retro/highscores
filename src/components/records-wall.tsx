@@ -27,10 +27,11 @@ type RecordsWallProps = {
    */
   showGameQr?: boolean
   /**
-   * When true (forced `?mode=wall` kiosk), each card links to that game's
-   * locked view (`?game=<slug>`).
+   * Forced `?mode=wall` kiosk only: rebalanced top band / row gap / overscan,
+   * and each card links to that game's locked view (`?game=<slug>`).
+   * Rotation wall slides keep the pre-#105 layout.
    */
-  linkToGame?: boolean
+  forced?: boolean
   className?: string
 }
 
@@ -49,36 +50,115 @@ const ROW_START: Record<number, string> = {
 }
 
 /**
- * Fixed band under the absolute title + QR (`top-24`, QR ~144px → ends
- * ~240px). 320px leaves ~80px of air under the QR. Spacer is `shrink-0` so
- * cards keep stretching in the remaining height (`flex-1`), close to the
- * original projected size.
+ * Forced wall only: band under absolute title + QR at `top-24` (QR ends
+ * ~240px). 320px leaves ~80px of air; spacer is `shrink-0` so cards still
+ * stretch in the remaining height.
  */
-const WALL_TOP_BAND = 'h-80 shrink-0'
+const FORCED_TOP_BAND = 'h-80 shrink-0'
 
 /**
  * Projected "mur des records": one card per visible game (mockup p.2).
  * What each card says about the all-time record is in `wallCardView()`.
- * Cards keep their original stretched size (`flex-1` grid); only the top
- * band, row gap and bottom overscan are tuned for balance.
+ * Rotation uses the classic `pt-36` / `gap-y-4` grid; `forced` applies the
+ * kiosk spacing from #105 without changing rotation card height.
  */
 export function RecordsWall({
   records,
   showGameQr = false,
-  linkToGame = false,
+  forced = false,
   className,
 }: RecordsWallProps) {
   const singleRow = records.length <= WALL_COLUMNS
   const cells = wallCells(records.length)
 
+  if (forced) {
+    return (
+      <ForcedRecordsWall
+        records={records}
+        cells={cells}
+        singleRow={singleRow}
+        showGameQr={showGameQr}
+        className={className}
+      />
+    )
+  }
+
+  // Rotation / admin wall: layout from before #105.
+  if (singleRow) {
+    return (
+      <div
+        className={cn(
+          'flex min-h-0 flex-1 items-center justify-center',
+          className,
+        )}
+      >
+        <div
+          className="grid w-full grid-cols-6 gap-x-10"
+          // Match one row of a full 3×2 page. Nudge up 12px so the gap above
+          // the cards equals the gap down to the pills (title/QR are absolute).
+          style={{ height: 'min(100%, 46%)', transform: 'translateY(-12px)' }}
+        >
+          {records.map((record, i) => (
+            <RecordCard
+              key={record.game.id}
+              record={record}
+              showGameQr={showGameQr}
+              linkToGame={false}
+              className={cn(
+                'col-span-2 min-h-0',
+                COLUMN_START[cells[i].column],
+              )}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className={cn(
+        'grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-4 pt-36',
+        className,
+      )}
+    >
+      {records.map((record, i) => (
+        <RecordCard
+          key={record.game.id}
+          record={record}
+          showGameQr={showGameQr}
+          linkToGame={false}
+          className={cn(
+            'col-span-2 row-span-2',
+            COLUMN_START[cells[i].column],
+            ROW_START[cells[i].row],
+          )}
+        />
+      ))}
+    </div>
+  )
+}
+
+function ForcedRecordsWall({
+  records,
+  cells,
+  singleRow,
+  showGameQr,
+  className,
+}: {
+  records: Array<GameRecord>
+  cells: ReturnType<typeof wallCells>
+  singleRow: boolean
+  showGameQr: boolean
+  className?: string
+}) {
   if (singleRow) {
     return (
       <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
-        <div className={WALL_TOP_BAND} aria-hidden="true" />
+        <div className={FORCED_TOP_BAND} aria-hidden="true" />
         <div className="flex min-h-0 flex-1 items-center justify-center pb-24">
           <div
             className="grid w-full grid-cols-6 gap-x-10"
-            // Same visual weight as one row of a full 3×2 page.
             style={{ height: 'min(100%, 46%)' }}
           >
             {records.map((record, i) => (
@@ -86,7 +166,7 @@ export function RecordsWall({
                 key={record.game.id}
                 record={record}
                 showGameQr={showGameQr}
-                linkToGame={linkToGame}
+                linkToGame
                 className={cn(
                   'col-span-2 min-h-0',
                   COLUMN_START[cells[i].column],
@@ -101,14 +181,14 @@ export function RecordsWall({
 
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
-      <div className={WALL_TOP_BAND} aria-hidden="true" />
+      <div className={FORCED_TOP_BAND} aria-hidden="true" />
       <div className="grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-12 pb-24">
         {records.map((record, i) => (
           <RecordCard
             key={record.game.id}
             record={record}
             showGameQr={showGameQr}
-            linkToGame={linkToGame}
+            linkToGame
             className={cn(
               'col-span-2 row-span-2',
               COLUMN_START[cells[i].column],
