@@ -1,4 +1,10 @@
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { AtSign, Camera, Check, EyeOff, Trophy } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -14,9 +20,12 @@ import {
   adminSettingsQuery,
   approvedScoresQuery,
   currentEventQuery,
+  nextIdAfterRemoving,
   placeFor,
   proofUrl,
   rankGameScores,
+  removeIdFromInfinitePages,
+  resolveSelectedSubmission,
   submissionCountsQuery,
   submissionsQuery,
   updateSettings,
@@ -41,6 +50,7 @@ const filters: Array<{ status: SubmissionFilter; label: string }> = [
 function Submissions() {
   const [status, setStatus] = useState<SubmissionFilter>('pending')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   const refetchInterval = useAdminRefetchInterval()
   const submissions = useInfiniteQuery({
     ...submissionsQuery(status),
@@ -52,18 +62,35 @@ function Submissions() {
   const event = useQuery({ ...currentEventQuery, refetchInterval })
 
   const list = submissions.data?.pages.flat() ?? []
-  const selected = list.find(({ id }) => id === selectedId) ?? list.at(0)
+  const selected = resolveSelectedSubmission(list, selectedId)
   const totalForFilter = counts.data?.[status]
   const canLoadMore =
     submissions.hasNextPage &&
     (totalForFilter == null || list.length < totalForFilter)
 
-  // When the selected submission leaves the list (approved, rejected), the
-  // next one takes its place.
+  // Keep selectedId aligned with the list: clear/advance when the row left,
+  // and adopt the first row when nothing is selected yet.
   useEffect(() => {
-    if (selectedId && !list.some(({ id }) => id === selectedId))
-      setSelectedId(null)
+    if (selectedId !== null && !list.some(({ id }) => id === selectedId)) {
+      setSelectedId(list[0]?.id ?? null)
+      return
+    }
+    if (selectedId === null && list[0]) setSelectedId(list[0].id)
   }, [list, selectedId])
+
+  /** Drop a reviewed row from the open filter immediately, then pick the next. */
+  const leaveQueue = (id: string) => {
+    const previous = list
+    queryClient.setQueryData<InfiniteData<Array<AdminScore>>>(
+      ['admin', 'submissions', status],
+      (current) => removeIdFromInfinitePages(current, id),
+    )
+    setSelectedId((current) =>
+      current !== null && current !== id
+        ? current
+        : nextIdAfterRemoving(previous, id),
+    )
+  }
 
   const gamesById = new Map((games.data ?? []).map((game) => [game.id, game]))
 
@@ -119,7 +146,7 @@ function Submissions() {
                 }
                 approved={approved.data ?? []}
                 eventId={event.data?.id}
-                selected={submission.id === selected?.id}
+                selected={submission.id === selectedId}
                 onSelect={() => {
                   setSelectedId(submission.id)
                   // On a phone the detail sits under the list: bring it up.
@@ -166,6 +193,7 @@ function Submissions() {
             games={games.data}
             approved={approved.data ?? []}
             eventId={event.data?.id}
+            onLeftQueue={leaveQueue}
           />
         ) : (
           <div className="hidden h-full min-h-64 place-items-center rounded-xl border border-dashed border-line-subtle lg:grid">

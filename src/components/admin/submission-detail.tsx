@@ -51,11 +51,14 @@ export function SubmissionDetail({
   games,
   approved,
   eventId,
+  onLeftQueue,
 }: {
   submission: AdminScore
   games: Array<AdminGame>
   approved: Array<AdminScore>
   eventId: string | undefined
+  /** Drop this row from the open queue as soon as a review mutation succeeds. */
+  onLeftQueue?: (id: string) => void
 }) {
   const invalidate = useInvalidateAdmin()
   const [gameId, setGameId] = useState(submission.game_id ?? '')
@@ -124,6 +127,11 @@ export function SubmissionDetail({
   const photo = proofUrl(submission.photo_path)
   const photoSrc = useReadablePhotoUrl(photo)
 
+  const afterLeavingQueue = () => {
+    onLeftQueue?.(submission.id)
+    invalidate()
+  }
+
   const approve = useMutation({
     mutationFn: () =>
       approveScore(submission.id, {
@@ -132,19 +140,19 @@ export function SubmissionDetail({
         player_name: playerName,
         display_on_screen: displayOnScreen,
       }),
-    onSuccess: invalidate,
+    onSuccess: afterLeavingQueue,
   })
   const reject = useMutation({
     mutationFn: () => rejectScore(submission.id, rejectionReason),
-    onSuccess: invalidate,
+    onSuccess: afterLeavingQueue,
   })
   const reopen = useMutation({
     mutationFn: () => reopenScore(submission.id),
-    onSuccess: invalidate,
+    onSuccess: afterLeavingQueue,
   })
   const remove = useMutation({
     mutationFn: () => deleteScore(submission.id),
-    onSuccess: invalidate,
+    onSuccess: afterLeavingQueue,
   })
   const busy =
     approve.isPending ||
