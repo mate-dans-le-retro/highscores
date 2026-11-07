@@ -559,10 +559,53 @@ export interface ScoreReview {
   display_on_screen: boolean
 }
 
-export async function approveScore(id: string, review: ScoreReview) {
-  const { error } = await getSupabase()
+/**
+ * Update matched no row: the score is gone, or another volunteer already
+ * moved it out of the expected status (approve/reject need pending, etc.).
+ */
+export class ScoreMutationConflictError extends Error {
+  constructor(action: string) {
+    super(
+      `Could not ${action}: the score is missing or its status already changed`,
+    )
+    this.name = 'ScoreMutationConflictError'
+  }
+}
+
+/** Throws when a status-constrained update matched no row. */
+export function assertScoreUpdated(
+  rows: Array<unknown> | null | undefined,
+  action: string,
+) {
+  if (!rows?.length) throw new ScoreMutationConflictError(action)
+}
+
+/**
+ * Updates a score only when its current status matches. Returns the updated
+ * ids so callers can detect a concurrent status change (0 rows).
+ */
+async function updateScoreWhen(
+  id: string,
+  expected: SubmissionStatus | Array<SubmissionStatus>,
+  row: Record<string, unknown>,
+  action: string,
+) {
+  const filter = Array.isArray(expected) ? expected : [expected]
+  const { data, error } = await getSupabase()
     .from('scores')
-    .update({
+    .update(row)
+    .eq('id', id)
+    .in('status', filter)
+    .select('id')
+  if (error) throw error
+  assertScoreUpdated(data, action)
+}
+
+export async function approveScore(id: string, review: ScoreReview) {
+  await updateScoreWhen(
+    id,
+    'pending',
+    {
       ...review,
       player_name: review.player_name?.trim() || null,
       custom_game_name: null,
@@ -570,37 +613,39 @@ export async function approveScore(id: string, review: ScoreReview) {
       rejection_reason: null,
       reviewed_at: new Date().toISOString(),
       reviewed_by: await currentUserId(),
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'approve',
+  )
 }
 
 export async function rejectScore(id: string, reason?: string | null) {
   const rejection_reason = reason?.trim() || null
-  const { error } = await getSupabase()
-    .from('scores')
-    .update({
+  await updateScoreWhen(
+    id,
+    'pending',
+    {
       status: 'rejected',
       rejection_reason,
       reviewed_at: new Date().toISOString(),
       reviewed_by: await currentUserId(),
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'reject',
+  )
 }
 
 /** Puts a reviewed submission back in the queue. */
 export async function reopenScore(id: string) {
-  const { error } = await getSupabase()
-    .from('scores')
-    .update({
+  await updateScoreWhen(
+    id,
+    ['approved', 'rejected'],
+    {
       status: 'pending',
       rejection_reason: null,
       reviewed_at: null,
       reviewed_by: null,
-    })
-    .eq('id', id)
-  if (error) throw error
+    },
+    'reopen',
+  )
 }
 
 export async function updateScore(
@@ -609,11 +654,7 @@ export async function updateScore(
     Pick<ScoreReview, 'score' | 'player_name' | 'display_on_screen'>
   >,
 ) {
-  const { error } = await getSupabase()
-    .from('scores')
-    .update(changes)
-    .eq('id', id)
-  if (error) throw error
+  await updateScoreWhen(id, 'approved', changes, 'update')
 }
 
 /** Marks a score as posted by hand on Instagram, or back to post (null). */
@@ -636,6 +677,20 @@ export interface ManualScore {
   score: number
   display_on_screen: boolean
   photo: File | null
+}
+
+/** Storage paths uploaded for a score photo (proof ± thumb). */
+export function scorePhotoPaths(
+  photoPath: string | null,
+  thumbPath: string | null,
+) {
+  return [photoPath, thumbPath].filter((path): path is string => Boolean(path))
+}
+
+/** Best-effort cleanup of photo uploads left without a scores row. */
+async function removeScorePhotos(paths: Array<string>) {
+  if (paths.length === 0) return
+  await getSupabase().storage.from('photos').remove(paths)
 }
 
 /** A score typed by a volunteer: approved right away, in the current event. */
@@ -673,7 +728,11 @@ export async function addManualScore(input: ManualScore) {
     reviewed_at: new Date().toISOString(),
     reviewed_by: await currentUserId(),
   })
-  if (error) throw error
+  if (error) {
+    // Insert failed after a successful upload: drop the orphan objects.
+    await removeScorePhotos(scorePhotoPaths(photoPath, thumbPath))
+    throw error
+  }
 }
 
 // ---------------------------------------------------------------------------
