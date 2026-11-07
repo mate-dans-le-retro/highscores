@@ -40,6 +40,17 @@ describe('screenSearchSchema', () => {
     ).toBe(false)
   })
 
+  it('reads mode and game lock params', () => {
+    expect(parse({ mode: 'wall' }).mode).toBe('wall')
+    expect(parse({ mode: 'game' }).mode).toBe('game')
+    expect(parse({ mode: 'both' }).mode).toBe('both')
+    expect(parse({ mode: 'nope' }).mode).toBeUndefined()
+    expect(parse({ game: 'tetris' }).game).toBe('tetris')
+    expect(parse({ game: '  pac-man  ' }).game).toBe('pac-man')
+    expect(parse({ game: '' }).game).toBeUndefined()
+    expect(parse({ game: '   ' }).game).toBeUndefined()
+  })
+
   it('ignores missing or invalid values', () => {
     expect(parse({})).toEqual({})
     expect(parse({ rotation: 'vite', rows: 2.5, minAllTime: 'nope' })).toEqual({
@@ -58,6 +69,8 @@ describe('screenOptions', () => {
       wallDurationMs: 20_000,
       newRecordDurationMs: 12_000,
       screenMode: 'game',
+      lockedGameSlug: undefined,
+      displayLocked: false,
       rows: 10,
       minAllTimeRows: 5,
       showHeader: false,
@@ -77,6 +90,8 @@ describe('screenOptions', () => {
       wallDurationMs: 30_000,
       newRecordDurationMs: 12_000,
       screenMode: 'game',
+      lockedGameSlug: undefined,
+      displayLocked: false,
       rows: 8,
       minAllTimeRows: 3,
       showHeader: false,
@@ -92,6 +107,8 @@ describe('screenOptions', () => {
       wallDurationMs: 20_000,
       newRecordDurationMs: 12_000,
       screenMode: 'game',
+      lockedGameSlug: undefined,
+      displayLocked: false,
       rows: 3,
       minAllTimeRows: 3,
       showHeader: false,
@@ -114,9 +131,59 @@ describe('screenOptions', () => {
       wallDurationMs: 30_000,
       newRecordDurationMs: 20_000,
       screenMode: 'both',
+      lockedGameSlug: undefined,
+      displayLocked: false,
       rows: 3,
       minAllTimeRows: 3,
       showHeader: false,
     })
+  })
+
+  it('locks the wall with ?mode=wall and ignores ?game= (no game filter)', () => {
+    const options = screenOptions(DEFAULT_SETTINGS, {
+      mode: 'wall',
+      game: 'tetris',
+    })
+    expect(options).toEqual({
+      rotationMs: 15_000,
+      gameDurationMs: 15_000,
+      wallDurationMs: 20_000,
+      newRecordDurationMs: 12_000,
+      screenMode: 'wall',
+      lockedGameSlug: undefined,
+      displayLocked: true,
+      rows: 10,
+      minAllTimeRows: 5,
+      showHeader: false,
+    })
+    // Takeover filtering keys off lockedGameSlug only; wall keeps every game.
+    expect(options.lockedGameSlug).toBeUndefined()
+  })
+
+  it('locks a single game with ?game=<slug>', () => {
+    expect(screenOptions(DEFAULT_SETTINGS, { game: 'donkey-kong' })).toEqual({
+      rotationMs: 15_000,
+      gameDurationMs: 15_000,
+      wallDurationMs: 20_000,
+      newRecordDurationMs: 12_000,
+      screenMode: 'game',
+      lockedGameSlug: 'donkey-kong',
+      displayLocked: true,
+      rows: 10,
+      minAllTimeRows: 5,
+      showHeader: false,
+    })
+  })
+
+  it('overrides rotation mode without locking when only ?mode=game|both', () => {
+    expect(screenOptions(DEFAULT_SETTINGS, { mode: 'both' }).screenMode).toBe(
+      'both',
+    )
+    expect(
+      screenOptions(DEFAULT_SETTINGS, { mode: 'both' }).displayLocked,
+    ).toBe(false)
+    expect(
+      screenOptions(DEFAULT_SETTINGS, { mode: 'game' }).displayLocked,
+    ).toBe(false)
   })
 })
