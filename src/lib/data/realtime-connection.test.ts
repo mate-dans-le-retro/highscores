@@ -1,8 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { keepSubscribed, reconnectDelayMs } from './realtime-connection'
+import {
+  keepSubscribed,
+  REALTIME_FRESHNESS_MS,
+  reconnectDelayMs,
+} from './realtime-connection'
 import type {
-  AttemptStatus,
+  AttemptReport,
   ConnectionStatus,
   NetworkSignal,
   PageSignal,
@@ -11,10 +15,10 @@ import type {
 /** Records every attempt so a test can make it join or drop. */
 function fakeChannels() {
   const attempts: Array<{
-    report: (status: AttemptStatus) => void
+    report: (status: AttemptReport) => void
     closed: boolean
   }> = []
-  const open = (report: (status: AttemptStatus) => void) => {
+  const open = (report: (status: AttemptReport) => void) => {
     const attempt = { report, closed: false }
     attempts.push(attempt)
     return () => {
@@ -74,7 +78,7 @@ describe('keepSubscribed', () => {
     vi.useRealTimers()
   })
 
-  function setup() {
+  function setup(freshnessMs?: number) {
     const channels = fakeChannels()
     const { network, listeners } = fakeNetwork()
     const { page, listeners: pageListeners } = fakePage()
@@ -84,6 +88,7 @@ describe('keepSubscribed', () => {
       onStatus: (status) => statuses.push(status),
       network,
       page,
+      freshnessMs,
     })
     return { channels, network, listeners, page, pageListeners, statuses, stop }
   }
@@ -207,14 +212,53 @@ describe('keepSubscribed', () => {
     expect(statuses).toEqual(['disconnected'])
   })
 
-  it('resubscribes on tab resume and marks the connection lost meanwhile', () => {
+  it('resubscribes on tab resume without marking lost while the rejoin is pending', () => {
     const { channels, page, statuses } = setup()
     channels.last().report('joined')
     page.resume()
-    expect(statuses).toEqual(['connected', 'disconnected'])
+    expect(statuses).toEqual(['connected'])
     expect(channels.attempts[0].closed).toBe(true)
     expect(channels.attempts).toHaveLength(2)
     channels.last().report('joined')
-    expect(statuses).toEqual(['connected', 'disconnected', 'connected'])
+    expect(statuses).toEqual(['connected'])
+  })
+
+  it('marks disconnected on resume only if the rejoin fails', () => {
+    const { channels, page, statuses } = setup()
+    channels.last().report('joined')
+    page.resume()
+    channels.last().report('lost')
+    expect(statuses).toEqual(['connected', 'disconnected'])
+    expect(channels.attempts[1].closed).toBe(true)
+  })
+
+  it('marks disconnected on resume when the browser is offline', () => {
+    const { channels, network, page, statuses } = setup()
+    channels.last().report('joined')
+    network.online = false
+    page.resume()
+    expect(statuses).toEqual(['connected', 'disconnected'])
+    expect(channels.attempts).toHaveLength(1)
+  })
+
+  it('forces disconnected when connected with no activity for freshnessMs', () => {
+    const { channels, statuses } = setup(REALTIME_FRESHNESS_MS)
+    channels.last().report('joined')
+    vi.advanceTimersByTime(REALTIME_FRESHNESS_MS - 1)
+    expect(statuses).toEqual(['connected'])
+    vi.advanceTimersByTime(1)
+    expect(statuses).toEqual(['connected', 'disconnected'])
+    expect(channels.attempts[0].closed).toBe(true)
+  })
+
+  it('resets the freshness timer on realtime activity', () => {
+    const { channels, statuses } = setup(REALTIME_FRESHNESS_MS)
+    channels.last().report('joined')
+    vi.advanceTimersByTime(REALTIME_FRESHNESS_MS - 1)
+    channels.last().report('activity')
+    vi.advanceTimersByTime(REALTIME_FRESHNESS_MS - 1)
+    expect(statuses).toEqual(['connected'])
+    vi.advanceTimersByTime(1)
+    expect(statuses).toEqual(['connected', 'disconnected'])
   })
 })

@@ -15,12 +15,12 @@ import { ScoreTable } from '#/components/score-table'
 import type { ScoreTableRow } from '#/components/score-table'
 import {
   DEFAULT_SETTINGS,
-  PUBLIC_RELOAD_AFTER_MS,
   findNewRecords,
   formatScore,
   formatScoreWhen,
   formatStation,
   isMock,
+  keepNewestCelebration,
   leaderboardQuery,
   photoUrl,
   pixelCaps,
@@ -64,9 +64,9 @@ export const Route = createFileRoute('/')({
 
 function PublicScreen() {
   useScreenWakeLock()
-  const realtime = useHighscoresRealtime({
-    reloadAfterMs: PUBLIC_RELOAD_AFTER_MS,
-  })
+  // Poll while Realtime is down; no hard-reload — pageIsReachable only proves
+  // the app HTML answers, so a Realtime-only outage would blink the projector.
+  const realtime = useHighscoresRealtime()
   const refetchInterval = realtimeFallbackInterval(realtime)
   const games = useQuery({ ...visibleGamesQuery, refetchInterval })
   const settings = useQuery({ ...settingsQuery, refetchInterval })
@@ -147,7 +147,9 @@ function PublicScreen() {
     const found = findNewRecords(previousRecords.current, records.data)
     previousRecords.current = records.data
     if (found.length === 0) return
-    setCelebrationQueue((queue) => [...queue, ...found])
+    // After a reconnect catch-up, many first places can land at once: keep
+    // only the newest so the projector does not freeze on a long chain.
+    setCelebrationQueue((queue) => keepNewestCelebration(queue, found))
   }, [records.data])
 
   useEffect(() => {
