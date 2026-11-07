@@ -2,14 +2,43 @@ import { describe, expect, it } from 'vitest'
 import type { Session } from '@supabase/supabase-js'
 
 import {
+  ScoreMutationConflictError,
+  assertScoreUpdated,
   coverUrl,
   defaultShortLabel,
   parseScore,
   passwordUpdateErrorMessage,
   placeFor,
   requiresCurrentPasswordForChange,
+  scorePhotoPaths,
   sessionHasPasswordIdentity,
 } from './admin'
+
+describe('assertScoreUpdated', () => {
+  it('accepts a non-empty result set', () => {
+    expect(() => assertScoreUpdated([{ id: 'a' }], 'approve')).not.toThrow()
+  })
+
+  it('throws ScoreMutationConflictError when no row was updated', () => {
+    expect(() => assertScoreUpdated([], 'reject')).toThrow(
+      ScoreMutationConflictError,
+    )
+    expect(() => assertScoreUpdated(null, 'reopen')).toThrow(
+      /missing or its status already changed/,
+    )
+  })
+})
+
+describe('scorePhotoPaths', () => {
+  it('keeps only defined proof and thumb paths', () => {
+    expect(scorePhotoPaths('admin/a.jpg', 'admin/a.thumb.jpg')).toEqual([
+      'admin/a.jpg',
+      'admin/a.thumb.jpg',
+    ])
+    expect(scorePhotoPaths('admin/a.jpg', null)).toEqual(['admin/a.jpg'])
+    expect(scorePhotoPaths(null, null)).toEqual([])
+  })
+})
 
 describe('parseScore', () => {
   it('reads points with or without separators', () => {

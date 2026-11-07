@@ -208,6 +208,7 @@ export const supabaseSource: HighscoresSource = {
     const thumbPath = isOriginalPhoto(input.photo)
       ? null
       : `submissions/${fileId}.thumb.${photoFileType(thumb).extension}`
+    const uploadedPaths = [photoPath, ...(thumbPath ? [thumbPath] : [])]
 
     const upload = (path: string, file: Blob) =>
       supabase.storage.from('photos').upload(path, file, {
@@ -219,6 +220,9 @@ export const supabaseSource: HighscoresSource = {
       thumbPath ? upload(thumbPath, thumb) : null,
     ])
     for (const result of uploads) if (result?.error) throw result.error
+
+    const removeUploads = () =>
+      supabase.storage.from('photos').remove(uploadedPaths)
 
     const { error } = await supabase.from('scores').insert({
       id: input.id,
@@ -235,7 +239,15 @@ export const supabaseSource: HighscoresSource = {
       detected_score: input.detected_score,
     })
     // 23505 on the id: the first try went through, only its answer got lost.
-    if (error && error.code !== '23505') throw error
+    // This attempt used a fresh fileId, so drop the unused uploads.
+    if (error?.code === '23505') {
+      await removeUploads()
+      return
+    }
+    if (error) {
+      await removeUploads()
+      throw error
+    }
   },
 
   photoUrl,
