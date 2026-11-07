@@ -131,6 +131,8 @@ function AdminTopBar({ email }: { email: string }) {
           variant="outline"
           size="sm"
           className="border-brand-purple bg-transparent text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
+          aria-label="Ouvrir l'écran public"
+          title="Ouvrir l'écran public"
         >
           <a href="/" target="_blank" rel="noreferrer">
             <MonitorPlay />
@@ -143,7 +145,7 @@ function AdminTopBar({ email }: { email: string }) {
           variant="ghost"
           size="icon"
           className="text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
-          title={`Se déconnecter (${email})`}
+          title="Se déconnecter"
           aria-label="Se déconnecter"
           onClick={() => void signOut()}
         >

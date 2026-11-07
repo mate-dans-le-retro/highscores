@@ -184,6 +184,7 @@ function Games() {
                               variant="ghost"
                               size="icon-sm"
                               aria-label={`Monter ${game.name}`}
+                              title={`Monter ${game.name}`}
                               disabled={index === 0 || move.isPending}
                               onClick={() => move.mutate({ index, by: -1 })}
                             >
@@ -193,6 +194,7 @@ function Games() {
                               variant="ghost"
                               size="icon-sm"
                               aria-label={`Descendre ${game.name}`}
+                              title={`Descendre ${game.name}`}
                               disabled={
                                 index === list.length - 1 || move.isPending
                               }
@@ -295,6 +297,7 @@ function Games() {
                                   variant="ghost"
                                   size="icon-sm"
                                   aria-label={`Modifier ${game.name}`}
+                                  title={`Modifier ${game.name}`}
                                   onClick={() => openEdit(game)}
                                 >
                                   <Pencil />
@@ -303,6 +306,7 @@ function Games() {
                                   variant="ghost"
                                   size="icon-sm"
                                   aria-label={`Supprimer ${game.name}`}
+                                  title={`Supprimer ${game.name}`}
                                   onClick={() => {
                                     if (ranking.length > 0) {
                                       setConfirmDeleteId(null)
