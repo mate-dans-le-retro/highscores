@@ -65,6 +65,10 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 `src/**/*.test.tsx` files run under jsdom (pragma on each file) with Testing Library. They cover `useHighscoresRealtime` (invalidate, public reload timer, one-shot admin warn) and a `ScoreTable` smoke. Plain `*.test.ts` modules stay on the default node environment.
 
+## 2026-11-07: Playwright smoke base (mock mode)
+
+`pnpm test:e2e` runs Playwright against a production preview on port 4173. The build sets `VITE_DATA_SOURCE=mock` and the smoke hits `/?mock=1` and `/score?mock=1`, so no Supabase is required. Install Chromium once with `pnpm test:e2e:install`. CI does not run E2E yet.
+
 ## 2026-11-05: anonymous nicknames, dual photos, screen leaderboard shape
 
 - Anonymous nicknames are generated (character + qualifier + optional flourish, French agreement), seeded by the normalized player name and the game id, so one nickname per player per game. Per-game character lists with a long pop-culture fallback live in `src/lib/data/anonymous-name.ts` for Claude to reuse on the server.
