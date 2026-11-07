@@ -178,7 +178,11 @@ Venue wifi drops the Supabase channel; a phone admin that was backgrounded can l
 - While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
 - After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
 - `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
-- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there.
+- Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there. Superseded by "admin_scores topic for pending Realtime" below.
+
+## 2026-11-07: admin_scores topic for pending Realtime
+
+Pending score writes used to bump the public `scores` topic, which leaked submission timing to anon through Realtime. Approved changes still bump `scores`. Every score write bumps `admin_scores`, readable only when `public.is_admin()`. The client maps `admin_scores` to the same query invalidation as `scores`.
 
 ## 2026-11-05: game covers are cropped square before upload
 
