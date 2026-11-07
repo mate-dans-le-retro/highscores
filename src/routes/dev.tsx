@@ -35,6 +35,9 @@ const SCREEN_MODES: Array<{ value: Settings['screen_mode']; label: string }> = [
 
 const GAME_DURATIONS: Array<Settings['game_duration_s']> = [15, 30, 60]
 const WALL_DURATIONS: Array<Settings['wall_duration_s']> = [10, 20, 30]
+const NEW_RECORD_DURATIONS: Array<Settings['new_record_duration_s']> = [
+  8, 12, 20,
+]
 const ROW_COUNTS: Array<Settings['rows_shown']> = [3, 5, 10]
 const MIN_ALL_TIME: Array<Settings['min_all_time_rows']> = [3, 5, 10]
 
@@ -289,6 +292,25 @@ function SettingsSection() {
             }
           >
             {WALL_DURATIONS.map((value) => (
+              <NativeSelectOption key={value} value={String(value)}>
+                {value} s
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </Field>
+
+        <Field label="Durée Nouveau record">
+          <NativeSelect
+            value={String(current.new_record_duration_s)}
+            onChange={(event) =>
+              patch({
+                new_record_duration_s: Number(
+                  event.target.value,
+                ) as Settings['new_record_duration_s'],
+              })
+            }
+          >
+            {NEW_RECORD_DURATIONS.map((value) => (
               <NativeSelectOption key={value} value={String(value)}>
                 {value} s
               </NativeSelectOption>

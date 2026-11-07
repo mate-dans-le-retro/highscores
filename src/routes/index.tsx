@@ -51,8 +51,6 @@ import { wallPages } from '#/lib/wall-pages'
 
 /** Brief dip to black when the screen changes: out, then back in on the new one. */
 const FADE_MS = 300
-/** How long the "Nouveau record" takeover stays on screen. */
-const NEW_RECORD_MS = 12_000
 
 type Slide =
   | { kind: 'game'; game: DisplayedGame }
@@ -76,6 +74,7 @@ function PublicScreen() {
   const {
     gameDurationMs,
     wallDurationMs,
+    newRecordDurationMs,
     screenMode,
     rows,
     minAllTimeRows,
@@ -173,9 +172,9 @@ function PublicScreen() {
         scoreId: celebration.record.id,
       })
       setCelebration(null)
-    }, NEW_RECORD_MS)
+    }, newRecordDurationMs)
     return () => window.clearTimeout(timer)
-  }, [celebration])
+  }, [celebration, newRecordDurationMs])
 
   useEffect(() => {
     setRotation((state) => ({ ...state, index: 0 }))

@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: Settings = {
   screen_mode: 'game',
   game_duration_s: 15,
   wall_duration_s: 20,
+  new_record_duration_s: 12,
   rows_shown: 10,
   min_all_time_rows: 5,
   show_header: false,
