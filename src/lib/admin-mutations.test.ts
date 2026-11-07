@@ -6,8 +6,15 @@ const fake = vi.hoisted(() => {
   const state = {
     userId: 'volunteer-1' as string | null,
     updateError: null as { message: string } | null,
+    /** Empty array = no matching row (status precondition failed). */
+    updateRows: [{ id: 'matched' }] as Array<{ id: string }>,
     rpcError: null as { message: string } | null,
-    updates: [] as Array<{ table: string; row: UpdateRow; id: string }>,
+    updates: [] as Array<{
+      table: string
+      row: UpdateRow
+      id: string
+      statuses: Array<string>
+    }>,
     rpcs: [] as Array<{ name: string; args: Record<string, unknown> }>,
   }
 
@@ -20,12 +27,31 @@ const fake = vi.hoisted(() => {
     from(table: string) {
       return {
         update(row: UpdateRow) {
-          return {
-            eq(_column: string, id: string) {
-              state.updates.push({ table, row, id })
-              return Promise.resolve({ error: state.updateError })
+          const filters = { id: '', statuses: [] as Array<string> }
+          const builder = {
+            eq(column: string, value: string) {
+              if (column === 'id') filters.id = value
+              if (column === 'status') filters.statuses = [value]
+              return builder
+            },
+            in(column: string, values: Array<string>) {
+              if (column === 'status') filters.statuses = values
+              return builder
+            },
+            select(_columns: string) {
+              state.updates.push({
+                table,
+                row,
+                id: filters.id,
+                statuses: filters.statuses,
+              })
+              return Promise.resolve({
+                data: state.updateError ? null : state.updateRows,
+                error: state.updateError,
+              })
             },
           }
+          return builder
         },
       }
     },
@@ -43,6 +69,7 @@ vi.mock('./supabase', () => ({
 }))
 
 const {
+  ScoreMutationConflictError,
   approveScore,
   archiveCurrentEvent,
   rejectScore,
@@ -54,6 +81,7 @@ describe('admin score mutations', () => {
   beforeEach(() => {
     fake.state.userId = 'volunteer-1'
     fake.state.updateError = null
+    fake.state.updateRows = [{ id: 'matched' }]
     fake.state.rpcError = null
     fake.state.updates = []
     fake.state.rpcs = []
@@ -65,7 +93,7 @@ describe('admin score mutations', () => {
     vi.useRealTimers()
   })
 
-  it('approves a submission with trimmed name and clears custom game + rejection', async () => {
+  it('approves only from pending, with trimmed name and cleared rejection', async () => {
     await approveScore('score-1', {
       game_id: 'game-tetris',
       score: 128_400,
@@ -77,6 +105,7 @@ describe('admin score mutations', () => {
     expect(fake.state.updates[0]).toMatchObject({
       table: 'scores',
       id: 'score-1',
+      statuses: ['pending'],
       row: {
         game_id: 'game-tetris',
         score: 128_400,
@@ -102,12 +131,13 @@ describe('admin score mutations', () => {
     expect(fake.state.updates[0]?.row.player_name).toBeNull()
   })
 
-  it('rejects with an optional trimmed reason', async () => {
+  it('rejects only from pending with an optional trimmed reason', async () => {
     await rejectScore('score-3', '  photo floue  ')
 
     expect(fake.state.updates[0]).toMatchObject({
       table: 'scores',
       id: 'score-3',
+      statuses: ['pending'],
       row: {
         status: 'rejected',
         rejection_reason: 'photo floue',
@@ -122,12 +152,13 @@ describe('admin score mutations', () => {
     expect(fake.state.updates[0]?.row.rejection_reason).toBeNull()
   })
 
-  it('reopens a reviewed score and clears the rejection reason', async () => {
+  it('reopens only from approved/rejected and clears the rejection reason', async () => {
     await reopenScore('score-5')
 
     expect(fake.state.updates[0]).toMatchObject({
       table: 'scores',
       id: 'score-5',
+      statuses: ['approved', 'rejected'],
       row: {
         status: 'pending',
         rejection_reason: null,
@@ -137,14 +168,27 @@ describe('admin score mutations', () => {
     })
   })
 
-  it('updates score fields by id', async () => {
+  it('updates approved scores only', async () => {
     await updateScore('score-6', { score: 99, display_on_screen: true })
 
     expect(fake.state.updates[0]).toEqual({
       table: 'scores',
       id: 'score-6',
+      statuses: ['approved'],
       row: { score: 99, display_on_screen: true },
     })
+  })
+
+  it('throws ScoreMutationConflictError when no row matches the status filter', async () => {
+    fake.state.updateRows = []
+    await expect(
+      approveScore('score-gone', {
+        game_id: 'game-tetris',
+        score: 1,
+        player_name: null,
+        display_on_screen: true,
+      }),
+    ).rejects.toBeInstanceOf(ScoreMutationConflictError)
   })
 
   it('archives the current event through the RPC with a trimmed name', async () => {

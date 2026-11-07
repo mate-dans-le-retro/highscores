@@ -49,9 +49,7 @@ vi.mock('../random-uuid', () => ({
 
 const { supabaseSource } = await import('./supabase-source')
 
-function submission(
-  overrides: Partial<SubmissionInput> = {},
-): SubmissionInput {
+function submission(overrides: Partial<SubmissionInput> = {}): SubmissionInput {
   const proof = new Blob(['proof'], { type: 'image/jpeg' })
   const thumb = new Blob(['thumb'], { type: 'image/jpeg' })
   return {
@@ -101,24 +99,36 @@ describe('supabaseSource.submitScore', () => {
     expect(fake.state.removals).toEqual([])
   })
 
-  it('ignores a duplicate-id insert (23505) after a lost first response', async () => {
+  it('treats 23505 as success and removes this attempt unused uploads', async () => {
     fake.state.insertError = { message: 'duplicate', code: '23505' }
     await expect(
       supabaseSource.submitScore(submission()),
     ).resolves.toBeUndefined()
+    expect(fake.state.removals).toEqual([
+      {
+        bucket: 'photos',
+        paths: [
+          'submissions/11111111-1111-4111-8111-111111111111.jpg',
+          'submissions/11111111-1111-4111-8111-111111111111.thumb.jpg',
+        ],
+      },
+    ])
   })
 
-  it('throws when insert fails for another reason', async () => {
+  it('removes uploaded proof and thumb when insert fails with a non-23505 error', async () => {
     fake.state.insertError = { message: 'rls', code: '42501' }
     await expect(supabaseSource.submitScore(submission())).rejects.toEqual({
       message: 'rls',
       code: '42501',
     })
+    expect(fake.state.removals).toEqual([
+      {
+        bucket: 'photos',
+        paths: [
+          'submissions/11111111-1111-4111-8111-111111111111.jpg',
+          'submissions/11111111-1111-4111-8111-111111111111.thumb.jpg',
+        ],
+      },
+    ])
   })
-
-  // G18: uploads stay in Storage when insert fails (non-23505). Flip this to a
-  // real assertion when storage.remove lands in the catch path.
-  it.todo(
-    'removes uploaded proof and thumb when insert fails with a non-23505 error',
-  )
 })

@@ -2,28 +2,64 @@ import { describe, expect, it } from 'vitest'
 import type { Session } from '@supabase/supabase-js'
 
 import {
+  ScoreMutationConflictError,
+  assertScoreUpdated,
   coverUrl,
   defaultShortLabel,
+  deleteGameBlockedMessage,
+  isScoreRuleLocked,
   parseScore,
   passwordUpdateErrorMessage,
   placeFor,
   requiresCurrentPasswordForChange,
+  scorePhotoPaths,
   sessionHasPasswordIdentity,
+  submissionsSortAscending,
 } from './admin'
 
+describe('assertScoreUpdated', () => {
+  it('accepts a non-empty result set', () => {
+    expect(() => assertScoreUpdated([{ id: 'a' }], 'approve')).not.toThrow()
+  })
+
+  it('throws ScoreMutationConflictError when no row was updated', () => {
+    expect(() => assertScoreUpdated([], 'reject')).toThrow(
+      ScoreMutationConflictError,
+    )
+    expect(() => assertScoreUpdated(null, 'reopen')).toThrow(
+      /missing or its status already changed/,
+    )
+  })
+})
+
+describe('scorePhotoPaths', () => {
+  it('keeps only defined proof and thumb paths', () => {
+    expect(scorePhotoPaths('admin/a.jpg', 'admin/a.thumb.jpg')).toEqual([
+      'admin/a.jpg',
+      'admin/a.thumb.jpg',
+    ])
+    expect(scorePhotoPaths('admin/a.jpg', null)).toEqual(['admin/a.jpg'])
+    expect(scorePhotoPaths(null, null)).toEqual([])
+  })
+})
+
 describe('parseScore', () => {
-  it('reads points with or without separators', () => {
+  it('reads points with or without spaces, capped at 15 digits', () => {
     expect(parseScore('128400', 'points')).toBe(128400)
     expect(parseScore('128 400', 'points')).toBe(128400)
     expect(parseScore('128 400', 'points')).toBe(128400)
-    expect(parseScore('128.400', 'points')).toBe(128400)
     expect(parseScore('12a', 'points')).toBeNull()
+    expect(parseScore('128.400', 'points')).toBeNull()
     expect(parseScore('', 'points')).toBeNull()
+    expect(parseScore('1'.repeat(15), 'points')).toBe(Number('1'.repeat(15)))
+    expect(parseScore('1'.repeat(16), 'points')).toBeNull()
   })
 
-  it('reads times in milliseconds', () => {
+  it('reads the same time formats as the player form', () => {
     expect(parseScore(`1'32"48`, 'time')).toBe(92480)
     expect(parseScore('1:32.48', 'time')).toBe(92480)
+    expect(parseScore('1:32:48', 'time')).toBe(92480)
+    expect(parseScore('13248', 'time')).toBe(92480)
     expect(parseScore(`1'32`, 'time')).toBe(92000)
     expect(parseScore('92.48', 'time')).toBe(92480)
     expect(parseScore(`0'09"5`, 'time')).toBe(9500)
@@ -58,6 +94,18 @@ describe('placeFor', () => {
 
   it('ignores the score being edited', () => {
     expect(placeFor(250, ranking, 'desc', 'a')).toBe(1)
+  })
+})
+
+describe('submissionsSortAscending', () => {
+  it('puts pending, rejected and to_post oldest-first', () => {
+    expect(submissionsSortAscending('pending')).toBe(true)
+    expect(submissionsSortAscending('rejected')).toBe(true)
+    expect(submissionsSortAscending('to_post')).toBe(true)
+  })
+
+  it('keeps approved newest-first', () => {
+    expect(submissionsSortAscending('approved')).toBe(false)
   })
 })
 
@@ -173,6 +221,25 @@ describe('passwordUpdateErrorMessage', () => {
   it('keeps the Auth code and message in the alert', () => {
     expect(passwordUpdateErrorMessage({ message: 'network boom' })).toContain(
       'network boom',
+    )
+  })
+})
+
+describe('isScoreRuleLocked', () => {
+  it('locks once any score exists', () => {
+    expect(isScoreRuleLocked(0)).toBe(false)
+    expect(isScoreRuleLocked(1)).toBe(true)
+    expect(isScoreRuleLocked(12)).toBe(true)
+  })
+})
+
+describe('deleteGameBlockedMessage', () => {
+  it('mentions every score status, singular and plural', () => {
+    expect(deleteGameBlockedMessage(1)).toContain(
+      '1 score (validé, en attente ou refusé)',
+    )
+    expect(deleteGameBlockedMessage(3)).toContain(
+      '3 scores (validés, en attente ou refusés)',
     )
   })
 })

@@ -1,5 +1,5 @@
 import { toPublicRow } from '../anonymize'
-import { keepSubscribed } from '../realtime-connection'
+import { keepSubscribed, REALTIME_FRESHNESS_MS } from '../realtime-connection'
 import { buildScreenLeaderboard } from '../screen-leaderboard'
 import type { HighscoresSource } from '../source'
 import type {
@@ -11,6 +11,7 @@ import type {
   Settings,
 } from '../types'
 import { rankScores } from '../ranking'
+import { hasExclusiveGameChoice } from '../submission-game'
 import {
   cachedMockPhotoUrl,
   clearMockPhotos,
@@ -138,7 +139,7 @@ export const mockSource: HighscoresSource = {
 
   submitScore: async (input) => {
     const customGameName = input.custom_game_name?.trim() || null
-    if (!input.game_id === !customGameName)
+    if (!hasExclusiveGameChoice(input.game_id, customGameName))
       throw new Error('Pick a game from the list or type its name, not both')
 
     const photoId = newId()
@@ -188,10 +189,14 @@ export const mockSource: HighscoresSource = {
   // offline/online events drive the same reconnection path as Supabase.
   subscribe: (onChange, onStatus) =>
     keepSubscribed({
+      freshnessMs: REALTIME_FRESHNESS_MS,
       onStatus: (status) => onStatus?.(status),
       open: (report) => {
         const joined = setTimeout(() => report('joined'), 0)
-        const unsubscribe = subscribeToStore(onChange)
+        const unsubscribe = subscribeToStore((table) => {
+          report('activity')
+          onChange(table)
+        })
         return () => {
           clearTimeout(joined)
           unsubscribe()

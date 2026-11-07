@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Plus, Upload } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
@@ -18,8 +18,10 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { Switch } from '#/components/ui/switch'
 import {
+  countGameScores,
   createGame,
   defaultShortLabel,
+  isScoreRuleLocked,
   updateGame,
   useInvalidateAdmin,
 } from '#/lib/admin'
@@ -104,6 +106,13 @@ function GameForm({
     name: string
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const scoreCount = useQuery({
+    queryKey: ['admin', 'game-score-count', game?.id ?? null],
+    queryFn: () => countGameScores(game!.id),
+    enabled: Boolean(game?.id),
+  })
+  const scoreRuleLocked = isScoreRuleLocked(scoreCount.data ?? 0)
 
   const label = shortLabel.trim() || defaultShortLabel(name)
   const coverPreview = useMemo(
@@ -270,6 +279,7 @@ function GameForm({
         label="Type de score"
         options={scoreTypes}
         value={scoreType}
+        disabled={scoreRuleLocked}
         onChange={(value) => {
           setScoreType(value)
           // A time is usually best when lowest.
@@ -280,8 +290,15 @@ function GameForm({
         label="Le meilleur score est"
         options={scoreOrders}
         value={scoreOrder}
+        disabled={scoreRuleLocked}
         onChange={setScoreOrder}
       />
+      {scoreRuleLocked && (
+        <p className="-mt-3 text-caption text-ink-secondary">
+          Type et sens verrouillés : ce jeu a déjà des scores, on les lirait de
+          travers sinon.
+        </p>
+      )}
 
       <label className="flex items-center gap-3 text-body-ui font-semibold">
         <Switch checked={visible} onCheckedChange={setVisible} />
@@ -316,14 +333,16 @@ function ChoiceGroup<T extends string>({
   options,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string
   options: Array<{ value: T; label: string }>
   value: T
   onChange: (value: T) => void
+  disabled?: boolean
 }) {
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset className="flex flex-col gap-2" disabled={disabled}>
       <legend className="mb-2 text-sm font-semibold">{label}</legend>
       <div
         className="grid gap-2"
@@ -333,16 +352,19 @@ function ChoiceGroup<T extends string>({
           <label
             key={option.value}
             className={cn(
-              'flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm font-semibold',
+              'flex h-10 items-center gap-2 rounded-md border px-3 text-sm font-semibold',
+              disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
               value === option.value
                 ? 'border-line-accent bg-surface-raised ring-1 ring-line-accent'
-                : 'border-line-strong hover:bg-surface-sunken',
+                : 'border-line-strong',
+              !disabled && value !== option.value && 'hover:bg-surface-sunken',
             )}
           >
             <input
               type="radio"
               className="accent-primary"
               checked={value === option.value}
+              disabled={disabled}
               onChange={() => onChange(option.value)}
             />
             {option.label}

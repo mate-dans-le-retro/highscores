@@ -17,7 +17,11 @@
     "typecheck": "tsc --noEmit",
     "vercel:login": "vercel login",
     "vercel:link": "vercel link --scope mate-dans-le-retro-gamings-projects --project highscores",
-    "env:pull": "vercel env pull .env.local --environment=development"
+    "env:pull": "vercel env pull .env.local --environment=development",
+    "supabase:login": "supabase login",
+    "supabase:link": "supabase link",
+    "supabase:types": "supabase gen types typescript > src/lib/database.types.ts",
+    "supabase:types:remote": "supabase gen types typescript --remote > src/lib/database.types.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.0",
