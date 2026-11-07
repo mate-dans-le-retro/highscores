@@ -254,8 +254,17 @@ export const supabaseSource: HighscoresSource = {
             'postgres_changes',
             { event: '*', schema: 'public', table: 'change_signals' },
             (payload) => {
-              const topic = (payload.new as { topic?: ChangedTable }).topic
-              if (topic) onChange(topic)
+              const topic = (payload.new as { topic?: string }).topic
+              // admin_scores is admin-only (RLS); treat it like scores for queries.
+              const table: ChangedTable | undefined =
+                topic === 'admin_scores'
+                  ? 'scores'
+                  : topic === 'games' ||
+                      topic === 'scores' ||
+                      topic === 'settings'
+                    ? topic
+                    : undefined
+              if (table) onChange(table)
             },
           )
           .subscribe((status) => {
