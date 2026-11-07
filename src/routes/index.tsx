@@ -76,6 +76,8 @@ function PublicScreen() {
     wallDurationMs,
     newRecordDurationMs,
     screenMode,
+    lockedGameSlug,
+    displayLocked,
     rows,
     minAllTimeRows,
     showHeader,
@@ -89,12 +91,16 @@ function PublicScreen() {
       page,
       pages,
     }))
-    const perGame = list.map((game) => ({ kind: 'game' as const, game }))
     if (screenMode === 'wall') return wall
+    if (lockedGameSlug) {
+      const game = list.find((entry) => entry.slug === lockedGameSlug)
+      return game ? [{ kind: 'game' as const, game }] : []
+    }
+    const perGame = list.map((game) => ({ kind: 'game' as const, game }))
     if (screenMode === 'game') return perGame
     // "Alterner les deux": the wall first, then each game (docs/screens.md).
     return [...wall, ...perGame]
-  }, [games.data, screenMode])
+  }, [games.data, screenMode, lockedGameSlug])
 
   const [rotation, setRotation] = useState<RotationState>(INITIAL_ROTATION)
   const { index, lap, held, pending } = rotation
@@ -146,11 +152,14 @@ function PublicScreen() {
     }
     const found = findNewRecords(previousRecords.current, records.data)
     previousRecords.current = records.data
-    if (found.length === 0) return
+    const relevant = lockedGameSlug
+      ? found.filter((entry) => entry.game.slug === lockedGameSlug)
+      : found
+    if (relevant.length === 0) return
     // After a reconnect catch-up, many first places can land at once: keep
     // only the newest so the projector does not freeze on a long chain.
-    setCelebrationQueue((queue) => keepNewestCelebration(queue, found))
-  }, [records.data])
+    setCelebrationQueue((queue) => keepNewestCelebration(queue, relevant))
+  }, [records.data, lockedGameSlug])
 
   useEffect(() => {
     if (celebration || celebrationQueue.length === 0) return
@@ -180,7 +189,7 @@ function PublicScreen() {
 
   useEffect(() => {
     setRotation((state) => ({ ...state, index: 0 }))
-  }, [screenMode, games.data?.length])
+  }, [screenMode, lockedGameSlug, games.data?.length])
 
   // Two timers per slide, so the screen only renders when something changes:
   // the progress bar animates on its own (see RotationProgress).
@@ -318,7 +327,7 @@ function PublicScreen() {
           </div>
         )}
 
-        {count > 0 ? (
+        {count > 0 && !displayLocked ? (
           <RotationPills
             slides={slides}
             current={safeIndex}

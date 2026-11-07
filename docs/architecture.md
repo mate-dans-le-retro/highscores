@@ -89,11 +89,16 @@ Both sources anonymize the scores a player kept off screen: the row keeps its ra
 
 The rotation and the number of rows come from the settings (15 s and 10 rows by default). Search params override them, validated and clamped with zod (`src/lib/screen-options.ts`):
 
-| Param      | Range    | Example         |
-| ---------- | -------- | --------------- |
-| `rotation` | 5 to 300 | `/?rotation=30` |
-| `rows`     | 1 to 10  | `/?rows=10`     |
-| `header`   | 0 or 1   | `/?header=1`    |
+| Param        | Range                      | Example              |
+| ------------ | -------------------------- | -------------------- |
+| `rotation`   | 5 to 300                   | `/?rotation=30`      |
+| `rows`       | 1 to 10                    | `/?rows=10`          |
+| `minAllTime` | 1 to 10                    | `/?minAllTime=5`     |
+| `header`     | 0 or 1                     | `/?header=1`         |
+| `mode`       | `game` \| `wall` \| `both` | `/?mode=wall`        |
+| `game`       | visible game slug          | `/?game=donkey-kong` |
+
+`mode` overrides the admin `screen_mode` for that browser. `mode=wall` locks the display on the records wall (no rotation thumbnails). `game=<slug>` locks on that one game (for a per-cabinet screen): no thumbnails, and the "Nouveau record" takeover only fires for that game. If both are set, `mode=wall` wins. `mode=game` or `mode=both` without `game=` only change the rotation mix; they do not lock.
 
 ## Realtime
 
