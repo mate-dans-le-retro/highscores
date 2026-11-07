@@ -61,12 +61,12 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 A projector or a future per-game cabinet can pin the public screen without changing admin settings:
 
-- `/?mode=wall` shows only the records wall (every game still on the wall), hides the bottom navigation thumbnails and the top rotation progress bar, and keeps the 96px bottom overscan so the wall is not stuck to the edge. The "Nouveau record" takeover (new #1 overlay) still fires for every game.
+- `/?mode=wall` shows only the records wall (every game still on the wall), hides the bottom navigation thumbnails and the top rotation progress bar, and keeps the 96px bottom overscan so the wall is not stuck to the edge. The "Nouveau record" takeover (new #1 overlay) still fires for every game. A click on a wall card opens that game's locked view (`/?game=<slug>`), like a cabinet picker.
 - `/?game=<slug>` shows only that visible game, hides the same chrome, keeps the same bottom overscan, and only plays that takeover for that game.
 - `/?mode=game` or `/?mode=both` still only override the rotation mix (same values as admin `screen_mode`); they do not lock.
 - When both `mode=wall` and `game=` are present, the wall wins.
 
-Same zod search params as the other screen overrides (`src/lib/screen-options.ts`).
+Same zod search params as the other screen overrides (`src/lib/screen-options.ts`). The wall keeps the original stretched card height (`flex-1` 3×2 grid). Balance comes only from margins and gaps: a fixed top band under the QR (`h-72`), a wider row gap (`gap-y-12` vs `gap-x-10`), and bottom overscan (`pb-24`).
 
 ## 2026-11-05: Vitest for the data layer
 

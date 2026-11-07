@@ -98,7 +98,7 @@ The rotation and the number of rows come from the settings (15 s and 10 rows by 
 | `mode`       | `game` \| `wall` \| `both` | `/?mode=wall`        |
 | `game`       | visible game slug          | `/?game=donkey-kong` |
 
-`mode` overrides the admin `screen_mode` for that browser. `mode=wall` locks the display on the records wall and hides the bottom navigation thumbnails and the top rotation progress bar; the wall still shows every game, and the "Nouveau record" takeover (new #1 overlay) still fires for every game. `game=<slug>` locks on that one game (for a per-cabinet screen): same chrome hide, and the takeover only fires for that game. A locked view keeps the 96px bottom overscan (`pb-24`) the thumbnails used to reserve. If both are set, `mode=wall` wins. `mode=game` or `mode=both` without `game=` only change the rotation mix; they do not lock.
+`mode` overrides the admin `screen_mode` for that browser. `mode=wall` locks the display on the records wall and hides the bottom navigation thumbnails and the top rotation progress bar; the wall still shows every game, and the "Nouveau record" takeover (new #1 overlay) still fires for every game. On that forced wall, a click (or tap) on a record card opens that game's locked view (`?game=<slug>`, `mode` cleared). Card height stays the stretched original; spacing is tuned via the top QR band, row gap and bottom overscan only (no fake thumb chrome). `game=<slug>` locks on that one game (for a per-cabinet screen): same chrome hide, the takeover only fires for that game, and the 96px bottom overscan (`pb-24`) stays. If both are set, `mode=wall` wins. `mode=game` or `mode=both` without `game=` only change the rotation mix; they do not lock.
 
 ## Realtime
 
