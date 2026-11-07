@@ -9,7 +9,7 @@ import {
   Undo2,
   X,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { GameDialog } from '#/components/admin/game-dialog'
 import { GameThumb } from '#/components/admin/game-thumb'
@@ -32,8 +32,13 @@ import {
   useInvalidateAdmin,
 } from '#/lib/admin'
 import type { AdminGame, AdminScore } from '#/lib/admin'
+import type { ScoreType } from '#/lib/data/types'
 import { formatScore, formatScoreWhen } from '#/lib/format'
 import { useReadablePhotoUrl } from '#/lib/readable-photo'
+
+function isTimeType(type: ScoreType | undefined) {
+  return type === 'time'
+}
 
 const statusLabels = {
   pending: 'À valider',
@@ -58,6 +63,8 @@ export function SubmissionDetail({
   const [scoreText, setScoreText] = useState(
     formatScore(submission.score, game?.score_type),
   )
+  const [scoreTypeWarning, setScoreTypeWarning] = useState(false)
+  const [pendingScoreReformat, setPendingScoreReformat] = useState(false)
   const [playerName, setPlayerName] = useState(submission.player_name ?? '')
   const [displayOnScreen, setDisplayOnScreen] = useState(
     submission.display_on_screen,
@@ -66,6 +73,38 @@ export function SubmissionDetail({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [confirmReject, setConfirmReject] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
+
+  function changeGame(nextId: string) {
+    const previous = games.find(({ id }) => id === gameId)
+    const next = games.find(({ id }) => id === nextId)
+    setGameId(nextId)
+    if (next) {
+      setScoreText(formatScore(submission.score, next.score_type))
+      setScoreTypeWarning(
+        Boolean(
+          previous &&
+          isTimeType(previous.score_type) !== isTimeType(next.score_type),
+        ),
+      )
+      setPendingScoreReformat(false)
+      return
+    }
+    // New game from the dialog: list refresh may land on the next render.
+    setPendingScoreReformat(true)
+    setScoreTypeWarning(false)
+  }
+
+  useEffect(() => {
+    if (!pendingScoreReformat || !game) return
+    const previousType = submission.game_id
+      ? games.find(({ id }) => id === submission.game_id)?.score_type
+      : 'points'
+    setScoreText(formatScore(submission.score, game.score_type))
+    setScoreTypeWarning(
+      isTimeType(previousType) !== isTimeType(game.score_type),
+    )
+    setPendingScoreReformat(false)
+  }, [pendingScoreReformat, game, games, submission.game_id, submission.score])
 
   const score = game ? parseScore(scoreText, game.score_type) : null
   const detectedGame = games.find(
@@ -203,7 +242,7 @@ export function SubmissionDetail({
                 open={creatingGame}
                 onOpenChange={setCreatingGame}
                 initialName={submission.custom_game_name ?? ''}
-                onSaved={setGameId}
+                onSaved={changeGame}
               />
             </div>
           )}
@@ -215,7 +254,7 @@ export function SubmissionDetail({
               className="w-full"
               value={gameId}
               disabled={!pending}
-              onChange={(event) => setGameId(event.target.value)}
+              onChange={(event) => changeGame(event.target.value)}
             >
               <option value="" disabled>
                 Choisis un jeu
@@ -242,6 +281,13 @@ export function SubmissionDetail({
             {game?.score_type === 'time' && (
               <p className="text-caption text-ink-secondary">
                 Format 1'32"48 (minutes, secondes, centièmes).
+              </p>
+            )}
+            {scoreTypeWarning && (
+              <p role="status" className="text-caption text-destructive">
+                Tu passes de points à un temps (ou l'inverse) : le chiffre
+                stocké est le même, mais il n'a plus le même sens. Vérifie bien
+                le score !
               </p>
             )}
           </div>
@@ -422,7 +468,7 @@ export function SubmissionDetail({
                   onClick={() => approve.mutate()}
                 >
                   <Check />
-                  Valider et afficher
+                  {displayOnScreen ? 'Valider et afficher' : 'Valider (masqué)'}
                 </Button>
               </>
             ) : (

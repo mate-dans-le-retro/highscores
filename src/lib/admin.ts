@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 import { randomUuid } from './random-uuid'
+import { parseScoreInput } from './parse-score'
 import { getSupabase } from './supabase'
 import {
   isAllowedCoverMime,
@@ -899,23 +900,9 @@ export async function renameEvent(id: string, name: string) {
 // ---------------------------------------------------------------------------
 
 /**
- * Reads what a volunteer typed. Points: digits, spaces allowed ("128 400").
- * Time: 1'32"48, 1:32.48, 1'32 or 92.48 (seconds), stored in milliseconds.
+ * Reads what a volunteer typed in review or manual entry. Same rules as the
+ * player form ({@link parseScoreInput}): stopwatch digits, 1:32:48, etc.
  */
 export function parseScore(raw: string, type: ScoreType): number | null {
-  const value = raw.trim()
-  if (!value) return null
-  if (type !== 'time') {
-    const digits = value.replace(/[\s.]/g, '')
-    return /^\d{1,15}$/.test(digits) ? Number(digits) : null
-  }
-  const match =
-    /^(?:(\d+)\s*['’:])?\s*(\d{1,2})(?:\s*(?:["”.,])\s*(\d{1,3}))?\s*"?$/.exec(
-      value,
-    )
-  if (!match) return null
-  const [, minutes = '0', seconds, fraction = ''] = match
-  if (Number(seconds) >= 60 && minutes !== '0') return null
-  const ms = Number(fraction.padEnd(3, '0').slice(0, 3))
-  return Number(minutes) * 60_000 + Number(seconds) * 1000 + ms
+  return parseScoreInput(raw, type)
 }
