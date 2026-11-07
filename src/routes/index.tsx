@@ -83,8 +83,8 @@ function PublicScreen() {
     minAllTimeRows,
     showHeader,
   } = screenOptions(settings.data ?? DEFAULT_SETTINGS, search)
-  /** Forced wall kiosk: cards drill into that game's locked view. */
-  const wallGameLinks = search.mode === 'wall'
+  /** Forced `?mode=wall` kiosk: rebalanced layout + card → `?game=`. */
+  const forcedWall = search.mode === 'wall'
 
   const slides = useMemo<Array<Slide>>(() => {
     const list = games.data ?? []
@@ -268,18 +268,33 @@ function PublicScreen() {
         ) : null}
 
         {showWall ? (
-          <div className="relative flex min-h-0 flex-1 flex-col px-24">
+          <div
+            className={cn(
+              'relative flex min-h-0 flex-1 flex-col px-24',
+              // Rotation keeps the classic pt-6; forced wall clears QR itself.
+              forcedWall ? null : 'pt-6',
+            )}
+          >
             {/*
-              Title + global QR are absolute at the 96px overscan
-              (`top-24` / `left-24` / `right-24`, 10-screens.md). RecordsWall
-              keeps a matching top band so cards clear the QR with air under it.
+              Title + global QR are absolute. Forced `?mode=wall` uses the
+              96px overscan (`top-24`); rotation keeps `top-6` from before #105.
             */}
             {showHeader ? null : (
-              <h1 className="pointer-events-none absolute top-24 left-24 z-10 font-display text-scene-pixel text-ink-accent">
+              <h1
+                className={cn(
+                  'pointer-events-none absolute left-24 z-10 font-display text-scene-pixel text-ink-accent',
+                  forcedWall ? 'top-24' : 'top-6',
+                )}
+              >
                 {pixelCaps('Les records')}
               </h1>
             )}
-            <div className="absolute top-24 right-24 z-10">
+            <div
+              className={cn(
+                'absolute right-24 z-10',
+                forcedWall ? 'top-24' : 'top-6',
+              )}
+            >
               <GlobalSubmitQr />
             </div>
             {records.isPending && <p className="text-scene-row">Chargement…</p>}
@@ -292,7 +307,7 @@ function PublicScreen() {
               <RecordsWall
                 records={wallPages(records.data)[wallPage] ?? []}
                 showGameQr
-                linkToGame={wallGameLinks}
+                forced={forcedWall}
               />
             )}
           </div>
