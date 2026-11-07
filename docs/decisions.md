@@ -66,7 +66,7 @@ A projector or a future per-game cabinet can pin the public screen without chang
 - `/?mode=game` or `/?mode=both` still only override the rotation mix (same values as admin `screen_mode`); they do not lock.
 - When both `mode=wall` and `game=` are present, the wall wins.
 
-Same zod search params as the other screen overrides (`src/lib/screen-options.ts`). The wall lays out a fixed-height card block between flex spacers (top ≥ 400px to clear the QR with air, bottom ≥ 160px overscan) so the purple above and below the cards matches on a full-HD frame, with a wider row gap (`gap-y-20`) than the column gap (`gap-x-10`).
+Same zod search params as the other screen overrides (`src/lib/screen-options.ts`). The wall keeps the original stretched card height (`flex-1` 3×2 grid). Balance comes only from margins and gaps: a fixed top band under the QR (`h-72`), a wider row gap (`gap-y-12` vs `gap-x-10`), and bottom overscan (`pb-24`).
 
 ## 2026-11-05: Vitest for the data layer
 
