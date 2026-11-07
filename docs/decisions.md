@@ -57,6 +57,17 @@ Rotation (15 s by default) and the number of rows (10 by default) are settings, 
 
 Supersedes the earlier "5 rows by default" wording from the same day: Clément set the default to 10, with `min_all_time_rows` (default 5) so the all-time block can shrink for current-event extras but never below that floor.
 
+## 2026-11-07: URL can lock the public screen on the wall or one game
+
+A projector or a future per-game cabinet can pin the public screen without changing admin settings:
+
+- `/?mode=wall` shows only the records wall (every game still on the wall) and hides the bottom navigation thumbnails. The "Nouveau record" takeover (new #1 overlay) still fires for every game.
+- `/?game=<slug>` shows only that visible game, hides the same thumbnails, and only plays that takeover for that game.
+- `/?mode=game` or `/?mode=both` still only override the rotation mix (same values as admin `screen_mode`); they do not lock.
+- When both `mode=wall` and `game=` are present, the wall wins.
+
+Same zod search params as the other screen overrides (`src/lib/screen-options.ts`).
+
 ## 2026-11-05: Vitest for the data layer
 
 `pnpm test` runs Vitest on plain TypeScript modules (ranking, score formatting, new record detection, anonymization, mock switch, screen options). It has its own `vitest.config.ts`, without the TanStack Start plugins.
