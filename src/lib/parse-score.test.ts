@@ -14,6 +14,11 @@ describe('parseScoreInput', () => {
     expect(parseScoreInput('', 'points')).toBeNull()
     expect(parseScoreInput('abc', 'points')).toBeNull()
   })
+
+  it('rejects points with more than 15 digits', () => {
+    expect(parseScoreInput('1'.repeat(15), 'points')).toBe(Number('1'.repeat(15)))
+    expect(parseScoreInput('1'.repeat(16), 'points')).toBeNull()
+  })
 })
 
 describe('parseTimeInput', () => {
