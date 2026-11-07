@@ -395,37 +395,40 @@ function RotationPills({
       className="flex shrink-0 justify-center pt-6 pb-24"
     >
       <div className="relative flex items-center gap-6">
-        {slides.map((entry, i) => (
-          <button
-            key={entry.kind === 'wall' ? `wall-${entry.page}` : entry.game.id}
-            type="button"
-            aria-current={i === current ? 'true' : undefined}
-            aria-label={
-              entry.kind === 'game'
-                ? entry.game.name
-                : entry.page === 0
-                  ? 'Mur des records'
-                  : `Mur des records, page ${entry.page + 1}`
-            }
-            onClick={(event) => onSelect(i, event.detail)}
-            className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
-          >
-            {entry.kind === 'wall' ? (
-              <WallThumb
-                active={i === current}
-                page={entry.pages > 1 ? entry.page + 1 : null}
-              />
-            ) : (
-              <GameThumb
-                name={entry.game.name}
-                shortLabel={entry.game.short_label}
-                coverPath={entry.game.cover_path}
-                active={i === current}
-                className="h-16 w-20 text-arcade-name"
-              />
-            )}
-          </button>
-        ))}
+        {slides.map((entry, i) => {
+          const label =
+            entry.kind === 'game'
+              ? entry.game.name
+              : entry.page === 0
+                ? 'Mur des records'
+                : `Mur des records, page ${entry.page + 1}`
+          return (
+            <button
+              key={entry.kind === 'wall' ? `wall-${entry.page}` : entry.game.id}
+              type="button"
+              aria-current={i === current ? 'true' : undefined}
+              aria-label={label}
+              title={label}
+              onClick={(event) => onSelect(i, event.detail)}
+              className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+            >
+              {entry.kind === 'wall' ? (
+                <WallThumb
+                  active={i === current}
+                  page={entry.pages > 1 ? entry.page + 1 : null}
+                />
+              ) : (
+                <GameThumb
+                  name={entry.game.name}
+                  shortLabel={entry.game.short_label}
+                  coverPath={entry.game.cover_path}
+                  active={i === current}
+                  className="h-16 w-20 text-arcade-name"
+                />
+              )}
+            </button>
+          )
+        })}
         {held ? <PauseButton onClick={onResume} /> : null}
       </div>
     </nav>
