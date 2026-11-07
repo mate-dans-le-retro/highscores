@@ -9,12 +9,18 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
 import { DemoWatermark } from '#/components/demo-watermark'
+import type { MdlrTheme } from '#/lib/admin-theme'
+import {
+  ADMIN_THEME_BOOT_SCRIPT,
+  resolveDocumentTheme,
+  useAdminTheme,
+} from '#/lib/admin-theme'
 
 import appCss from '../styles.css?url'
 
 import type { QueryClient } from '@tanstack/react-query'
 
-export type MdlrTheme = 'arcade' | 'console' | 'scene'
+export type { MdlrTheme }
 
 declare module '@tanstack/react-router' {
   interface StaticDataRouteOption {
@@ -85,7 +91,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootDocument,
 })
 
-function useTheme(): MdlrTheme {
+function useRouteTheme(): MdlrTheme {
   const matches = useMatches()
   for (let i = matches.length - 1; i >= 0; i--) {
     const theme = matches[i].staticData.theme
@@ -94,12 +100,19 @@ function useTheme(): MdlrTheme {
   return 'arcade'
 }
 
+function useDocumentTheme(): MdlrTheme {
+  const routeTheme = useRouteTheme()
+  const adminTheme = useAdminTheme()
+  return resolveDocumentTheme(routeTheme, adminTheme)
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const theme = useTheme()
+  const theme = useDocumentTheme()
 
   return (
     <html lang="fr" data-theme={theme}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: ADMIN_THEME_BOOT_SCRIPT }} />
         <HeadContent />
       </head>
       <body className="min-h-screen antialiased">

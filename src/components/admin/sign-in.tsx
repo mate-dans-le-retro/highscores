@@ -86,7 +86,10 @@ export function SignIn() {
       <PixelGrid className="grid min-h-screen place-items-center bg-surface-base px-4 py-10">
         <PixelPanel label="HIGHSCORES" className="w-full max-w-md shadow-pixel">
           <div className="flex flex-col gap-5 text-ink-inverse">
-            <Logo src="/mdlr-logo.svg" className="m-0 w-48 self-center" />
+            <Logo
+              src="/mdlr-logo-color-dark.svg"
+              className="m-0 w-48 self-center"
+            />
             <div className="flex flex-col gap-1 text-center">
               <h1 className="text-h3 text-ink-inverse">
                 {mode === 'sign-up' ? 'Inscription' : 'Connexion'}

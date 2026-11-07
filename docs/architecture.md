@@ -16,16 +16,16 @@ The app is a server-rendered TanStack Start app deployed on Vercel. Pages talk d
 
 ## Routes
 
-| Route     | Theme   | Role                                |
-| --------- | ------- | ----------------------------------- |
-| `/`       | scene   | Projected public screen             |
-| `/scores` | none    | Redirects to `/`                    |
-| `/score`  | arcade  | Player form (QR code on the screen) |
-| `/admin`  | console | Volunteer admin, reached by its URL |
+| Route     | Theme             | Role                                |
+| --------- | ----------------- | ----------------------------------- |
+| `/`       | scene             | Projected public screen             |
+| `/scores` | none              | Redirects to `/`                    |
+| `/score`  | arcade            | Player form (QR code on the screen) |
+| `/admin`  | console (default) | Volunteer admin, reached by its URL |
 
-The admin (client-rendered, `ssr: false`) has four pages: `/admin` (submissions queue), `/admin/games` (games, order, display), `/admin/games/$gameId` (ranking of the current event, scores by hand, archiving) and `/admin/settings` (screen, submissions, QR code, event name). Its data access is in `src/lib/admin.ts`, straight to Supabase with the volunteer's session.
+The admin (client-rendered, `ssr: false`) has four pages: `/admin` (submissions queue), `/admin/games` (games, order, display), `/admin/games/$gameId` (ranking of the current event, scores by hand, archiving) and `/admin/settings` (screen, submissions, QR code, event name). Its data access is in `src/lib/admin.ts`, straight to Supabase with the volunteer's session. Volunteers can switch the admin to a dark look (`arcade` tokens) via the same Moon / Sun ghost toggle as Tournois; the choice is stored in `localStorage` (`mdlr-admin-theme`).
 
-Each route declares its theme in `staticData.theme`; `__root.tsx` sets the value of the deepest route on `<html data-theme>`, from the server render on.
+Each route declares its theme in `staticData.theme`; `__root.tsx` sets the value of the deepest route on `<html data-theme>`, from the server render on. On admin routes (`console`), that value is overridden by the persisted admin theme (with a boot script on `/admin` to avoid a flash).
 
 ## Data model
 
