@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseScoreInput, parseTimeInput } from './parse-score'
+import {
+  looksLikeTimeInput,
+  parseCustomScoreInput,
+  parseScoreInput,
+  parseTimeInput,
+} from './parse-score'
 
 const time = (raw: string) => parseScoreInput(raw, 'time')
 
@@ -16,7 +21,9 @@ describe('parseScoreInput', () => {
   })
 
   it('rejects points with more than 15 digits', () => {
-    expect(parseScoreInput('1'.repeat(15), 'points')).toBe(Number('1'.repeat(15)))
+    expect(parseScoreInput('1'.repeat(15), 'points')).toBe(
+      Number('1'.repeat(15)),
+    )
     expect(parseScoreInput('1'.repeat(16), 'points')).toBeNull()
   })
 })
@@ -78,5 +85,35 @@ describe('parseTimeInput', () => {
     expect(parseTimeInput(`32"1'`)).toEqual({ ok: false, error: 'format' })
     expect(parseTimeInput('1:32.4855')).toEqual({ ok: false, error: 'format' })
     expect(parseTimeInput('123456789')).toEqual({ ok: false, error: 'format' })
+  })
+})
+
+describe('parseCustomScoreInput', () => {
+  it('keeps pure digits as points', () => {
+    expect(parseCustomScoreInput('13248')).toEqual({
+      ok: true,
+      value: 13_248,
+      scoreType: 'points',
+    })
+    expect(looksLikeTimeInput('13248')).toBe(false)
+  })
+
+  it('parses recognizable time spellings as milliseconds', () => {
+    expect(parseCustomScoreInput(`1'32"48`)).toEqual({
+      ok: true,
+      value: 92_480,
+      scoreType: 'time',
+    })
+    expect(parseCustomScoreInput('1:32.48')).toEqual({
+      ok: true,
+      value: 92_480,
+      scoreType: 'time',
+    })
+    expect(looksLikeTimeInput(`1'32"48`)).toBe(true)
+  })
+
+  it('rejects empty or broken input', () => {
+    expect(parseCustomScoreInput('')).toEqual({ ok: false })
+    expect(parseCustomScoreInput(`1'75"00`)).toEqual({ ok: false })
   })
 })

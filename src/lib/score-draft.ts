@@ -25,6 +25,8 @@ export interface ScoreDraft {
   instagramHandle: string
   detectedGameId: string | null
   detectedScore: number | null
+  /** Set after a successful send; gates `?step=done` and clears on a new draft. */
+  sent: boolean
 }
 
 export const emptyScoreDraft = (): ScoreDraft => ({
@@ -40,6 +42,7 @@ export const emptyScoreDraft = (): ScoreDraft => ({
   instagramHandle: '',
   detectedGameId: null,
   detectedScore: null,
+  sent: false,
 })
 
 interface SessionStore {

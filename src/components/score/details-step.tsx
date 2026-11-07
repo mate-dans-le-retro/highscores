@@ -12,7 +12,11 @@ import { detectFromPhoto } from '#/lib/detect-from-photo'
 import type { DraftPhoto } from '#/lib/draft-photo'
 import { formatScore } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
-import { parseScoreInput, parseTimeInput } from '#/lib/parse-score'
+import {
+  parseCustomScoreInput,
+  parseScoreInput,
+  parseTimeInput,
+} from '#/lib/parse-score'
 import type { TimeInputError } from '#/lib/parse-score'
 import { writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
@@ -39,6 +43,16 @@ function formatPointsInput(digits: string) {
   const n = Number(digits)
   if (!Number.isFinite(n)) return digits
   return new Intl.NumberFormat('fr-FR').format(n)
+}
+
+function customScoreError(raw: string, touched: boolean): string | null {
+  if (!touched || !raw.trim()) return null
+  if (parseCustomScoreInput(raw).ok) return null
+  const timed = parseTimeInput(raw)
+  if (!timed.ok && /[h'":.,]|min|sec|mn/i.test(raw)) {
+    return TIME_ERRORS[timed.error]
+  }
+  return `On n'a pas compris ce score. Points en chiffres, ou un temps du genre 1'32"48.`
 }
 
 export function DetailsStep({
@@ -90,19 +104,34 @@ export function DetailsStep({
   }, [photo])
 
   const selectedGame = games.find((game) => game.id === draft.gameId) ?? null
-  const scoreType = selectedGame?.score_type ?? 'points'
+  const customScore = draft.customGame
+    ? parseCustomScoreInput(draft.scoreText)
+    : null
+  const scoreType = draft.customGame
+    ? customScore?.ok
+      ? customScore.scoreType
+      : 'points'
+    : (selectedGame?.score_type ?? 'points')
   const gameDetected =
     draft.detectedGameId !== null && draft.gameId === draft.detectedGameId
-  const scoreValue = parseScoreInput(draft.scoreText, scoreType)
+  const scoreValue = draft.customGame
+    ? customScore?.ok
+      ? customScore.value
+      : null
+    : parseScoreInput(draft.scoreText, scoreType)
   const scoreDetected =
     draft.detectedScore !== null && scoreValue === draft.detectedScore
 
+  const freeTextScore = draft.customGame || scoreType === 'time'
   const time =
     scoreType === 'time' && draft.scoreText.trim()
       ? parseTimeInput(draft.scoreText)
       : null
-  const timeError =
-    time && !time.ok && scoreTouched ? TIME_ERRORS[time.error] : null
+  const scoreError = draft.customGame
+    ? customScoreError(draft.scoreText, scoreTouched)
+    : time && !time.ok && scoreTouched
+      ? TIME_ERRORS[time.error]
+      : null
   const gameOk = draft.customGame
     ? (draft.customGameName?.trim().length ?? 0) > 0
     : Boolean(draft.gameId)
@@ -213,15 +242,15 @@ export function DetailsStep({
               id="score"
               className={cn(
                 'h-12 rounded-xl font-mono text-arcade-name',
-                timeError && 'border-ink-accent',
+                scoreError && 'border-ink-accent',
               )}
               value={
-                scoreType === 'time'
+                freeTextScore
                   ? draft.scoreText
                   : formatPointsInput(draft.scoreText.replace(/\s/g, ''))
               }
               onChange={(event) => {
-                if (scoreType === 'time') {
+                if (freeTextScore) {
                   patch({ scoreText: event.target.value })
                   return
                 }
@@ -233,8 +262,14 @@ export function DetailsStep({
               inputMode="numeric"
               autoComplete="off"
               enterKeyHint="done"
-              placeholder={scoreType === 'time' ? '13248' : '0'}
-              aria-invalid={Boolean(timeError)}
+              placeholder={
+                draft.customGame
+                  ? `128400 ou 1'32"48`
+                  : scoreType === 'time'
+                    ? '13248'
+                    : '0'
+              }
+              aria-invalid={Boolean(scoreError)}
               aria-describedby="score-hint"
               required
             />
@@ -243,13 +278,27 @@ export function DetailsStep({
               aria-live="polite"
               className={cn(
                 'text-body-sm',
-                timeError ? 'font-bold text-ink-accent' : 'text-ink-secondary',
+                scoreError ? 'font-bold text-ink-accent' : 'text-ink-secondary',
               )}
             >
-              {scoreType !== 'time' ? (
+              {draft.customGame ? (
+                scoreError ? (
+                  scoreError
+                ) : customScore?.ok && customScore.scoreType === 'time' ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    On lit
+                    <span className="font-display text-arcade-label leading-none text-ink-accent">
+                      {formatScore(customScore.value, 'time')}
+                    </span>
+                    .
+                  </span>
+                ) : (
+                  `Points en chiffres, ou un temps du genre 1'32"48.`
+                )
+              ) : scoreType !== 'time' ? (
                 "Tel qu'affiché sur l'écran du jeu."
-              ) : timeError ? (
-                timeError
+              ) : scoreError ? (
+                scoreError
               ) : time?.ok ? (
                 <span className="inline-flex items-center gap-1.5">
                   On lit
