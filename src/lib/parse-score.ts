@@ -171,7 +171,8 @@ export function parseScoreInput(raw: string, type: ScoreType): number | null {
 
   if (type === 'points' || type === 'other') {
     const digits = trimmed.replace(/\s/g, '')
-    if (!/^\d+$/.test(digits)) return null
+    // Same ceiling as admin parseScore and the SQL scores_score_check (10^15).
+    if (!/^\d{1,15}$/.test(digits)) return null
     return Number(digits)
   }
 
