@@ -31,7 +31,7 @@ pnpm build          # production build (.output/)
 pnpm lint           # ESLint (@tanstack/eslint-config)
 pnpm check          # Prettier check
 pnpm format         # Prettier + ESLint --fix
-pnpm test           # Vitest (src/**/*.test.ts)
+pnpm test           # Vitest (src/**/*.test.ts and *.test.tsx)
 pnpm typecheck      # type check (tsc --noEmit)
 
 pnpm vercel:login   # Vercel CLI login, once per machine
