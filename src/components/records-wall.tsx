@@ -45,21 +45,35 @@ const COLUMN_START: Record<number, string> = {
 const ROW_START: Record<number, string> = {
   1: 'row-start-1',
   2: 'row-start-2',
-  3: 'row-start-3',
 }
 
 /**
- * Band that clears the absolute "LES RECORDS" title and the global QR.
- * Both sit at `top-24` (96px overscan). QR is ~144px tall, so it ends near
- * 240px; 288px (`h-72`) leaves ~48px of air under the QR before the cards.
+ * Absolute title + QR sit at `top-24` (~96px) and the QR is ~144px tall, so
+ * it ends near 240px. The top flex spacer is at least 400px (≈160px of air
+ * under the QR); the bottom spacer is at least 160px so the purple above and
+ * below the block match in a full-HD frame (including the stage overscan).
  */
-const WALL_QR_CLEARANCE = 'h-72 shrink-0'
+const WALL_TOP_SPACER = 'min-h-[400px] flex-1'
+const WALL_BOTTOM_SPACER = 'min-h-40 flex-1'
+
+/** Two-row block: 220px rows + `gap-y-20` (80px). */
+const TWO_ROW_BLOCK_PX = 520
+/** Single-row block: one card row, same visual weight as one two-row track. */
+const ONE_ROW_BLOCK_PX = 240
+
+/**
+ * `wallCells` still speaks in 1/3 on a 4-track grid; the visual wall is two
+ * tracks, so row 3 maps to row-start-2.
+ */
+function visualRow(cellRow: number): 1 | 2 {
+  return cellRow <= 2 ? 1 : 2
+}
 
 /**
  * Projected "mur des records": one card per visible game (mockup p.2).
  * What each card says about the all-time record is in `wallCardView()`.
- * Cards keep the same size on every page; the rows of a partial page are
- * centred.
+ * The card block is a fixed height, vertically balanced under the QR (not
+ * stretched), with a row gap larger than the column gap so two rows breathe.
  */
 export function RecordsWall({
   records,
@@ -70,38 +84,16 @@ export function RecordsWall({
   const singleRow = records.length <= WALL_COLUMNS
   const cells = wallCells(records.length)
 
-  if (singleRow) {
-    return (
-      <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
-        <div className={WALL_QR_CLEARANCE} aria-hidden="true" />
-        <div className="flex min-h-0 flex-1 items-center justify-center pb-4">
-          <div
-            className="grid w-full grid-cols-6 gap-x-10"
-            // One row of a full 3×2 page, centred in the space under the QR.
-            style={{ height: 'min(100%, 52%)' }}
-          >
-            {records.map((record, i) => (
-              <RecordCard
-                key={record.game.id}
-                record={record}
-                showGameQr={showGameQr}
-                linkToGame={linkToGame}
-                className={cn(
-                  'col-span-2 min-h-0',
-                  COLUMN_START[cells[i].column],
-                )}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
-      <div className={WALL_QR_CLEARANCE} aria-hidden="true" />
-      <div className="grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-10 pb-4">
+      <div className={WALL_TOP_SPACER} aria-hidden="true" />
+      <div
+        className={cn(
+          'grid w-full shrink-0 grid-cols-6 gap-x-10',
+          singleRow ? 'grid-rows-1' : 'grid-rows-2 gap-y-20',
+        )}
+        style={{ height: singleRow ? ONE_ROW_BLOCK_PX : TWO_ROW_BLOCK_PX }}
+      >
         {records.map((record, i) => (
           <RecordCard
             key={record.game.id}
@@ -109,13 +101,14 @@ export function RecordsWall({
             showGameQr={showGameQr}
             linkToGame={linkToGame}
             className={cn(
-              'col-span-2 row-span-2',
+              'col-span-2 min-h-0',
               COLUMN_START[cells[i].column],
-              ROW_START[cells[i].row],
+              singleRow ? undefined : ROW_START[visualRow(cells[i].row)],
             )}
           />
         ))}
       </div>
+      <div className={WALL_BOTTOM_SPACER} aria-hidden="true" />
     </div>
   )
 }

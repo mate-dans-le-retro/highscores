@@ -348,11 +348,11 @@ function PublicScreen() {
           />
         ) : null}
         {/*
-          Locked views hide the nav thumbnails. Keep only the 96px overscan
-          (`pb-24`, 10-screens.md). A fake thumb row left a large empty band
-          under the wall; cards now clear the QR and share the remaining height.
+          Locked game view: keep the 96px overscan the pills used to reserve.
+          Locked wall: no spacer — RecordsWall balances its own top/bottom
+          bands (including overscan) so the card block is not stuck high.
         */}
-        {displayLocked ? (
+        {displayLocked && !showWall ? (
           <div aria-hidden="true" className="shrink-0 pb-24" />
         ) : null}
 
