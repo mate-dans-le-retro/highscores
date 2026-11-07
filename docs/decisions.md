@@ -61,8 +61,8 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 A projector or a future per-game cabinet can pin the public screen without changing admin settings:
 
-- `/?mode=wall` shows only the records wall (every game still on the wall) and hides the bottom navigation thumbnails. The "Nouveau record" takeover (new #1 overlay) still fires for every game.
-- `/?game=<slug>` shows only that visible game, hides the same thumbnails, and only plays that takeover for that game.
+- `/?mode=wall` shows only the records wall (every game still on the wall), hides the bottom navigation thumbnails and the top rotation progress bar, and keeps the 96px bottom overscan so the wall is not stuck to the edge. The "Nouveau record" takeover (new #1 overlay) still fires for every game.
+- `/?game=<slug>` shows only that visible game, hides the same chrome, keeps the same bottom overscan, and only plays that takeover for that game.
 - `/?mode=game` or `/?mode=both` still only override the rotation mix (same values as admin `screen_mode`); they do not lock.
 - When both `mode=wall` and `game=` are present, the wall wins.
 
