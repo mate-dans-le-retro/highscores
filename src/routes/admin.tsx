@@ -1,7 +1,8 @@
 import type { Session } from '@supabase/supabase-js'
 import { useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
-import { LogOut, MonitorPlay } from 'lucide-react'
+import { LogOut, Menu, MonitorPlay } from 'lucide-react'
+import { useState } from 'react'
 
 import { AppBar } from '#/components/admin/app-bar'
 import {
@@ -13,12 +14,19 @@ import { SignIn } from '#/components/admin/sign-in'
 import { ThemeToggle } from '#/components/admin/theme-toggle'
 import { Button } from '#/components/ui/button'
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '#/components/ui/sheet'
+import {
   currentUserHasPasswordQuery,
   sessionHasPasswordIdentity,
   signOut,
   submissionCountsQuery,
   useAdminAuth,
 } from '#/lib/admin'
+import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/admin')({
   staticData: { theme: 'console' },
@@ -98,20 +106,49 @@ function AdminTopBar({ email }: { email: string }) {
   const refetchInterval = useAdminRefetchInterval()
   const counts = useQuery({ ...submissionCountsQuery, refetchInterval })
   const pending = counts.data?.pending ?? 0
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <AppBar title="Highscores">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent sm:hidden"
+        aria-label="Menu"
+        title="Menu"
+        aria-expanded={menuOpen}
+        aria-controls="admin-mobile-nav"
+        onClick={() => setMenuOpen(true)}
+      >
+        <Menu aria-hidden="true" />
+      </Button>
       <nav
         className="mr-2 hidden items-center gap-1 sm:flex"
         aria-label="Sections"
       >
-        <NavTab to="/admin" exact pending={pending}>
-          Soumissions
-        </NavTab>
-        <NavTab to="/admin/games">Jeux</NavTab>
-        <NavTab to="/admin/settings">Écran</NavTab>
-        <NavTab to="/admin/users">Utilisateurs</NavTab>
+        <AdminNavLinks pending={pending} tone="bar" />
       </nav>
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent
+          id="admin-mobile-nav"
+          side="left"
+          className="gap-0 bg-surface-raised p-0 shadow-card sm:max-w-xs"
+        >
+          <SheetHeader className="border-b border-line-subtle">
+            <SheetTitle className="text-h5 text-ink-primary">
+              Navigation
+            </SheetTitle>
+          </SheetHeader>
+          <nav
+            className="flex flex-col gap-2 p-4"
+            aria-label="Sections"
+            onClick={() => setMenuOpen(false)}
+          >
+            <AdminNavLinks pending={pending} tone="panel" />
+          </nav>
+        </SheetContent>
+      </Sheet>
       <ThemeToggle />
       <div className="flex items-center gap-2 text-ink-on-accent sm:gap-3">
         {email ? (
@@ -156,24 +193,57 @@ function AdminTopBar({ email }: { email: string }) {
   )
 }
 
+function AdminNavLinks({
+  pending,
+  tone,
+}: {
+  pending: number
+  tone: 'bar' | 'panel'
+}) {
+  return (
+    <>
+      <NavTab to="/admin" exact pending={pending} tone={tone}>
+        Soumissions
+      </NavTab>
+      <NavTab to="/admin/games" tone={tone}>
+        Jeux
+      </NavTab>
+      <NavTab to="/admin/settings" tone={tone}>
+        Écran
+      </NavTab>
+      <NavTab to="/admin/users" tone={tone}>
+        Utilisateurs
+      </NavTab>
+    </>
+  )
+}
+
 function NavTab({
   to,
   children,
   exact = false,
   pending,
+  tone,
 }: {
   to: '/admin' | '/admin/games' | '/admin/settings' | '/admin/users'
   children: string
   exact?: boolean
   pending?: number
+  tone: 'bar' | 'panel'
 }) {
   return (
     <Link
       to={to}
       activeOptions={exact ? { exact: true } : undefined}
-      className={navPillBase}
+      className={cn(
+        navPillBase,
+        tone === 'panel' && 'w-full justify-start px-4 py-3',
+      )}
       inactiveProps={{
-        className: 'text-ink-on-accent hover:bg-brand-purple/25',
+        className:
+          tone === 'bar'
+            ? 'text-ink-on-accent hover:bg-brand-purple/25'
+            : 'text-ink-primary hover:bg-surface-sunken',
       }}
       activeProps={{
         className:
@@ -182,7 +252,14 @@ function NavTab({
     >
       {children}
       {pending != null && pending > 0 ? (
-        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-surface-raised px-1.5 text-xs text-ink-primary">
+        <span
+          className={cn(
+            'grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-xs',
+            tone === 'bar'
+              ? 'bg-surface-raised text-ink-primary'
+              : 'bg-surface-sunken text-ink-primary',
+          )}
+        >
           {pending}
         </span>
       ) : null}

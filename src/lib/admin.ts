@@ -1,4 +1,9 @@
-import { queryOptions, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  infiniteQueryOptions,
+  queryOptions,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
@@ -355,11 +360,25 @@ export const adminGamesQuery = queryOptions({
   },
 })
 
-/** Player submissions of one filter, newest first (posts to make: oldest first). */
+/** Page size for the admin submission queues (pending / rejected stay reachable). */
+export const SUBMISSIONS_PAGE_SIZE = 200
+
+/**
+ * Queue order: pending, rejected and to_post are oldest-first so volunteers
+ * clear the backlog; approved stays newest-first for a recent history.
+ */
+export function submissionsSortAscending(filter: SubmissionFilter): boolean {
+  return filter !== 'approved'
+}
+
+/** Player submissions of one filter, paginated in pages of {@link SUBMISSIONS_PAGE_SIZE}. */
 export const submissionsQuery = (filter: SubmissionFilter) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: ['admin', 'submissions', filter],
-    queryFn: async (): Promise<Array<AdminScore>> => {
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }): Promise<Array<AdminScore>> => {
+      const from = pageParam
+      const to = from + SUBMISSIONS_PAGE_SIZE - 1
       const base = getSupabase()
         .from('scores')
         .select('*')
@@ -372,11 +391,15 @@ export const submissionsQuery = (filter: SubmissionFilter) =>
               .is('instagram_post_id', null)
           : base.eq('status', filter)
       const { data, error } = await query
-        .order('created_at', { ascending: filter === 'to_post' })
-        .limit(200)
+        .order('created_at', { ascending: submissionsSortAscending(filter) })
+        .range(from, to)
       if (error) throw error
       return data as Array<AdminScore>
     },
+    getNextPageParam: (lastPage, _pages, lastPageParam) =>
+      lastPage.length < SUBMISSIONS_PAGE_SIZE
+        ? undefined
+        : lastPageParam + SUBMISSIONS_PAGE_SIZE,
   })
 
 export const submissionCountsQuery = queryOptions({

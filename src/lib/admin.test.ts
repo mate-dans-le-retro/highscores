@@ -9,6 +9,7 @@ import {
   placeFor,
   requiresCurrentPasswordForChange,
   sessionHasPasswordIdentity,
+  submissionsSortAscending,
 } from './admin'
 
 describe('parseScore', () => {
@@ -58,6 +59,18 @@ describe('placeFor', () => {
 
   it('ignores the score being edited', () => {
     expect(placeFor(250, ranking, 'desc', 'a')).toBe(1)
+  })
+})
+
+describe('submissionsSortAscending', () => {
+  it('puts pending, rejected and to_post oldest-first', () => {
+    expect(submissionsSortAscending('pending')).toBe(true)
+    expect(submissionsSortAscending('rejected')).toBe(true)
+    expect(submissionsSortAscending('to_post')).toBe(true)
+  })
+
+  it('keeps approved newest-first', () => {
+    expect(submissionsSortAscending('approved')).toBe(false)
   })
 })
 
