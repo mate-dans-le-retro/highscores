@@ -139,10 +139,12 @@ describe('screenOptions', () => {
     })
   })
 
-  it('locks the wall with ?mode=wall and ignores ?game=', () => {
-    expect(
-      screenOptions(DEFAULT_SETTINGS, { mode: 'wall', game: 'tetris' }),
-    ).toEqual({
+  it('locks the wall with ?mode=wall and ignores ?game= (no game filter)', () => {
+    const options = screenOptions(DEFAULT_SETTINGS, {
+      mode: 'wall',
+      game: 'tetris',
+    })
+    expect(options).toEqual({
       rotationMs: 15_000,
       gameDurationMs: 15_000,
       wallDurationMs: 20_000,
@@ -154,6 +156,8 @@ describe('screenOptions', () => {
       minAllTimeRows: 5,
       showHeader: false,
     })
+    // Takeover filtering keys off lockedGameSlug only; wall keeps every game.
+    expect(options.lockedGameSlug).toBeUndefined()
   })
 
   it('locks a single game with ?game=<slug>', () => {

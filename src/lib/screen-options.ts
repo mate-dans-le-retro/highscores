@@ -30,12 +30,16 @@ export const screenSearchSchema = z.object({
   rows: boundedInt(1, 10),
   minAllTime: boundedInt(1, 10),
   header: boundedInt(0, 1),
-  /** Overrides admin `screen_mode`. `wall` also locks the display (no pills). */
+  /**
+   * Overrides admin `screen_mode`. `wall` also locks the display (hides the
+   * bottom navigation thumbnails). The new-#1 takeover still fires for every
+   * game; the wall itself keeps showing every game's records.
+   */
   mode: screenModeParam,
   /**
    * Locks the public screen on this visible game slug (per-cabinet kiosk).
-   * Ignored when `mode=wall`. Hides rotation pills; new-record takeovers only
-   * fire for this game.
+   * Ignored when `mode=wall`. Hides the bottom navigation thumbnails; the
+   * new-#1 takeover only fires for this game.
    */
   game: gameSlugParam,
 })
@@ -56,7 +60,7 @@ export type ScreenDisplayOptions = {
   lockedGameSlug: string | undefined
   /**
    * True when the URL forces the wall (`mode=wall`) or a single game
-   * (`game=<slug>`): no rotation thumbnails.
+   * (`game=<slug>`): hide the bottom navigation thumbnails.
    */
   displayLocked: boolean
   rows: number

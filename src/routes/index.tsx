@@ -152,6 +152,8 @@ function PublicScreen() {
     }
     const found = findNewRecords(previousRecords.current, records.data)
     previousRecords.current = records.data
+    // New-#1 takeover: filter only on a locked game kiosk. Wall lock keeps
+    // every game (records on the wall + takeover overlay).
     const relevant = lockedGameSlug
       ? found.filter((entry) => entry.game.slug === lockedGameSlug)
       : found
