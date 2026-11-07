@@ -17,7 +17,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       className="text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
-      aria-label={isDark ? 'Passer en thème clair' : 'Passer en thème sombre'}
+      aria-label={isDark ? 'Thème clair' : 'Thème sombre'}
       title={isDark ? 'Thème clair' : 'Thème sombre'}
       onClick={() => {
         toggleAdminTheme(theme)

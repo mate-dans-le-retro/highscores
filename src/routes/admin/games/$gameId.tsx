@@ -80,7 +80,11 @@ function GameRecords() {
       <header className="flex flex-col gap-2">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon-sm">
-            <Link to="/admin/games" aria-label="Retour aux jeux">
+            <Link
+              to="/admin/games"
+              aria-label="Retour aux jeux"
+              title="Retour aux jeux"
+            >
               <ArrowLeft />
             </Link>
           </Button>
@@ -271,6 +275,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label="Annuler"
+                title="Annuler"
                 onClick={() => setEditing(false)}
               >
                 <X />
@@ -278,6 +283,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
               <Button
                 size="icon-sm"
                 aria-label="Enregistrer"
+                title="Enregistrer"
                 disabled={parsed === null || save.isPending}
                 onClick={() => save.mutate()}
               >
@@ -308,6 +314,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label={`Modifier le score de ${score.player_name ?? 'Sans nom'}`}
+                title={`Modifier le score de ${score.player_name ?? 'Sans nom'}`}
                 onClick={() => setEditing(true)}
               >
                 <Pencil />
@@ -316,6 +323,7 @@ function RankingRow({ score, game }: { score: RankedScore; game: AdminGame }) {
                 variant="ghost"
                 size="icon-sm"
                 aria-label={`Supprimer le score de ${score.player_name ?? 'Sans nom'}`}
+                title={`Supprimer le score de ${score.player_name ?? 'Sans nom'}`}
                 onClick={() => setConfirmDelete(true)}
               >
                 <Trash2 />
