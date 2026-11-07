@@ -15,8 +15,8 @@ import {
   isValidInstagramHandle,
   normalizeInstagramHandle,
 } from '#/lib/instagram-handle'
-import { randomUuid } from '#/lib/random-uuid'
-import { writeScoreDraft } from '#/lib/score-draft'
+import { draftPhotos } from '#/lib/draft-photo'
+import { resetScoreDraftKeepName, writeScoreDraft } from '#/lib/score-draft'
 import type { ScoreDraft } from '#/lib/score-draft'
 import {
   CHARACTERS_BY_SLUG,
@@ -25,7 +25,7 @@ import {
   submitScore,
 } from '#/lib/highscores'
 import type { DisplayedGame } from '#/lib/highscores'
-import { parseScoreInput } from '#/lib/parse-score'
+import { parseCustomScoreInput, parseScoreInput } from '#/lib/parse-score'
 import { submissionErrorMessage } from '#/lib/submission-error'
 import { cn } from '#/lib/utils'
 
@@ -54,8 +54,19 @@ export function ConsentStep({
   const gameLabel = draft.customGame
     ? (draft.customGameName?.trim() ?? 'Autre jeu')
     : (game?.name ?? 'Jeu')
-  const scoreType = game?.score_type ?? 'points'
-  const scoreValue = parseScoreInput(draft.scoreText, scoreType)
+  const customScore = draft.customGame
+    ? parseCustomScoreInput(draft.scoreText)
+    : null
+  const scoreType = draft.customGame
+    ? customScore?.ok
+      ? customScore.scoreType
+      : 'points'
+    : (game?.score_type ?? 'points')
+  const scoreValue = draft.customGame
+    ? customScore?.ok
+      ? customScore.value
+      : null
+    : parseScoreInput(draft.scoreText, scoreType)
   const scoreLabel =
     scoreValue === null ? draft.scoreText : formatScore(scoreValue, scoreType)
   // A hidden field is never sent: off screen, the score has no name at all.
@@ -109,10 +120,15 @@ export function ConsentStep({
         detected_game_id: draft.detectedGameId,
         detected_score: draft.detectedScore,
       })
-      // The next score of this draft is another score.
-      patch({ submissionId: randomUuid() })
+      // Clear the form so back / reopen cannot resubmit the same pending.
+      const next = resetScoreDraftKeepName(draft)
+      next.sent = true
+      writeScoreDraft(next)
+      onDraftChange(next)
+      await draftPhotos.clear()
       await navigate({
         search: (prev) => ({ ...prev, step: 'done' }),
+        replace: true,
       })
     } catch (caught) {
       setError(submissionErrorMessage(caught))

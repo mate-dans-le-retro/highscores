@@ -246,7 +246,8 @@ export function photoFileType(photo: Blob) {
     fromName && /^[a-z0-9]{1,5}$/.test(fromName) ? fromName : 'jpg'
   if (HEIF_EXTENSION.test(`.${extension}`) || HEIF_MIME.test(photo.type)) {
     return {
-      extension: extension === 'heif' || extension === 'hif' ? extension : 'heic',
+      extension:
+        extension === 'heif' || extension === 'hif' ? extension : 'heic',
       contentType: photo.type === 'image/heif' ? 'image/heif' : 'image/heic',
     }
   }

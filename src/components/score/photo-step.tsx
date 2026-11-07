@@ -4,7 +4,11 @@ import { useRef, useState } from 'react'
 
 import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
 import { Button } from '@/components/ui/button'
-import { PHOTO_ACCEPT, isAllowedPhotoMime, preparePhoto } from '#/lib/data/photo'
+import {
+  PHOTO_ACCEPT,
+  isAllowedPhotoMime,
+  preparePhoto,
+} from '#/lib/data/photo'
 import { draftPhotos } from '#/lib/draft-photo'
 import type { ScoreDraft } from '#/lib/score-draft'
 

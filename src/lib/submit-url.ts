@@ -21,13 +21,20 @@ export function submitScoreUrl(
   return url.href
 }
 
-/** Null until mounted: the origin is only known in the browser. */
+/**
+ * Browser: sync from `window` on the first render so the public QR is not
+ * empty for a frame. SSR / first server pass: null until the client effect.
+ */
 export function useSubmitScoreUrl(
   mock: boolean,
   options: SubmitScoreUrlOptions = {},
 ) {
   const gameSlug = options.gameSlug ?? null
-  const [url, setUrl] = useState<string | null>(null)
+  const [url, setUrl] = useState<string | null>(() =>
+    typeof window === 'undefined'
+      ? null
+      : submitScoreUrl(window.location.origin, mock, { gameSlug }),
+  )
   useEffect(() => {
     setUrl(submitScoreUrl(window.location.origin, mock, { gameSlug }))
   }, [mock, gameSlug])
