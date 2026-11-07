@@ -37,6 +37,7 @@ import {
   useInvalidateAdmin,
 } from '#/lib/admin'
 import type { AdminGame, RankedScore } from '#/lib/admin'
+import { PHOTO_ACCEPT, isAllowedPhotoMime } from '#/lib/data/photo'
 import { formatScore, formatScoreWhen } from '#/lib/format'
 import { useReadablePhotoUrl } from '#/lib/readable-photo'
 import { cn } from '#/lib/utils'
@@ -402,9 +403,16 @@ function ManualScoreForm({ game }: { game: AdminGame }) {
         </span>
         <input
           type="file"
-          accept="image/*"
+          accept={PHOTO_ACCEPT}
           className="sr-only"
-          onChange={(event) => setPhoto(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            const file = event.target.files?.[0] ?? null
+            if (file?.type && !isAllowedPhotoMime(file.type)) {
+              setPhoto(null)
+              return
+            }
+            setPhoto(file)
+          }}
         />
       </label>
       <label className="flex items-start gap-3">

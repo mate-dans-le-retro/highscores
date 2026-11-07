@@ -24,6 +24,7 @@ import {
   useInvalidateAdmin,
 } from '#/lib/admin'
 import type { AdminGame, GameInput } from '#/lib/admin'
+import { COVER_ACCEPT, isAllowedCoverMime } from '#/lib/data/photo'
 import type { ScoreOrder, ScoreType } from '#/lib/data/types'
 import { cn } from '#/lib/utils'
 
@@ -155,6 +156,7 @@ function GameForm({
   function pickCover(file: File | undefined) {
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (!file) return
+    if (file.type && !isAllowedCoverMime(file.type)) return
     setPendingCrop({ src: URL.createObjectURL(file), name: file.name })
   }
 
@@ -256,7 +258,7 @@ function GameForm({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
+              accept={COVER_ACCEPT}
               className="sr-only"
               onChange={(event) => pickCover(event.target.files?.[0])}
             />

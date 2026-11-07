@@ -4,7 +4,12 @@ import type { Session } from '@supabase/supabase-js'
 
 import { randomUuid } from './random-uuid'
 import { getSupabase } from './supabase'
-import { isOriginalPhoto, photoFileType, preparePhoto } from './data/photo'
+import {
+  isAllowedCoverMime,
+  isOriginalPhoto,
+  photoFileType,
+  preparePhoto,
+} from './data/photo'
 import { isBetter } from './data/records'
 import { rankScores } from './data/ranking'
 import type {
@@ -655,10 +660,14 @@ function extensionOf(file: Blob) {
 }
 
 async function uploadCover(gameSlug: string, cover: File) {
+  const contentType = cover.type || 'image/jpeg'
+  if (!isAllowedCoverMime(contentType)) {
+    throw new Error('Unsupported cover type (use JPEG, PNG or WebP)')
+  }
   const path = `${gameSlug}-${randomUuid().slice(0, 8)}.${extensionOf(cover)}`
   const { error } = await getSupabase()
     .storage.from('covers')
-    .upload(path, cover, { contentType: cover.type || 'image/png' })
+    .upload(path, cover, { contentType })
   if (error) throw error
   return path
 }
