@@ -32,6 +32,19 @@ With `VITE_DATA_SOURCE` commented out, `pnpm dev` talks to the real Supabase pro
 
 Without Vercel access, or with a local Supabase (`pnpm supabase start`, needs Docker), set `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in `.env.development.local` instead.
 
+## Regenerate Supabase types
+
+Domain types in `src/lib/data/types.ts` stay hand-written. After a schema change, regenerate the raw Postgres client types into `src/lib/database.types.ts`:
+
+```bash
+pnpm supabase:login   # once per machine
+pnpm supabase:link    # once per checkout
+pnpm supabase start   # local Docker stack
+pnpm supabase:types   # writes src/lib/database.types.ts
+```
+
+Against the linked remote project instead of local Docker: `pnpm supabase:types:remote`. Wire generated table types into the domain layer gradually; do not replace `types.ts` wholesale in one go.
+
 ## Check before pushing
 
 ```bash

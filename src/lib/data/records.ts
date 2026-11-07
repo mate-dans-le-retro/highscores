@@ -30,3 +30,23 @@ export function findNewRecords(
     return [{ game, record: current, previous, all_time }]
   })
 }
+
+/**
+ * Celebration queue after a reconnect catch-up: drop older queued takeovers
+ * and keep only the newest record (by `created_at`). Empty `found` leaves the
+ * queue unchanged.
+ */
+export function keepNewestCelebration(
+  queue: Array<NewRecord>,
+  found: Array<NewRecord>,
+): Array<NewRecord> {
+  if (found.length === 0) return queue
+  const candidates = [...queue, ...found]
+  let newest = candidates[0]
+  for (const candidate of candidates.slice(1)) {
+    if (candidate.record.created_at >= newest.record.created_at) {
+      newest = candidate
+    }
+  }
+  return [newest]
+}

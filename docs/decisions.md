@@ -61,6 +61,14 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 `pnpm test` runs Vitest on plain TypeScript modules (ranking, score formatting, new record detection, anonymization, mock switch, screen options). It has its own `vitest.config.ts`, without the TanStack Start plugins.
 
+## 2026-11-07: Vitest also covers hooks and a ScoreTable smoke
+
+`src/**/*.test.tsx` files run under jsdom (pragma on each file) with Testing Library. They cover `useHighscoresRealtime` (invalidate, public reload timer, one-shot admin warn) and a `ScoreTable` smoke. Plain `*.test.ts` modules stay on the default node environment.
+
+## 2026-11-07: Playwright smoke base (mock mode)
+
+`pnpm test:e2e` runs Playwright against a production preview on port 4173. The build sets `VITE_DATA_SOURCE=mock` and the smoke hits `/?mock=1` and `/score?mock=1`, so no Supabase is required. Install Chromium once with `pnpm test:e2e:install`. CI does not run E2E yet.
+
 ## 2026-11-05: anonymous nicknames, dual photos, screen leaderboard shape
 
 - Anonymous nicknames are generated (character + qualifier + optional flourish, French agreement), seeded by the normalized player name and the game id, so one nickname per player per game. Per-game character lists with a long pop-culture fallback live in `src/lib/data/anonymous-name.ts` for Claude to reuse on the server.
@@ -180,13 +188,24 @@ Venue wifi drops the Supabase channel; a phone admin that was backgrounded can l
 
 - Public `/` and admin both subscribe to `change_signals` through `useHighscoresRealtime`.
 - While reconnecting, TanStack Query polls every 10 seconds (`realtimeFallbackInterval`).
-- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin.
-- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins.
+- After 60 seconds still down: the public screen hard-reloads once the site answers a `HEAD`; the admin opens a dialog once and keeps polling (no reload), same split as Tournaments projector vs admin. Superseded by "public screen trusts poll over hard-reload" below.
+- `keepSubscribed` also resubscribes on tab resume (`visibilitychange` / `focus`), marking disconnected so polling starts until the new channel joins. Superseded by "soft resume + freshness watchdog" below.
 - Migration `20261106220000_signal_pending_scores`: every insert, update or delete on `scores` bumps the `scores` signal (pending included). The public still reads only approved rows; a pending bump only causes a harmless refetch there. Superseded by "admin_scores topic for pending Realtime" below.
 
 ## 2026-11-07: admin_scores topic for pending Realtime
 
 Pending score writes used to bump the public `scores` topic, which leaked submission timing to anon through Realtime. Approved changes still bump `scores`. Every score write bumps `admin_scores`, readable only when `public.is_admin()`. The client maps `admin_scores` to the same query invalidation as `scores`.
+
+## 2026-11-07: public screen trusts poll over hard-reload
+
+A Realtime-only outage (Vercel still up) used to hard-reload the projector every ~60 s. `pageIsReachable` only HEADs the app HTML, so the poll already kept scores fresh while the reload blinked the screen, cut rotation and dumped the "nouveau record" queue. The public screen no longer passes `reloadAfterMs`: it keeps the 10 s TanStack poll and `keepSubscribed` reconnect. Admin still warns once after 60 s disconnected (no reload). Optional reload-on-sustained-fetch-failure was left out; a quiet poll is enough for the weekend.
+
+## 2026-11-07: soft resume + freshness watchdog
+
+Two Realtime flaps on the projector / phone admin:
+
+- Tab resume (`visibilitychange` / `focus`) used to emit `disconnected` before resubscribing, even when the channel was healthy, which armed poll (and the old public reload timer). Resume now soft-resubscribes and only marks lost if the new attempt fails or the browser is offline.
+- A channel can stay `connected` as a zombie without `CHANNEL_ERROR`. Prefer a light freshness watchdog over a permanent micro-poll: while connected, if no join or `change_signals` activity arrives for `REALTIME_FRESHNESS_MS` (3 min), force `disconnected` so the 10 s poll starts and reconnect runs. Activity reports reset the timer.
 
 ## 2026-11-05: game covers are cropped square before upload
 
@@ -211,3 +230,7 @@ The wall had no QR while empty "À prendre !" cards begged for one. Light UX shi
 - **Global QR** always on the wall (top right), pointing at `/score` with no game. A player can send any score without waiting for a game slide.
 - **Per-game QR** only where the layout has room: empty wall cards and the empty-game invite, as `/score?game=<slug>`. Filled wall cards stay photo + score (no second QR). The game-slide "À toi de jouer" panel also uses `?game=<slug>` for the game on screen; a second global QR there would crowd the aside, and the wall already carries the unscoped one.
 - **Form**: `?game=` preselects that visible game on step 2 when the draft has no game yet; the tiles stay changeable. Unknown slugs are ignored.
+
+## 2026-11-07: archive rejects leftover non-approved scores
+
+`archive_current_event` used to leave pending (and already rejected) scores on the closing event. Approving a leftover pending afterward kept it on that archived event, so it never showed on the new board. The RPC now rejects every non-approved score of the current event in the same transaction (`status = rejected`, `rejection_reason = 'Édition archivée'`, `reviewed_at = now()`, `reviewed_by = auth.uid()`) before opening the new event. Approved scores stay put for the all-time record. Pendings are not moved to the new event.

@@ -1,5 +1,8 @@
-// Hand-written rows, in snake_case like Postgres. To be replaced by
-// `supabase gen types` plus a mapping once the schema catches up.
+// Hand-written domain rows, in snake_case like Postgres. Regenerate raw
+// Postgres client types with `pnpm supabase:login`, `pnpm supabase:link`, then
+// `pnpm supabase:types` (local Docker) or `pnpm supabase:types:remote`; output
+// is `src/lib/database.types.ts`. Map from those tables into these domain
+// types gradually — no full swap required each time.
 
 import type { PreparedPhoto } from './photo'
 

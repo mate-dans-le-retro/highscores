@@ -15,13 +15,27 @@ describe('seedGameFromSearch', () => {
     expect(next?.customGame).toBe(false)
   })
 
-  it('leaves an already picked game alone', () => {
+  it('overrides an already picked game when the QR slug differs', () => {
     const draft = { ...emptyScoreDraft(), gameId: 'g-tetris' }
-    expect(seedGameFromSearch(draft, games, 'duck-hunt')).toBeNull()
+    const next = seedGameFromSearch(draft, games, 'duck-hunt')
+    expect(next?.gameId).toBe('g-duck')
+    expect(next?.customGame).toBe(false)
   })
 
-  it('leaves "Un autre jeu" alone', () => {
-    const draft = { ...emptyScoreDraft(), customGame: true }
+  it('overrides "Un autre jeu" when a visible QR slug is present', () => {
+    const draft = {
+      ...emptyScoreDraft(),
+      customGame: true,
+      customGameName: 'Pong',
+    }
+    const next = seedGameFromSearch(draft, games, 'duck-hunt')
+    expect(next?.gameId).toBe('g-duck')
+    expect(next?.customGame).toBe(false)
+    expect(next?.customGameName).toBeNull()
+  })
+
+  it('leaves the draft alone when the slug already matches', () => {
+    const draft = { ...emptyScoreDraft(), gameId: 'g-duck' }
     expect(seedGameFromSearch(draft, games, 'duck-hunt')).toBeNull()
   })
 

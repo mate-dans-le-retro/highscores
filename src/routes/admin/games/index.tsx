@@ -21,8 +21,10 @@ import {
   GameHasScoresError,
   adminGamesQuery,
   approvedScoresQuery,
+  countGameScores,
   currentEventQuery,
   deleteGame,
+  deleteGameBlockedMessage,
   rankGameScores,
   reorderGames,
   setGameVisible,
@@ -73,11 +75,7 @@ function Games() {
     },
     onError: (error) => {
       if (error instanceof GameHasScoresError) {
-        setDeleteError(
-          error.count === 1
-            ? 'Ce jeu a encore 1 score (validé, en attente ou refusé). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
-            : `Ce jeu a encore ${error.count} scores (validés, en attente ou refusés). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`,
-        )
+        setDeleteError(deleteGameBlockedMessage(error.count))
         return
       }
       setDeleteError(
@@ -307,18 +305,30 @@ function Games() {
                                   size="icon-sm"
                                   aria-label={`Supprimer ${game.name}`}
                                   title={`Supprimer ${game.name}`}
+                                  disabled={remove.isPending}
                                   onClick={() => {
-                                    if (ranking.length > 0) {
-                                      setConfirmDeleteId(null)
-                                      setDeleteError(
-                                        ranking.length === 1
-                                          ? 'Ce jeu a encore 1 score validé. Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
-                                          : `Ce jeu a encore ${ranking.length} scores validés. Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`,
-                                      )
-                                      return
-                                    }
-                                    setDeleteError(null)
-                                    setConfirmDeleteId(game.id)
+                                    void (async () => {
+                                      setDeleteError(null)
+                                      try {
+                                        // Same count as deleteGame: any status,
+                                        // any event — not only approved ranking.
+                                        const count = await countGameScores(
+                                          game.id,
+                                        )
+                                        if (count > 0) {
+                                          setConfirmDeleteId(null)
+                                          setDeleteError(
+                                            deleteGameBlockedMessage(count),
+                                          )
+                                          return
+                                        }
+                                        setConfirmDeleteId(game.id)
+                                      } catch {
+                                        setDeleteError(
+                                          'Impossible de vérifier les scores. Réessaie dans un instant.',
+                                        )
+                                      }
+                                    })()
                                   }}
                                 >
                                   <Trash2 />

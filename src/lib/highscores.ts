@@ -31,7 +31,7 @@ export {
   gameSlugFromId,
 } from './data/anonymous-name'
 export { displayedPlayerName } from './data/anonymize'
-export { findNewRecords } from './data/records'
+export { findNewRecords, keepNewestCelebration } from './data/records'
 export { DEFAULT_SETTINGS } from './data/source'
 export {
   formatScore,
@@ -43,9 +43,7 @@ export { isMock }
 export type { MockPendingScore } from './data/mock/mock-source'
 export { mockTools }
 export type { ConnectionStatus }
-
-/** Public screen: hard reload after this long without realtime. */
-export const PUBLIC_RELOAD_AFTER_MS = 60_000
+export { REALTIME_FRESHNESS_MS } from './data/realtime-connection'
 
 /** Admin: warn once after this long disconnected; keep polling forever. */
 export const ADMIN_WARN_AFTER_MS = 60_000
@@ -101,7 +99,10 @@ const invalidatedBy: Record<ChangedTable, Array<string>> = {
 }
 
 export type HighscoresRealtimeOptions = {
-  /** Public screen: full page reload after this long disconnected. */
+  /**
+   * Optional hard reload after this long disconnected. Unused on the public
+   * screen: the 10 s poll already refreshes data while Realtime is down.
+   */
   reloadAfterMs?: number
   /** Admin: fire once after this long disconnected; keep trying forever. */
   warnAfterMs?: number
@@ -112,7 +113,8 @@ export type HighscoresRealtimeOptions = {
  * Refreshes the queries as soon as a score, a game or a setting changes.
  * On disconnect: keepSubscribed reconnects; callers should poll meanwhile.
  * On reconnect: refetch once to catch events missed while down.
- * Public: optional hard reload after `reloadAfterMs`.
+ * Optional hard reload after `reloadAfterMs` (kept for callers that want it;
+ * the public projector does not — poll covers a Realtime-only outage).
  * Admin: optional one-shot warn after `warnAfterMs` (no reload).
  */
 export function useHighscoresRealtime(
