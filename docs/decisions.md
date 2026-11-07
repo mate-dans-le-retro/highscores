@@ -61,6 +61,10 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 `pnpm test` runs Vitest on plain TypeScript modules (ranking, score formatting, new record detection, anonymization, mock switch, screen options). It has its own `vitest.config.ts`, without the TanStack Start plugins.
 
+## 2026-11-07: Vitest also covers hooks and a ScoreTable smoke
+
+`src/**/*.test.tsx` files run under jsdom (pragma on each file) with Testing Library. They cover `useHighscoresRealtime` (invalidate, public reload timer, one-shot admin warn) and a `ScoreTable` smoke. Plain `*.test.ts` modules stay on the default node environment.
+
 ## 2026-11-05: anonymous nicknames, dual photos, screen leaderboard shape
 
 - Anonymous nicknames are generated (character + qualifier + optional flourish, French agreement), seeded by the normalized player name and the game id, so one nickname per player per game. Per-game character lists with a long pop-culture fallback live in `src/lib/data/anonymous-name.ts` for Claude to reuse on the server.
