@@ -89,7 +89,11 @@ Everyone at the venue shares one wifi, so a limit per IP would block the room. A
 
 ## 2026-11-05: the photos bucket accepts any image type
 
-A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one.
+A photo is never refused: some phones send `image/heif` or no type at all. The bucket accepts `image/*` (still no HTML or scripts). The browser uploads a ~2000 px proof (`photo_path`, for the admin) and a ~800 px thumbnail (`thumb_path`, for the screen) when it can resize; `public_scores()` returns the thumbnail when there is one. Superseded by "Storage MIME without SVG" below.
+
+## 2026-11-07: Storage MIME without SVG
+
+Opening an SVG from the public Storage origin can run script there. The `photos` bucket is limited to JPEG, PNG, WebP, HEIC and HEIF; `covers` to JPEG, PNG and WebP. The player form and admin file pickers use the same lists. Demo placeholders under `photos/demo/` are PNG.
 
 ## 2026-11-05: an admin for the weekend, simple first
 

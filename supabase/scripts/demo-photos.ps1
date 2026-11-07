@@ -4,10 +4,10 @@
   linked project, or removes them with -Remove.
 
 .DESCRIPTION
-  The SVG files of photos/demo/ in this folder are placeholders drawn for this
+  The PNG files of photos/demo/ in this folder are placeholders drawn for this
   repository (no third-party image, no real person). Their folder mirrors
   their path in the bucket. demo-seed.sql links a demo score to
-  photos/demo/<name>.svg only when the file is already in the bucket: upload
+  photos/demo/<name>.png only when the file is already in the bucket: upload
   first, then run (or run again) demo-seed.sql.
 
   Upload: one recursive copy of the local folder named demo into the root of
@@ -45,8 +45,8 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..\..')
 # relative to the repository root, with forward slashes.
 $localFolder = 'supabase/scripts/photos/demo'
 $photos = Get-ChildItem (Join-Path $repoRoot $localFolder) -File | Sort-Object Name
-if ($photos | Where-Object Extension -ne '.svg') {
-  throw "$localFolder must only hold the demo SVG files: all of it is uploaded."
+if ($photos | Where-Object Extension -ne '.png') {
+  throw "$localFolder must only hold the demo PNG files: all of it is uploaded."
 }
 
 # Storage commands are experimental in the Supabase CLI 3.
@@ -72,7 +72,7 @@ try {
   # which always exists: the files land in photos/demo/, whatever is there.
   Invoke-Cli @(
     'storage', 'cp', '--recursive', $localFolder, 'ss:///photos/',
-    '--content-type', 'image/svg+xml', '--jobs', '4'
+    '--content-type', 'image/png', '--jobs', '4'
   )
   Write-Host "$($photos.Count) photos in photos/demo/. Run demo-seed.sql (again) to link them."
 }

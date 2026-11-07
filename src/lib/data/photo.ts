@@ -4,6 +4,36 @@ export interface PreparedPhoto {
   thumb: Blob
 }
 
+/** MIME types allowed in the photos Storage bucket (no SVG). */
+export const PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+] as const
+
+/** MIME types allowed in the covers Storage bucket (no SVG). */
+export const COVER_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+] as const
+
+export const PHOTO_ACCEPT = [...PHOTO_MIME_TYPES, '.heic', '.heif'].join(',')
+export const COVER_ACCEPT = COVER_MIME_TYPES.join(',')
+
+const PHOTO_MIME_SET = new Set<string>(PHOTO_MIME_TYPES)
+const COVER_MIME_SET = new Set<string>(COVER_MIME_TYPES)
+
+export function isAllowedPhotoMime(type: string) {
+  return PHOTO_MIME_SET.has(type.toLowerCase())
+}
+
+export function isAllowedCoverMime(type: string) {
+  return COVER_MIME_SET.has(type.toLowerCase())
+}
+
 export const PROOF_SIZE = { maxSize: 2000, quality: 0.85 }
 export const THUMB_SIZE = { maxSize: 800, quality: 0.7 }
 
@@ -202,18 +232,29 @@ export async function preparePhoto(
   return { proof: photo, thumb: photo }
 }
 
-/** Extension and Content-Type for the photos bucket (which takes any image/*). */
+/** Extension and Content-Type for the photos bucket (jpeg/png/webp/heic/heif). */
 export function photoFileType(photo: Blob) {
   if (photo.type === 'image/jpeg')
     return { extension: 'jpg', contentType: 'image/jpeg' }
+  if (photo.type === 'image/png')
+    return { extension: 'png', contentType: 'image/png' }
+  if (photo.type === 'image/webp')
+    return { extension: 'webp', contentType: 'image/webp' }
   const fromName =
     photo instanceof File ? photo.name.split('.').pop()?.toLowerCase() : null
   const extension =
     fromName && /^[a-z0-9]{1,5}$/.test(fromName) ? fromName : 'jpg'
-  const guessed = HEIF_EXTENSION.test(`.${extension}`)
-    ? 'image/heic'
-    : 'image/jpeg'
-  return { extension, contentType: photo.type || guessed }
+  if (HEIF_EXTENSION.test(`.${extension}`) || HEIF_MIME.test(photo.type)) {
+    return {
+      extension: extension === 'heif' || extension === 'hif' ? extension : 'heic',
+      contentType: photo.type === 'image/heif' ? 'image/heif' : 'image/heic',
+    }
+  }
+  const contentType = photo.type || 'image/jpeg'
+  if (!isAllowedPhotoMime(contentType)) {
+    throw new Error('Unsupported photo type (use JPEG, PNG, WebP or HEIC)')
+  }
+  return { extension, contentType }
 }
 
 /** True when preparePhoto had to keep the original file. */

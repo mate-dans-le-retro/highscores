@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 
 import { DraftPhotoPreview } from '@/components/score/draft-photo-preview'
 import { Button } from '@/components/ui/button'
-import { preparePhoto } from '#/lib/data/photo'
+import { PHOTO_ACCEPT, isAllowedPhotoMime, preparePhoto } from '#/lib/data/photo'
 import { draftPhotos } from '#/lib/draft-photo'
 import type { ScoreDraft } from '#/lib/score-draft'
 
@@ -23,6 +23,10 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
 
   async function handleFile(file: File | undefined) {
     if (!file) return
+    if (file.type && !isAllowedPhotoMime(file.type)) {
+      setError('Format non pris en charge. Utilise JPEG, PNG, WebP ou HEIC.')
+      return
+    }
     setBusy('preparing')
     setError(null)
     try {
@@ -148,7 +152,7 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
           <input
             ref={cameraInputRef}
             type="file"
-            accept="image/*,.heic,.heif"
+            accept={PHOTO_ACCEPT}
             capture="environment"
             className="sr-only"
             onChange={(event) => {
@@ -159,7 +163,7 @@ export function PhotoStep({ draft, photoUrl, onDraftChange }: PhotoStepProps) {
           <input
             ref={galleryInputRef}
             type="file"
-            accept="image/*,.heic,.heif"
+            accept={PHOTO_ACCEPT}
             className="sr-only"
             onChange={(event) => {
               void handleFile(event.target.files?.[0])
