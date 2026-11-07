@@ -3,6 +3,7 @@ import {
   queryOptions,
   useQuery,
   useQueryClient,
+  type InfiniteData,
 } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
@@ -509,6 +510,45 @@ export async function setUserAdmin(userId: string, makeAdmin: boolean) {
 export function useInvalidateAdmin() {
   const queryClient = useQueryClient()
   return () => queryClient.invalidateQueries({ queryKey: ['admin'] })
+}
+
+/**
+ * Detail panel target for the submission list. When `selectedId` is set but
+ * missing from the list (left the queue, stale page), return undefined rather
+ * than silently falling back to another row: that fallback showed the wrong
+ * score after validate + realtime refresh.
+ */
+export function resolveSelectedSubmission<T extends { id: string }>(
+  list: Array<T>,
+  selectedId: string | null,
+): T | undefined {
+  if (selectedId !== null)
+    return list.find((row) => row.id === selectedId)
+  return list[0]
+}
+
+/** Id to select after `removedId` leaves the queue (same index, else last). */
+export function nextIdAfterRemoving(
+  list: Array<{ id: string }>,
+  removedId: string,
+): string | null {
+  const index = list.findIndex((row) => row.id === removedId)
+  const remaining = list.filter((row) => row.id !== removedId)
+  if (remaining.length === 0) return null
+  if (index < 0) return remaining[0]?.id ?? null
+  return remaining[Math.min(index, remaining.length - 1)]?.id ?? null
+}
+
+/** Drop one score from every page of an infinite submissions query. */
+export function removeIdFromInfinitePages<T extends { id: string }>(
+  data: InfiniteData<Array<T>> | undefined,
+  id: string,
+): InfiniteData<Array<T>> | undefined {
+  if (!data) return data
+  return {
+    ...data,
+    pages: data.pages.map((page) => page.filter((row) => row.id !== id)),
+  }
 }
 
 // ---------------------------------------------------------------------------

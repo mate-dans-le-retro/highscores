@@ -8,10 +8,13 @@ import {
   defaultShortLabel,
   deleteGameBlockedMessage,
   isScoreRuleLocked,
+  nextIdAfterRemoving,
   parseScore,
   passwordUpdateErrorMessage,
   placeFor,
+  removeIdFromInfinitePages,
   requiresCurrentPasswordForChange,
+  resolveSelectedSubmission,
   scorePhotoPaths,
   sessionHasPasswordIdentity,
   submissionsSortAscending,
@@ -106,6 +109,56 @@ describe('submissionsSortAscending', () => {
 
   it('keeps approved newest-first', () => {
     expect(submissionsSortAscending('approved')).toBe(false)
+  })
+})
+
+describe('resolveSelectedSubmission', () => {
+  const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+
+  it('returns the matching row when selectedId is set', () => {
+    expect(resolveSelectedSubmission(list, 'b')).toEqual({ id: 'b' })
+  })
+
+  it('does not fall back to another row when selectedId is missing', () => {
+    expect(resolveSelectedSubmission(list, 'gone')).toBeUndefined()
+  })
+
+  it('falls back to the first row only when nothing is selected yet', () => {
+    expect(resolveSelectedSubmission(list, null)).toEqual({ id: 'a' })
+    expect(resolveSelectedSubmission([], null)).toBeUndefined()
+  })
+})
+
+describe('nextIdAfterRemoving', () => {
+  const list = [{ id: 'a' }, { id: 'b' }, { id: 'c' }]
+
+  it('keeps the same index when a middle row leaves', () => {
+    expect(nextIdAfterRemoving(list, 'b')).toBe('c')
+  })
+
+  it('selects the new last row when the last one leaves', () => {
+    expect(nextIdAfterRemoving(list, 'c')).toBe('b')
+  })
+
+  it('returns null when the queue becomes empty', () => {
+    expect(nextIdAfterRemoving([{ id: 'a' }], 'a')).toBeNull()
+  })
+})
+
+describe('removeIdFromInfinitePages', () => {
+  it('drops the id from every page and leaves page structure', () => {
+    const data = {
+      pages: [
+        [{ id: 'a' }, { id: 'b' }],
+        [{ id: 'c' }, { id: 'a' }],
+      ],
+      pageParams: [0, 200],
+    }
+    expect(removeIdFromInfinitePages(data, 'a')).toEqual({
+      pages: [[{ id: 'b' }], [{ id: 'c' }]],
+      pageParams: [0, 200],
+    })
+    expect(removeIdFromInfinitePages(undefined, 'a')).toBeUndefined()
   })
 })
 
