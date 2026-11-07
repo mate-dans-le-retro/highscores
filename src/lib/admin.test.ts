@@ -4,6 +4,8 @@ import type { Session } from '@supabase/supabase-js'
 import {
   coverUrl,
   defaultShortLabel,
+  deleteGameBlockedMessage,
+  isScoreRuleLocked,
   parseScore,
   passwordUpdateErrorMessage,
   placeFor,
@@ -173,6 +175,25 @@ describe('passwordUpdateErrorMessage', () => {
   it('keeps the Auth code and message in the alert', () => {
     expect(passwordUpdateErrorMessage({ message: 'network boom' })).toContain(
       'network boom',
+    )
+  })
+})
+
+describe('isScoreRuleLocked', () => {
+  it('locks once any score exists', () => {
+    expect(isScoreRuleLocked(0)).toBe(false)
+    expect(isScoreRuleLocked(1)).toBe(true)
+    expect(isScoreRuleLocked(12)).toBe(true)
+  })
+})
+
+describe('deleteGameBlockedMessage', () => {
+  it('mentions every score status, singular and plural', () => {
+    expect(deleteGameBlockedMessage(1)).toContain(
+      '1 score (validé, en attente ou refusé)',
+    )
+    expect(deleteGameBlockedMessage(3)).toContain(
+      '3 scores (validés, en attente ou refusés)',
     )
   })
 })
