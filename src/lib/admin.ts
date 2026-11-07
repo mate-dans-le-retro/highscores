@@ -546,11 +546,13 @@ export async function approveScore(id: string, review: ScoreReview) {
   if (error) throw error
 }
 
-export async function rejectScore(id: string) {
+export async function rejectScore(id: string, reason?: string | null) {
+  const rejection_reason = reason?.trim() || null
   const { error } = await getSupabase()
     .from('scores')
     .update({
       status: 'rejected',
+      rejection_reason,
       reviewed_at: new Date().toISOString(),
       reviewed_by: await currentUserId(),
     })
@@ -562,7 +564,12 @@ export async function rejectScore(id: string) {
 export async function reopenScore(id: string) {
   const { error } = await getSupabase()
     .from('scores')
-    .update({ status: 'pending', reviewed_at: null, reviewed_by: null })
+    .update({
+      status: 'pending',
+      rejection_reason: null,
+      reviewed_at: null,
+      reviewed_by: null,
+    })
     .eq('id', id)
   if (error) throw error
 }
