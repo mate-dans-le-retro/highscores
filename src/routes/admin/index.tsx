@@ -260,6 +260,11 @@ function SubmissionCard({
           {game?.name ?? `${submission.custom_game_name} (jeu libre)`} ·{' '}
           {formatScoreWhen(submission.created_at)}
         </span>
+        {submission.status === 'rejected' && submission.rejection_reason && (
+          <span className="line-clamp-2 text-caption text-ink-secondary">
+            Motif : {submission.rejection_reason}
+          </span>
+        )}
         <span className="flex flex-wrap gap-1.5">
           {place === 1 && (
             <Tag className="bg-rank-gold text-ink-primary">

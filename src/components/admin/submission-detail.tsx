@@ -19,6 +19,7 @@ import { Checkbox } from '#/components/ui/checkbox'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { NativeSelect } from '#/components/ui/native-select'
+import { Textarea } from '#/components/ui/textarea'
 import {
   approveScore,
   deleteScore,
@@ -63,6 +64,8 @@ export function SubmissionDetail({
   )
   const [creatingGame, setCreatingGame] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmReject, setConfirmReject] = useState(false)
+  const [rejectionReason, setRejectionReason] = useState('')
 
   const score = game ? parseScore(scoreText, game.score_type) : null
   const detectedGame = games.find(
@@ -93,7 +96,7 @@ export function SubmissionDetail({
     onSuccess: invalidate,
   })
   const reject = useMutation({
-    mutationFn: () => rejectScore(submission.id),
+    mutationFn: () => rejectScore(submission.id, rejectionReason),
     onSuccess: invalidate,
   })
   const reopen = useMutation({
@@ -316,6 +319,37 @@ export function SubmissionDetail({
               : 'pas d’accord, on ne publie pas.'}
           </p>
 
+          {submission.status === 'rejected' && (
+            <div className="rounded-lg bg-surface-sunken p-3">
+              <p className="text-caption font-semibold text-ink-secondary">
+                Motif du rejet
+              </p>
+              <p className="text-body-sm whitespace-pre-wrap">
+                {submission.rejection_reason?.trim() || 'Aucun motif noté.'}
+              </p>
+            </div>
+          )}
+
+          {confirmReject && pending && (
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="rejection-reason">
+                Motif du rejet{' '}
+                <span className="font-normal text-ink-secondary">
+                  (facultatif)
+                </span>
+              </Label>
+              <Textarea
+                id="rejection-reason"
+                rows={3}
+                maxLength={500}
+                value={rejectionReason}
+                placeholder="Ex. : score illisible sur la photo"
+                disabled={busy}
+                onChange={(event) => setRejectionReason(event.target.value)}
+              />
+            </div>
+          )}
+
           {(approve.isError ||
             reject.isError ||
             reopen.isError ||
@@ -344,6 +378,27 @@ export function SubmissionDetail({
                   Supprimer
                 </Button>
               </>
+            ) : confirmReject && pending ? (
+              <>
+                <Button
+                  variant="ghost"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmReject(false)
+                    setRejectionReason('')
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  variant="outline"
+                  disabled={busy}
+                  onClick={() => reject.mutate()}
+                >
+                  <X />
+                  Confirmer le rejet
+                </Button>
+              </>
             ) : pending ? (
               <>
                 <Button
@@ -357,7 +412,7 @@ export function SubmissionDetail({
                 <Button
                   variant="outline"
                   disabled={busy}
-                  onClick={() => reject.mutate()}
+                  onClick={() => setConfirmReject(true)}
                 >
                   <X />
                   Rejeter
