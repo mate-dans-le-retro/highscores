@@ -32,6 +32,8 @@ pnpm lint           # ESLint (@tanstack/eslint-config)
 pnpm check          # Prettier check
 pnpm format         # Prettier + ESLint --fix
 pnpm test           # Vitest (src/**/*.test.ts)
+pnpm test:e2e:install  # once: Playwright Chromium
+pnpm test:e2e       # Playwright smoke (builds, then preview on :4173, ?mock=1)
 pnpm typecheck      # type check (tsc --noEmit)
 
 pnpm vercel:login   # Vercel CLI login, once per machine

@@ -61,6 +61,10 @@ Supersedes the earlier "5 rows by default" wording from the same day: Clément s
 
 `pnpm test` runs Vitest on plain TypeScript modules (ranking, score formatting, new record detection, anonymization, mock switch, screen options). It has its own `vitest.config.ts`, without the TanStack Start plugins.
 
+## 2026-11-07: Playwright smoke base (mock mode)
+
+`pnpm test:e2e` runs Playwright against a production preview on port 4173. The build sets `VITE_DATA_SOURCE=mock` and the smoke hits `/?mock=1` and `/score?mock=1`, so no Supabase is required. Install Chromium once with `pnpm test:e2e:install`. CI does not run E2E yet.
+
 ## 2026-11-05: anonymous nicknames, dual photos, screen leaderboard shape
 
 - Anonymous nicknames are generated (character + qualifier + optional flourish, French agreement), seeded by the normalized player name and the game id, so one nickname per player per game. Per-game character lists with a long pop-culture fallback live in `src/lib/data/anonymous-name.ts` for Claude to reuse on the server.
