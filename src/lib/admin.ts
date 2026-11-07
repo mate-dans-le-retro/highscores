@@ -848,14 +848,25 @@ export async function updateGame(game: AdminGame, input: GameInput) {
   const cover_path = input.cover
     ? await uploadCover(game.slug, input.cover)
     : game.cover_path
+  // Lock type/order once any score exists: changing them would misread rankings.
+  const scoreCount = await countGameScores(game.id)
+  const scoreFields =
+    scoreCount > 0
+      ? {
+          score_type: game.score_type,
+          score_order: game.score_order,
+        }
+      : {
+          score_type: input.score_type,
+          score_order: input.score_order,
+        }
   const { error } = await getSupabase()
     .from('games')
     .update({
       name: input.name.trim(),
       short_label: input.short_label.trim().toUpperCase(),
       console: input.console?.trim() || null,
-      score_type: input.score_type,
-      score_order: input.score_order,
+      ...scoreFields,
       visible: input.visible,
       cover_path,
     })
@@ -885,6 +896,31 @@ export class GameHasScoresError extends Error {
 }
 
 /**
+ * Counts every score for a game (pending, approved, rejected; any event).
+ * Same filter as deleteGame / score-type lock.
+ */
+export async function countGameScores(gameId: string) {
+  const { count, error } = await getSupabase()
+    .from('scores')
+    .select('id', { count: 'exact', head: true })
+    .eq('game_id', gameId)
+  if (error) throw error
+  return count ?? 0
+}
+
+/** True once any score exists: score_type / score_order must stay fixed. */
+export function isScoreRuleLocked(scoreCount: number) {
+  return scoreCount > 0
+}
+
+/** French copy when delete is blocked because scores still point at the game. */
+export function deleteGameBlockedMessage(count: number) {
+  return count === 1
+    ? 'Ce jeu a encore 1 score (validé, en attente ou refusé). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.'
+    : `Ce jeu a encore ${count} scores (validés, en attente ou refusés). Masque-le de l’écran, ou va dans Records pour supprimer les scores d’abord.`
+}
+
+/**
  * Deletes a game for good. Refuses when any score still points at it
  * (pending, approved or rejected): `scores.game_id` cascades on delete.
  * Station labels for the game go away with it (`game_event_setups` cascade).
@@ -892,12 +928,8 @@ export class GameHasScoresError extends Error {
  */
 export async function deleteGame(game: Pick<AdminGame, 'id' | 'cover_path'>) {
   const supabase = getSupabase()
-  const { count, error: countError } = await supabase
-    .from('scores')
-    .select('id', { count: 'exact', head: true })
-    .eq('game_id', game.id)
-  if (countError) throw countError
-  if ((count ?? 0) > 0) throw new GameHasScoresError(count ?? 0)
+  const count = await countGameScores(game.id)
+  if (count > 0) throw new GameHasScoresError(count)
 
   const { error } = await supabase.from('games').delete().eq('id', game.id)
   if (error) throw error
@@ -907,19 +939,12 @@ export async function deleteGame(game: Pick<AdminGame, 'id' | 'cover_path'>) {
   }
 }
 
-/** Saves a new display order: positions 1, 2, 3… */
+/** Saves a new display order: positions 1, 2, 3… (one atomic Postgres update). */
 export async function reorderGames(ids: Array<string>) {
-  const supabase = getSupabase()
-  const results = await Promise.all(
-    ids.map((id, index) =>
-      supabase
-        .from('games')
-        .update({ position: index + 1 })
-        .eq('id', id),
-    ),
-  )
-  const failed = results.find((result) => result.error)
-  if (failed?.error) throw failed.error
+  const { error } = await getSupabase().rpc('reorder_games', {
+    ordered_ids: ids,
+  })
+  if (error) throw error
 }
 
 export function coverUrl(path: string | null) {
