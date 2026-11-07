@@ -180,6 +180,10 @@ Every public tile shows the cover as a square (`object-cover`). Picking a file i
 
 The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508) with the submission QR. Two styles: Clair (white, no pattern) and Sombre (purple + pixel background). 1, 2 or 4 posters per page (cut from one sheet). Optional "Une affiche par jeu": multi-select games, each poster shows the game name, puts the cover in the QR centre (ECC H), and links to `/score?game=<slug>`. A pack becomes a multipage PDF when it needs more than one sheet. Primary download is PDF (JPEG embedded, no dependency); PNG remains as a secondary export. QR points to the current origin's `/score`. Copy matches the public screen ("Un record à afficher ?", "Scanne, prends ta photo, c'est parti !").
 
+## 2026-11-07: Nouveau record duration is a setting
+
+The public "Nouveau record" takeover used a hard-coded 12 s. It is now `settings.new_record_duration_s` (8, 12 or 20 s, default 12), next to game and wall durations in the admin Screen settings. The public screen reads it through `screenOptions` (`newRecordDurationMs`). No URL override: `?rotation=` still only covers game and wall slides.
+
 ## 2026-11-07: admin clair / sombre preference
 
 The admin stays on the `console` route theme by default (light management screens). A ghost Moon / Sun toggle in the pink app bar (same control as Tournois TanStack) flips between `console` and `arcade` tokens. The choice is kept in `localStorage` under `mdlr-admin-theme` (legacy `mdlr-highscores-admin-appearance` is migrated on read) and applied in `__root.tsx` only when the route theme is `console`. A small boot script avoids a flash on `/admin`. Public and player routes are unchanged. The app bar (and sign-in lockup) uses Brand Color dark (`/mdlr-logo-color-dark.svg`): transparent background with a white block under « dans le rétro », same as Tournois. Header order matches Tournois: tabs, theme toggle, then email / Admin badge / actions.

@@ -705,6 +705,7 @@ export type SettingsChanges = Partial<
     | 'submissions_open'
     | 'game_duration_s'
     | 'wall_duration_s'
+    | 'new_record_duration_s'
     | 'rows_shown'
     | 'min_all_time_rows'
     | 'show_header'
