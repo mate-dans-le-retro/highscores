@@ -1,22 +1,27 @@
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
-import { setPassword } from '#/lib/admin'
+import { passwordUpdateErrorMessage, setPassword } from '#/lib/admin'
 
 const MIN_PASSWORD_LENGTH = 6
 
 export function SetPasswordForm({
   heading = 'Définir un mot de passe',
   hint = 'Utile si Google tombe le jour J : tu pourras te connecter avec ton email.',
+  userId,
   onDone,
 }: {
   heading?: string
   hint?: string
+  /** When set, invalidates currentUserHasPasswordQuery after a successful save. */
+  userId?: string
   onDone?: () => void
 }) {
+  const queryClient = useQueryClient()
   const [password, setPasswordValue] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -39,12 +44,17 @@ export function SetPasswordForm({
     setPending(true)
     try {
       await setPassword(password)
+      if (userId) {
+        await queryClient.invalidateQueries({
+          queryKey: ['admin', 'has-password', userId],
+        })
+      }
       setDone(true)
       setPasswordValue('')
       setConfirm('')
       onDone?.()
-    } catch {
-      setError("Le mot de passe n'a pas pu être enregistré. Réessaie !")
+    } catch (err) {
+      setError(passwordUpdateErrorMessage(err))
     } finally {
       setPending(false)
     }

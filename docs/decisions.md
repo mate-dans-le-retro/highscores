@@ -107,6 +107,10 @@ Volunteers sign in with Google, so they have no password to remember. Sign-ups s
 
 Sign-ups are open so colleagues can create an Auth account themselves (Google or email/password). Fail-closed stays: Auth alone grants nothing; `/admin` only opens for rows in `public.admins`. Clément (or any admin) promotes from `/admin/users` (`list_registered_users` / `set_user_admin`), without SQL. Demotion is supported, except for yourself and the last admin. After a Google sign-up, the signed-in user can set a password for the venue wifi. Linking Google onto a password-only account is deferred.
 
+## 2026-11-07: Password presence from encrypted_password, not identities
+
+`auth.updateUser({ password })` on a Google-only account sets `encrypted_password` without adding an `email` identity. Inferring "has a password" from `session.user.identities` stayed false after a successful save, so `/admin/account` kept offering "Définir un mot de passe" and a second submit of the same value failed with Auth `same_password` under a generic error. The UI now reads `current_user_has_password()` (same rule as `list_registered_users.has_password`) and maps Auth password errors to French copy.
+
 ## 2026-11-05: public screen after the visual review
 
 Clément's calls on the review of the public screens, and how we applied them.
