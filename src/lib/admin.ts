@@ -128,13 +128,67 @@ export async function signOut() {
   await getSupabase().auth.signOut()
 }
 
-/** True when the session already has an email/password identity. */
-export function sessionHasPassword(session: Session) {
+/**
+ * Maps Auth password-update errors to French copy. Kept pure for tests.
+ * Google-only accounts keep a single `google` identity after updateUser({ password });
+ * a second submit of the same value then hits same_password.
+ */
+export function passwordUpdateErrorMessage(error: unknown): string {
+  const message =
+    error && typeof error === 'object' && 'message' in error
+      ? String(error.message)
+      : ''
+  const code =
+    error && typeof error === 'object' && 'code' in error
+      ? String(error.code)
+      : ''
+
+  if (
+    code === 'same_password' ||
+    /different from the old password/i.test(message)
+  ) {
+    return 'Choisis un mot de passe différent de celui déjà enregistré.'
+  }
+  if (
+    code === 'weak_password' ||
+    /weak|at least \d+ character/i.test(message)
+  ) {
+    return 'Ce mot de passe est trop faible. Choisis-en un plus long ou plus varié.'
+  }
+  if (
+    code === 'reauthentication_needed' ||
+    /reauthentication|reauthenticate/i.test(message)
+  ) {
+    return 'Pour changer le mot de passe, déconnecte-toi puis reconnecte-toi, et réessaie.'
+  }
+  return "Le mot de passe n'a pas pu être enregistré. Réessaie !"
+}
+
+/**
+ * Optimistic hint from the JWT identities only. Incomplete for Google-only
+ * accounts that already set a password (no email identity is created). Prefer
+ * {@link currentUserHasPasswordQuery}.
+ */
+export function sessionHasPasswordIdentity(session: Session) {
   return (
     session.user.identities?.some(
       (identity) => identity.provider === 'email',
     ) ?? false
   )
+}
+
+/** True when auth.users.encrypted_password is set for the signed-in user. */
+export function currentUserHasPasswordQuery(userId: string) {
+  return queryOptions({
+    queryKey: ['admin', 'has-password', userId],
+    queryFn: async (): Promise<boolean> => {
+      const { data, error } = await getSupabase().rpc(
+        'current_user_has_password',
+      )
+      if (error) throw error
+      return data === true
+    },
+  })
 }
 
 async function currentUserId() {

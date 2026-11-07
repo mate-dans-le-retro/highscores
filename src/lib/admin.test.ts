@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
+import type { Session } from '@supabase/supabase-js'
 
-import { coverUrl, defaultShortLabel, parseScore, placeFor } from './admin'
+import {
+  coverUrl,
+  defaultShortLabel,
+  parseScore,
+  passwordUpdateErrorMessage,
+  placeFor,
+  sessionHasPasswordIdentity,
+} from './admin'
 
 describe('parseScore', () => {
   it('reads points with or without separators', () => {
@@ -65,5 +73,52 @@ describe('coverUrl', () => {
       'https://cdn.example/cover.png',
     )
     expect(coverUrl('/covers/local.svg')).toBe('/covers/local.svg')
+  })
+})
+
+describe('sessionHasPasswordIdentity', () => {
+  function sessionWith(providers: Array<string>): Session {
+    return {
+      user: {
+        identities: providers.map((provider) => ({
+          provider,
+          id: provider,
+          user_id: 'u1',
+          identity_id: provider,
+          identity_data: {},
+          created_at: '',
+          last_sign_in_at: '',
+          updated_at: '',
+        })),
+      },
+    } as Session
+  }
+
+  it('is false for a Google-only account even after a password was set server-side', () => {
+    // updateUser({ password }) sets encrypted_password without adding an email identity.
+    expect(sessionHasPasswordIdentity(sessionWith(['google']))).toBe(false)
+  })
+
+  it('is true when an email identity exists', () => {
+    expect(sessionHasPasswordIdentity(sessionWith(['google', 'email']))).toBe(
+      true,
+    )
+  })
+})
+
+describe('passwordUpdateErrorMessage', () => {
+  it('explains same_password after a Google user retries the password already stored', () => {
+    expect(
+      passwordUpdateErrorMessage({
+        code: 'same_password',
+        message: 'New password should be different from the old password.',
+      }),
+    ).toBe('Choisis un mot de passe différent de celui déjà enregistré.')
+  })
+
+  it('falls back to a generic French message', () => {
+    expect(passwordUpdateErrorMessage({ message: 'network boom' })).toBe(
+      "Le mot de passe n'a pas pu être enregistré. Réessaie !",
+    )
   })
 })

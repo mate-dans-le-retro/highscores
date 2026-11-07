@@ -53,6 +53,8 @@ Auth sign-ups are open: `enable_signup = true` in `supabase/config.toml` locally
 
 To grant access: an existing volunteer opens `/admin/users`, finds the account and clicks "Promouvoir admin" (`set_user_admin`). Demotion is the reverse, with two guards: you cannot demote yourself, and you cannot demote the last admin. Listing users goes through `list_registered_users()` (security definer, admins only). No SQL and no dashboard user creation are required for day-to-day onboarding.
 
+Setting a password after Google uses `auth.updateUser({ password })`. That writes `auth.users.encrypted_password` but does not add an `email` identity. The UI therefore calls `current_user_has_password()` (security definer, any signed-in user, own row only) instead of inferring from `session.user.identities`.
+
 Google sign-in needs an OAuth client in Google Cloud, whose redirect URI is `https://<project ref>.supabase.co/auth/v1/callback`, and the Google provider enabled in the dashboard. The redirect URLs allowed by Supabase must cover production, preprod and the Vercel previews. Linking Google onto an account that only has a password is deferred.
 
 Check the policies locally after any change, for example:
