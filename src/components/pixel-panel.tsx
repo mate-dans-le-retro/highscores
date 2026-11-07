@@ -39,12 +39,12 @@ export function PixelPanel({
     >
       <div className="flex min-h-0 flex-1 flex-col p-6">
         {label ? (
-          <div className="mb-4 shrink-0 text-brand-pink">
+          <div className="mb-4 min-w-0 shrink-0 text-brand-pink">
             <h2 className="font-display text-scene-pixel text-balance">
               {pixelCaps(label)}
             </h2>
             {subtitle ? (
-              <p className="mt-1 font-display text-arcade-title text-balance">
+              <p className="mt-1 truncate font-display text-arcade-name">
                 {pixelCaps(subtitle)}
               </p>
             ) : null}
