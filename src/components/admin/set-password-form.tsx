@@ -12,16 +12,23 @@ const MIN_PASSWORD_LENGTH = 6
 export function SetPasswordForm({
   heading = 'Définir un mot de passe',
   hint = 'Utile si Google tombe le jour J : tu pourras te connecter avec ton email.',
+  requireCurrentPassword = false,
   userId,
   onDone,
 }: {
   heading?: string
   hint?: string
+  /**
+   * Highscores Auth requires the current password once one is stored
+   * (Tournoi Auth does not). Pass true for the "change" form.
+   */
+  requireCurrentPassword?: boolean
   /** When set, invalidates currentUserHasPasswordQuery after a successful save. */
   userId?: string
   onDone?: () => void
 }) {
   const queryClient = useQueryClient()
+  const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPasswordValue] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -31,6 +38,10 @@ export function SetPasswordForm({
   async function submit(event: FormEvent) {
     event.preventDefault()
     setError(null)
+    if (requireCurrentPassword && !currentPassword) {
+      setError('Saisis ton mot de passe actuel.')
+      return
+    }
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(
         `Le mot de passe doit faire au moins ${MIN_PASSWORD_LENGTH} caractères.`,
@@ -43,15 +54,20 @@ export function SetPasswordForm({
     }
     setPending(true)
     try {
-      await setPassword(password)
+      await setPassword(
+        password,
+        requireCurrentPassword ? currentPassword : undefined,
+      )
+      setDone(true)
+      setCurrentPassword('')
+      setPasswordValue('')
+      setConfirm('')
+      // Never let a has-password refetch mark a successful Auth write as failed.
       if (userId) {
-        await queryClient.invalidateQueries({
+        void queryClient.invalidateQueries({
           queryKey: ['admin', 'has-password', userId],
         })
       }
-      setDone(true)
-      setPasswordValue('')
-      setConfirm('')
       onDone?.()
     } catch (err) {
       setError(passwordUpdateErrorMessage(err))
@@ -82,6 +98,19 @@ export function SetPasswordForm({
           {error}
         </p>
       )}
+      {requireCurrentPassword ? (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="current-password">Mot de passe actuel</Label>
+          <Input
+            id="current-password"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={currentPassword}
+            onChange={(event) => setCurrentPassword(event.target.value)}
+          />
+        </div>
+      ) : null}
       <div className="flex flex-col gap-2">
         <Label htmlFor="new-password">Nouveau mot de passe</Label>
         <Input

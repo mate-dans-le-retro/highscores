@@ -47,8 +47,9 @@ function AdminAccount() {
         ) : hasPassword ? (
           <SetPasswordForm
             userId={userId}
+            requireCurrentPassword
             heading="Changer le mot de passe"
-            hint="Un mot de passe est déjà défini. Tu peux le remplacer ici, ou te connecter avec Google."
+            hint="Un mot de passe est déjà défini. Saisis l'actuel, puis le nouveau (ou reconnecte-toi avec Google)."
           />
         ) : (
           <SetPasswordForm userId={userId} />

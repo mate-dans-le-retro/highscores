@@ -113,12 +113,22 @@ describe('passwordUpdateErrorMessage', () => {
         code: 'same_password',
         message: 'New password should be different from the old password.',
       }),
-    ).toBe('Choisis un mot de passe différent de celui déjà enregistré.')
+    ).toContain('Choisis un mot de passe différent de celui déjà enregistré.')
   })
 
-  it('falls back to a generic French message', () => {
-    expect(passwordUpdateErrorMessage({ message: 'network boom' })).toBe(
-      "Le mot de passe n'a pas pu être enregistré. Réessaie !",
+  it('explains current_password_required (Highscores Auth, unlike Tournoi)', () => {
+    expect(
+      passwordUpdateErrorMessage({
+        code: 'current_password_required',
+        message: 'Current password required when setting new password.',
+        status: 400,
+      }),
+    ).toContain('mot de passe actuel')
+  })
+
+  it('keeps the Auth code and message in the alert', () => {
+    expect(passwordUpdateErrorMessage({ message: 'network boom' })).toContain(
+      'network boom',
     )
   })
 })

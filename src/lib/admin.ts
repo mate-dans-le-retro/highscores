@@ -118,9 +118,20 @@ export async function signInWithGoogle() {
   if (error) throw error
 }
 
-/** Adds or replaces the password for the signed-in user (e.g. after Google). */
-export async function setPassword(password: string) {
-  const { error } = await getSupabase().auth.updateUser({ password })
+/**
+ * Adds or replaces the password for the signed-in user (e.g. after Google).
+ * Highscores Auth has "Secure password change" / require-current enabled
+ * (Tournoi does not): once encrypted_password is set, updateUser needs
+ * `current_password` or it returns current_password_required.
+ */
+export async function setPassword(password: string, currentPassword?: string) {
+  const supabase = getSupabase()
+  const { error: userError } = await supabase.auth.getUser()
+  if (userError) throw userError
+  const { error } = await supabase.auth.updateUser({
+    password,
+    ...(currentPassword ? { current_password: currentPassword } : {}),
+  })
   if (error) throw error
 }
 
@@ -128,40 +139,81 @@ export async function signOut() {
   await getSupabase().auth.signOut()
 }
 
+/** Auth code + message for alerts and tests. */
+export function authErrorFields(error: unknown): {
+  message: string
+  code: string
+  status: number | null
+} {
+  if (!error || typeof error !== 'object') {
+    return { message: '', code: '', status: null }
+  }
+  const record = error as {
+    message?: unknown
+    code?: unknown
+    status?: unknown
+  }
+  return {
+    message: typeof record.message === 'string' ? record.message : '',
+    code: typeof record.code === 'string' ? record.code : '',
+    status: typeof record.status === 'number' ? record.status : null,
+  }
+}
+
 /**
- * Maps Auth password-update errors to French copy. Kept pure for tests.
+ * Maps Auth password-update errors to French copy, always keeping the Auth
+ * code/message so a failure is diagnosable (Tournoi form swallowed them).
  * Google-only accounts keep a single `google` identity after updateUser({ password });
  * a second submit of the same value then hits same_password.
  */
 export function passwordUpdateErrorMessage(error: unknown): string {
-  const message =
-    error && typeof error === 'object' && 'message' in error
-      ? String(error.message)
-      : ''
-  const code =
-    error && typeof error === 'object' && 'code' in error
-      ? String(error.code)
-      : ''
+  const { message, code, status } = authErrorFields(error)
+  const detail = [code || null, message || null]
+    .filter((part): part is string => Boolean(part))
+    .join(': ')
+  const suffix = detail
+    ? ` (${status != null ? `${status} ` : ''}${detail})`
+    : ''
 
   if (
     code === 'same_password' ||
     /different from the old password/i.test(message)
   ) {
-    return 'Choisis un mot de passe différent de celui déjà enregistré.'
+    return `Choisis un mot de passe différent de celui déjà enregistré.${suffix}`
   }
   if (
     code === 'weak_password' ||
     /weak|at least \d+ character/i.test(message)
   ) {
-    return 'Ce mot de passe est trop faible. Choisis-en un plus long ou plus varié.'
+    return `Ce mot de passe est trop faible. Choisis-en un plus long ou plus varié.${suffix}`
+  }
+  if (
+    code === 'current_password_required' ||
+    /current password required/i.test(message)
+  ) {
+    return `Il faut saisir ton mot de passe actuel pour en définir un nouveau.${suffix}`
+  }
+  if (
+    code === 'current_password_mismatch' ||
+    /current password.*mismatch|incorrect.*password/i.test(message)
+  ) {
+    return `Le mot de passe actuel est incorrect.${suffix}`
   }
   if (
     code === 'reauthentication_needed' ||
-    /reauthentication|reauthenticate/i.test(message)
+    /reauthentication|reauthenticate|requires reauthentication/i.test(message)
   ) {
-    return 'Pour changer le mot de passe, déconnecte-toi puis reconnecte-toi, et réessaie.'
+    return `Pour changer le mot de passe, déconnecte-toi puis reconnecte-toi, et réessaie.${suffix}`
   }
-  return "Le mot de passe n'a pas pu être enregistré. Réessaie !"
+  if (
+    code === 'session_not_found' ||
+    code === 'bad_jwt' ||
+    code === 'no_authorization' ||
+    /session|jwt|authorized|logged in/i.test(message)
+  ) {
+    return `Ta session a expiré. Reconnecte-toi, puis réessaie.${suffix}`
+  }
+  return `Le mot de passe n'a pas pu être enregistré. Réessaie !${suffix}`
 }
 
 /**
@@ -188,6 +240,8 @@ export function currentUserHasPasswordQuery(userId: string) {
       if (error) throw error
       return data === true
     },
+    // A missing RPC must not block setting a password.
+    retry: false,
   })
 }
 
