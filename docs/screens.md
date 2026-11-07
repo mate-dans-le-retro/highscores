@@ -34,7 +34,7 @@ Four steps, with a header that holds the logo or "Retour", "Étape X sur 3" and 
 
 ## Admin (`/admin`, `console` theme by default, desktop)
 
-Pink top bar (aligned with Tournois): Brand Color dark logo (white block under « dans le rétro »), stacked "MDLR" / "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Utilisateurs", truncated email linking to Mon compte, Admin pill, Clair / Sombre theme toggle (stored in `localStorage`), "Ouvrir l'écran public", and logout. Sombre remaps the admin to `arcade` tokens; public routes stay on their own themes.
+Pink top bar (aligned with Tournois TanStack): Brand Color dark logo (white block under « dans le rétro »), stacked "MDLR" / "Highscores", tabs "Soumissions" (with the pending count), "Jeux", "Écran", "Utilisateurs", Moon / Sun theme toggle, truncated email linking to Mon compte, Admin pill, "Ouvrir l'écran public", and logout. Dark remaps the admin to `arcade` tokens (`mdlr-admin-theme` in `localStorage`); public routes stay on their own themes.
 
 **Sign-in.** Arcade pink-framed card (like Tournois): Color dark logo, "Connexion" / "Inscription", Google first, then email/password. The line "Ton accès admin sera disponible après validation d'un admin" shows in sign-up mode only. A new Auth account lands on "Pas encore admin" until an admin promotes it; from that page (and from Mon compte), they can set a password after a Google sign-up.
 

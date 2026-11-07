@@ -78,7 +78,7 @@ function AdminLayout() {
 }
 
 const navPillBase =
-  'inline-flex h-9 items-center gap-2 rounded-full px-4 text-sm font-extrabold leading-none no-underline transition-colors'
+  'inline-flex items-center justify-center gap-2 rounded-full px-4 py-1.5 text-body-sm font-extrabold leading-none no-underline transition-colors'
 
 function AdminTopBar({ email }: { email: string }) {
   const refetchInterval = useAdminRefetchInterval()
@@ -88,7 +88,7 @@ function AdminTopBar({ email }: { email: string }) {
   return (
     <AppBar title="Highscores">
       <nav
-        className="mr-1 hidden items-center gap-1 md:flex"
+        className="mr-2 hidden items-center gap-1 sm:flex"
         aria-label="Sections"
       >
         <NavTab to="/admin" exact pending={pending}>
@@ -98,6 +98,7 @@ function AdminTopBar({ email }: { email: string }) {
         <NavTab to="/admin/settings">Écran</NavTab>
         <NavTab to="/admin/users">Utilisateurs</NavTab>
       </nav>
+      <ThemeToggle />
       <div className="flex items-center gap-2 text-ink-on-accent sm:gap-3">
         {email ? (
           <Link
@@ -111,7 +112,6 @@ function AdminTopBar({ email }: { email: string }) {
         <span className="hidden rounded-full border-2 border-brand-purple bg-transparent px-3 py-0.5 text-caption font-extrabold text-ink-on-accent sm:inline">
           Admin
         </span>
-        <ThemeToggle />
         <Button
           asChild
           variant="outline"

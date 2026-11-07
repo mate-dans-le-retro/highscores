@@ -1,59 +1,107 @@
 import { useSyncExternalStore } from 'react'
 
-/** Light = console tokens; dark = arcade tokens (existing MDLR pair). */
-export type AdminAppearance = 'light' | 'dark'
+export type MdlrTheme = 'arcade' | 'console' | 'scene'
 
-const STORAGE_KEY = 'mdlr-highscores-admin-appearance'
+/** Admin chrome only: light (`console`) vs dark (`arcade`). Never `scene`. */
+export type AdminTheme = 'console' | 'arcade'
+
+/** Same key as Tournois TanStack admin, so the preference reads the same way. */
+export const ADMIN_THEME_KEY = 'mdlr-admin-theme'
+export const DEFAULT_ADMIN_THEME: AdminTheme = 'console'
+
+/** Pre-#58 follow-up key; migrated once on read. */
+const LEGACY_APPEARANCE_KEY = 'mdlr-highscores-admin-appearance'
 
 const listeners = new Set<() => void>()
+
+function isAdminTheme(value: string | null | undefined): value is AdminTheme {
+  return value === 'console' || value === 'arcade'
+}
 
 function emit() {
   for (const listener of listeners) listener()
 }
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (event) => {
-    if (event.key === STORAGE_KEY) emit()
-  })
-}
-
-export function getAdminAppearance(): AdminAppearance {
-  if (typeof window === 'undefined') return 'light'
+export function readAdminTheme(): AdminTheme {
+  if (typeof window === 'undefined') return DEFAULT_ADMIN_THEME
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY)
-    if (raw === 'dark' || raw === 'light') return raw
+    const stored = window.localStorage.getItem(ADMIN_THEME_KEY)
+    if (isAdminTheme(stored)) return stored
+
+    const legacy = window.localStorage.getItem(LEGACY_APPEARANCE_KEY)
+    if (legacy === 'dark' || legacy === 'light') {
+      const migrated: AdminTheme = legacy === 'dark' ? 'arcade' : 'console'
+      window.localStorage.setItem(ADMIN_THEME_KEY, migrated)
+      window.localStorage.removeItem(LEGACY_APPEARANCE_KEY)
+      return migrated
+    }
   } catch {
-    // Private mode or blocked storage: keep the default.
+    return DEFAULT_ADMIN_THEME
   }
-  return 'light'
+  return DEFAULT_ADMIN_THEME
 }
 
-export function setAdminAppearance(appearance: AdminAppearance) {
+export function writeAdminTheme(theme: AdminTheme): void {
+  if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(STORAGE_KEY, appearance)
+    window.localStorage.setItem(ADMIN_THEME_KEY, theme)
+    window.localStorage.removeItem(LEGACY_APPEARANCE_KEY)
   } catch {
-    // Ignore write failures; in-memory listeners still update this tab.
+    // Ignore quota / private-mode failures; in-memory listeners still update.
   }
   emit()
 }
 
-export function subscribeAdminAppearance(listener: () => void): () => void {
+export function toggleAdminTheme(current: AdminTheme): AdminTheme {
+  const next: AdminTheme = current === 'console' ? 'arcade' : 'console'
+  writeAdminTheme(next)
+  return next
+}
+
+function subscribe(listener: () => void): () => void {
   listeners.add(listener)
+  const onStorage = (event: StorageEvent) => {
+    if (
+      event.key === ADMIN_THEME_KEY ||
+      event.key === LEGACY_APPEARANCE_KEY ||
+      event.key === null
+    ) {
+      listener()
+    }
+  }
+  if (typeof window !== 'undefined') {
+    window.addEventListener('storage', onStorage)
+  }
   return () => {
     listeners.delete(listener)
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('storage', onStorage)
+    }
   }
 }
 
-export function adminAppearanceToTheme(
-  appearance: AdminAppearance,
-): 'console' | 'arcade' {
-  return appearance === 'dark' ? 'arcade' : 'console'
-}
-
-export function useAdminAppearance(): AdminAppearance {
+export function useAdminTheme(): AdminTheme {
   return useSyncExternalStore(
-    subscribeAdminAppearance,
-    getAdminAppearance,
-    () => 'light',
+    subscribe,
+    readAdminTheme,
+    () => DEFAULT_ADMIN_THEME,
   )
 }
+
+/**
+ * Public screen (`scene`) and player form (`arcade`) keep their route theme.
+ * Only `console` admin routes honor the persisted preference.
+ */
+export function resolveDocumentTheme(
+  routeTheme: MdlrTheme,
+  adminTheme: AdminTheme,
+): MdlrTheme {
+  if (routeTheme === 'console') return adminTheme
+  return routeTheme
+}
+
+/**
+ * Inline head script: apply persisted admin theme before paint on `/admin`.
+ * Skips public and player routes so `scene` / `arcade` are never overwritten.
+ */
+export const ADMIN_THEME_BOOT_SCRIPT = `(function(){try{var p=location.pathname;if(p!=='/admin'&&p.indexOf('/admin/')!==0)return;var t=localStorage.getItem('${ADMIN_THEME_KEY}');if(t!=='arcade'&&t!=='console'){var legacy=localStorage.getItem('${LEGACY_APPEARANCE_KEY}');t=legacy==='dark'?'arcade':legacy==='light'?'console':'${DEFAULT_ADMIN_THEME}';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`

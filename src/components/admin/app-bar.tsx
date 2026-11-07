@@ -34,7 +34,7 @@ export function AppBar({
       )}
       style={{ zIndex: 'var(--z-appbar)' }}
     >
-      <div className="mx-auto flex h-16 w-full max-w-[1280px] items-center justify-between gap-4 px-4 py-3 sm:h-20 md:px-8">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:h-20 sm:px-6">
         <Link
           to={homeTo}
           aria-label="Highscores — accueil admin"
@@ -56,7 +56,7 @@ export function AppBar({
             </span>
           </div>
         </Link>
-        <div className="flex min-w-0 shrink items-center gap-3 text-ink-on-accent">
+        <div className="flex shrink-0 items-center gap-3 text-ink-on-accent">
           {children}
         </div>
       </div>

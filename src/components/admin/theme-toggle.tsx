@@ -1,59 +1,29 @@
 import { Moon, Sun } from 'lucide-react'
 
 import { Button } from '#/components/ui/button'
-import type { AdminAppearance } from '#/lib/admin-theme'
-import { setAdminAppearance, useAdminAppearance } from '#/lib/admin-theme'
-import { cn } from '#/lib/utils'
-
-const OPTIONS: { id: AdminAppearance; label: string; Icon: typeof Sun }[] = [
-  { id: 'light', label: 'Clair', Icon: Sun },
-  { id: 'dark', label: 'Sombre', Icon: Moon },
-]
-
-type ThemeToggleProps = {
-  className?: string
-}
+import { toggleAdminTheme, useAdminTheme } from '#/lib/admin-theme'
 
 /**
- * Clair / sombre for the admin shell. Preference lives in localStorage.
+ * Light (`console`) ↔ dark (`arcade`) for admin chrome.
+ * Same control as Tournois TanStack: ghost icon on the pink bar.
  */
-export function ThemeToggle({ className }: ThemeToggleProps) {
-  const appearance = useAdminAppearance()
+export function ThemeToggle() {
+  const theme = useAdminTheme()
+  const isDark = theme === 'arcade'
 
   return (
-    <div
-      role="group"
-      aria-label="Thème de l'admin"
-      className={cn(
-        'inline-flex overflow-hidden rounded-md border-2 border-brand-purple',
-        className,
-      )}
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className="text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent"
+      aria-label={isDark ? 'Passer en thème clair' : 'Passer en thème sombre'}
+      title={isDark ? 'Thème clair' : 'Thème sombre'}
+      onClick={() => {
+        toggleAdminTheme(theme)
+      }}
     >
-      {OPTIONS.map(({ id, label, Icon }) => {
-        const active = appearance === id
-        return (
-          <Button
-            key={id}
-            type="button"
-            variant="ghost"
-            size="sm"
-            aria-pressed={active}
-            title={label}
-            aria-label={label}
-            onClick={() => setAdminAppearance(id)}
-            className={cn(
-              'h-8 gap-1.5 rounded-none px-2.5 text-ink-on-accent hover:bg-brand-purple/25 hover:text-ink-on-accent',
-              active &&
-                'bg-brand-purple text-ink-on-accent-large hover:bg-brand-purple hover:text-ink-on-accent-large',
-            )}
-          >
-            <Icon className="size-3.5" aria-hidden />
-            <span className="hidden text-caption font-extrabold sm:inline">
-              {label}
-            </span>
-          </Button>
-        )
-      })}
-    </div>
+      {isDark ? <Sun /> : <Moon />}
+    </Button>
   )
 }

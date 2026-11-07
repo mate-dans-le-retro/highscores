@@ -182,7 +182,7 @@ The Screen settings QR card offers a PDF A4 sheet (300 dpi canvas, 2480 × 3508)
 
 ## 2026-11-07: admin clair / sombre preference
 
-The admin stays on the `console` route theme by default (light management screens). A Clair / Sombre control in the pink app bar maps sombre to the existing `arcade` tokens (no fourth theme). The choice is kept in `localStorage` under `mdlr-highscores-admin-appearance` and applied in `__root.tsx` only when the route theme is `console`. Public and player routes are unchanged. The app bar (and sign-in lockup) uses Brand Color dark (`/mdlr-logo-color-dark.svg`): transparent background with a white block under « dans le rétro », same as Tournois.
+The admin stays on the `console` route theme by default (light management screens). A ghost Moon / Sun toggle in the pink app bar (same control as Tournois TanStack) flips between `console` and `arcade` tokens. The choice is kept in `localStorage` under `mdlr-admin-theme` (legacy `mdlr-highscores-admin-appearance` is migrated on read) and applied in `__root.tsx` only when the route theme is `console`. A small boot script avoids a flash on `/admin`. Public and player routes are unchanged. The app bar (and sign-in lockup) uses Brand Color dark (`/mdlr-logo-color-dark.svg`): transparent background with a white block under « dans le rétro », same as Tournois. Header order matches Tournois: tabs, theme toggle, then email / Admin badge / actions.
 
 ## 2026-11-06: QR on the records wall, optional `?game=<slug>`
 
