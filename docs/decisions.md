@@ -211,3 +211,7 @@ The wall had no QR while empty "À prendre !" cards begged for one. Light UX shi
 - **Global QR** always on the wall (top right), pointing at `/score` with no game. A player can send any score without waiting for a game slide.
 - **Per-game QR** only where the layout has room: empty wall cards and the empty-game invite, as `/score?game=<slug>`. Filled wall cards stay photo + score (no second QR). The game-slide "À toi de jouer" panel also uses `?game=<slug>` for the game on screen; a second global QR there would crowd the aside, and the wall already carries the unscoped one.
 - **Form**: `?game=` preselects that visible game on step 2 when the draft has no game yet; the tiles stay changeable. Unknown slugs are ignored.
+
+## 2026-11-07: archive rejects leftover non-approved scores
+
+`archive_current_event` used to leave pending (and already rejected) scores on the closing event. Approving a leftover pending afterward kept it on that archived event, so it never showed on the new board. The RPC now rejects every non-approved score of the current event in the same transaction (`status = rejected`, `rejection_reason = 'Édition archivée'`, `reviewed_at = now()`, `reviewed_by = auth.uid()`) before opening the new event. Approved scores stay put for the all-time record. Pendings are not moved to the new event.
