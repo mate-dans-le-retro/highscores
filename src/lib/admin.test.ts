@@ -13,18 +13,22 @@ import {
 } from './admin'
 
 describe('parseScore', () => {
-  it('reads points with or without separators', () => {
+  it('reads points with or without spaces, capped at 15 digits', () => {
     expect(parseScore('128400', 'points')).toBe(128400)
     expect(parseScore('128 400', 'points')).toBe(128400)
     expect(parseScore('128 400', 'points')).toBe(128400)
-    expect(parseScore('128.400', 'points')).toBe(128400)
     expect(parseScore('12a', 'points')).toBeNull()
+    expect(parseScore('128.400', 'points')).toBeNull()
     expect(parseScore('', 'points')).toBeNull()
+    expect(parseScore('1'.repeat(15), 'points')).toBe(Number('1'.repeat(15)))
+    expect(parseScore('1'.repeat(16), 'points')).toBeNull()
   })
 
-  it('reads times in milliseconds', () => {
+  it('reads the same time formats as the player form', () => {
     expect(parseScore(`1'32"48`, 'time')).toBe(92480)
     expect(parseScore('1:32.48', 'time')).toBe(92480)
+    expect(parseScore('1:32:48', 'time')).toBe(92480)
+    expect(parseScore('13248', 'time')).toBe(92480)
     expect(parseScore(`1'32`, 'time')).toBe(92000)
     expect(parseScore('92.48', 'time')).toBe(92480)
     expect(parseScore(`0'09"5`, 'time')).toBe(9500)
