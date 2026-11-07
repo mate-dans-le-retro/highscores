@@ -139,3 +139,5 @@ Secrets (service role, Instagram, AI) stay in variables **without** the `VITE_` 
 ## Deployment
 
 Vercel, MDLR team, connected to the GitHub repository `mate-dans-le-retro/highscores`. The `main` branch is preprod (`scores.preview.matedansleretro.fr`), the `prod` branch is production (`scores.matedansleretro.fr`), as for `website` and `tournaments`. Nitro detects the Vercel environment at build time. The Supabase database comes from the Vercel Marketplace Supabase integration (Storage tab of the project), as for `tournaments`: a single database for preprod and production. Migrations are applied to the MDLR Supabase project with `pnpm supabase db push` (or Supabase's GitHub integration).
+
+`vercel.json` sets baseline security headers on every response: a Content-Security-Policy (self, Google Fonts, Supabase HTTPS/WSS, inline boot script for the admin theme), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy` (camera allowed for the player form), and `Cross-Origin-Opener-Policy: same-origin`.
