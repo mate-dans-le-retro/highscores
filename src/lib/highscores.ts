@@ -38,6 +38,7 @@ export {
   formatScoreWhen,
   formatStation,
   pixelCaps,
+  splitGameTitle,
 } from './format'
 export { isMock }
 export type { MockPendingScore } from './data/mock/mock-source'

@@ -8,6 +8,7 @@ import {
   isMock,
   photoUrl,
   pixelCaps,
+  splitGameTitle,
 } from '#/lib/highscores'
 import type { GameRecord } from '#/lib/highscores'
 import { useSubmitScoreUrl } from '#/lib/submit-url'
@@ -144,10 +145,15 @@ function RecordCard({
 }) {
   const { game } = record
   const view = wallCardView(record)
+  const { title, subtitle } = splitGameTitle(game.name)
 
   if (view.kind === 'empty') {
     return (
-      <PixelPanel label={game.name} className={cn('min-w-0', className)}>
+      <PixelPanel
+        label={title}
+        subtitle={subtitle}
+        className={cn('min-w-0', className)}
+      >
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-2 text-center">
           <p className="font-display text-scene-pixel text-ink-inverse">
             {pixelCaps('À prendre !')}
@@ -167,7 +173,11 @@ function RecordCard({
   const image = main.anonymous ? null : photoUrl(main.photo_path)
 
   return (
-    <PixelPanel label={game.name} className={cn('min-w-0', className)}>
+    <PixelPanel
+      label={title}
+      subtitle={subtitle}
+      className={cn('min-w-0', className)}
+    >
       <div className="flex min-h-0 flex-1 items-center gap-6">
         <div className="flex aspect-square max-h-full w-2/5 shrink-0 items-center justify-center overflow-hidden rounded-none border-4 border-line-subtle bg-surface-base">
           {image ? (
