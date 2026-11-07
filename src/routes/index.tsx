@@ -194,10 +194,13 @@ function PublicScreen() {
   }, [screenMode, lockedGameSlug, games.data?.length])
 
   // Two timers per slide, so the screen only renders when something changes:
-  // the progress bar animates on its own (see RotationProgress).
+  // the progress bar animates on its own (see RotationProgress). A locked
+  // single view (forced wall page or one game) does not rotate: no bar, no
+  // timer. Multi-page locked walls still advance without showing the bar.
   useEffect(() => {
     setFadedOut(false)
     if (paused || held || pending || count === 0) return
+    if (displayLocked && count <= 1) return
     const fade =
       count > 1
         ? window.setTimeout(() => setFadedOut(true), durationMs - FADE_MS)
@@ -210,7 +213,7 @@ function PublicScreen() {
       window.clearTimeout(fade)
       window.clearTimeout(next)
     }
-  }, [safeIndex, lap, count, durationMs, paused, held, pending])
+  }, [safeIndex, lap, count, durationMs, paused, held, pending, displayLocked])
 
   const game = slide && slide.kind === 'game' ? slide.game : undefined
   const record = game
@@ -228,12 +231,14 @@ function PublicScreen() {
           className="pointer-events-none absolute inset-0 -z-10 bg-surface-base bg-[url('/pixel-background.svg')] bg-cover bg-center"
         />
 
-        <RotationProgress
-          key={`${safeIndex}-${lap}-${count}-${durationMs}`}
-          durationMs={durationMs}
-          shown={progressShown(rotation, count)}
-          frozen={paused}
-        />
+        {!displayLocked ? (
+          <RotationProgress
+            key={`${safeIndex}-${lap}-${count}-${durationMs}`}
+            durationMs={durationMs}
+            shown={progressShown(rotation, count)}
+            frozen={paused}
+          />
+        ) : null}
 
         <div
           aria-hidden="true"
@@ -337,6 +342,17 @@ function PublicScreen() {
             onSelect={selectSlide}
             onResume={resumeRotation}
           />
+        ) : null}
+        {/*
+          Locked views hide the nav thumbnails. Keep the same vertical chrome
+          (pt-6 + thumb row + pb-24 overscan from 10-screens.md) so the wall /
+          game content stays balanced top and bottom instead of hugging the
+          lower edge.
+        */}
+        {displayLocked ? (
+          <div aria-hidden="true" className="shrink-0 pt-6 pb-24">
+            <div className="h-16" />
+          </div>
         ) : null}
 
         {celebration ? <NewRecordScreen entry={celebration} /> : null}
