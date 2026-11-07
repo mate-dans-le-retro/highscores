@@ -11,6 +11,7 @@ import type {
   Settings,
 } from '../types'
 import { rankScores } from '../ranking'
+import { hasExclusiveGameChoice } from '../submission-game'
 import {
   cachedMockPhotoUrl,
   clearMockPhotos,
@@ -138,7 +139,7 @@ export const mockSource: HighscoresSource = {
 
   submitScore: async (input) => {
     const customGameName = input.custom_game_name?.trim() || null
-    if (!input.game_id === !customGameName)
+    if (!hasExclusiveGameChoice(input.game_id, customGameName))
       throw new Error('Pick a game from the list or type its name, not both')
 
     const photoId = newId()

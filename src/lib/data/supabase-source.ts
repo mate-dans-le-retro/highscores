@@ -8,6 +8,7 @@ import { keepSubscribed, REALTIME_FRESHNESS_MS } from './realtime-connection'
 import { buildScreenLeaderboard } from './screen-leaderboard'
 import type { ScoreForScreen } from './screen-leaderboard'
 import type { HighscoresSource, LeaderboardQueryOptions } from './source'
+import { hasExclusiveGameChoice } from './submission-game'
 import type {
   AllTimeRecord,
   ChangedTable,
@@ -196,7 +197,7 @@ export const supabaseSource: HighscoresSource = {
 
   submitScore: async (input) => {
     const customGameName = input.custom_game_name?.trim() || null
-    if (!input.game_id === !customGameName)
+    if (!hasExclusiveGameChoice(input.game_id, customGameName))
       throw new Error('Pick a game from the list or type its name, not both')
 
     const supabase = getSupabase()
