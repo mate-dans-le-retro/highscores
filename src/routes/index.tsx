@@ -310,7 +310,10 @@ function PublicScreen() {
           <div
             className={cn(
               'flex min-h-0 flex-1 gap-12 px-24',
-              showHeader ? 'pt-10' : 'pt-24',
+              // Rotation: match the pills' 24px air (pt-6 / pb-6) so the
+              // board is not stuck high. Locked `?game=` keeps the 96px
+              // overscan pair (pt-24 here, spacer pb-24 below).
+              showHeader ? 'pt-10' : displayLocked ? 'pt-24' : 'pt-6',
             )}
           >
             <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -451,7 +454,7 @@ function RotationPills({
               aria-label={label}
               title={label}
               onClick={(event) => onSelect(i, event.detail)}
-              className="rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+              className="group cursor-pointer rounded-none focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
             >
               {entry.kind === 'wall' ? (
                 <WallThumb
@@ -515,10 +518,10 @@ function WallThumb({ active, page }: { active: boolean; page: number | null }) {
   return (
     <span
       className={cn(
-        'inline-flex h-16 w-20 shrink-0 items-center justify-center rounded-none border-4 bg-surface-overlay font-display text-arcade-name text-ink-primary',
+        'inline-flex h-16 w-20 shrink-0 items-center justify-center rounded-none border-4 bg-surface-overlay font-display text-arcade-name text-ink-primary transition-[opacity,border-color,transform] duration-150 ease-out',
         active
           ? 'border-line-accent shadow-pixel'
-          : 'border-line-strong opacity-70',
+          : 'border-line-strong opacity-70 group-hover:border-line-accent group-hover:opacity-100 group-hover:[transform:scale(1.06)]',
       )}
       title="Mur des records"
     >
