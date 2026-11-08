@@ -66,7 +66,7 @@ A projector or a future per-game cabinet can pin the public screen without chang
 - `/?mode=game` or `/?mode=both` still only override the rotation mix (same values as admin `screen_mode`); they do not lock.
 - When both `mode=wall` and `game=` are present, the wall wins.
 
-Same zod search params as the other screen overrides (`src/lib/screen-options.ts`). The rebalanced wall spacing (top band under the QR, wider row gap, bottom overscan) and card → `?game=` links apply only to the forced kiosk (`?mode=wall`). Rotation wall slides keep title and QR at `top-6`, with their own balanced band / row gap / pills air (pills sit `pb-6` from the bottom so card height stays put).
+Same zod search params as the other screen overrides (`src/lib/screen-options.ts`). The rebalanced wall spacing (top band under the QR, wider row gap, bottom overscan) and card → `?game=` links apply only to the forced kiosk (`?mode=wall`). Rotation wall slides keep title and QR at `top-6`, with their own balanced band / row gap / pills air (pills sit `pb-6` from the bottom so card height stays put). Rotation game slides use the same 24px top air (`pt-6`) so the board is not stuck high above the pills; locked `?game=` keeps the 96px overscan pair.
 
 ## 2026-11-05: Vitest for the data layer
 
