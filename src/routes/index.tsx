@@ -268,16 +268,11 @@ function PublicScreen() {
         ) : null}
 
         {showWall ? (
-          <div
-            className={cn(
-              'relative flex min-h-0 flex-1 flex-col px-24',
-              // Rotation keeps the classic pt-6; forced wall clears QR itself.
-              forcedWall ? null : 'pt-6',
-            )}
-          >
+          <div className="relative flex min-h-0 flex-1 flex-col px-24">
             {/*
               Title + global QR are absolute. Forced `?mode=wall` uses the
-              96px overscan (`top-24`); rotation keeps `top-6` from before #105.
+              96px overscan (`top-24`); rotation keeps `top-6`. Each mode's
+              RecordsWall band clears the QR; no flow padding here.
             */}
             {showHeader ? null : (
               <h1
@@ -416,10 +411,11 @@ function RotationProgress({
 }
 
 /**
- * Position in the rotation, 96px clear of the bottom edge (overscan). A
- * click shows that slide from the start of its time; a double click holds
- * it, and the next click resumes. The pause button sits beside the pills
- * without moving them.
+ * Position in the rotation, 24px clear of the bottom edge. A click shows
+ * that slide from the start of its time; a double click holds it, and the
+ * next click resumes. The pause button sits beside the pills without moving
+ * them. Lower than the old 96px overscan so the wall can balance air under
+ * the QR and between card rows without shrinking the cards.
  */
 function RotationPills({
   slides,
@@ -437,7 +433,7 @@ function RotationPills({
   return (
     <nav
       aria-label="Écrans en rotation"
-      className="flex shrink-0 justify-center pt-6 pb-24"
+      className="flex shrink-0 justify-center pt-6 pb-6"
     >
       <div className="relative flex items-center gap-6">
         {slides.map((entry, i) => {
