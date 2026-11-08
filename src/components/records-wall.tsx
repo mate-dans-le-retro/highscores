@@ -57,10 +57,18 @@ const ROW_START: Record<number, string> = {
 const FORCED_TOP_BAND = 'h-80 shrink-0'
 
 /**
+ * Rotation two-row only: band under absolute title + QR at `top-6` (QR ends
+ * ~168px). 208px leaves ~40px of air, matched by `gap-y-10` and the air down
+ * to the pills. Freed vertical room comes from lowering the pills' bottom
+ * overscan (`pb-6`), so card stretch height stays ~356px at 1080p.
+ */
+const ROTATION_TOP_BAND = 'h-52 shrink-0'
+
+/**
  * Projected "mur des records": one card per visible game (mockup p.2).
  * What each card says about the all-time record is in `wallCardView()`.
- * Rotation uses the classic `pt-36` / `gap-y-4` grid; `forced` applies the
- * kiosk spacing from #105 without changing rotation card height.
+ * Rotation balances top / row / pills air without changing card height;
+ * `forced` keeps the kiosk spacing from #105.
  */
 export function RecordsWall({
   records,
@@ -83,7 +91,7 @@ export function RecordsWall({
     )
   }
 
-  // Rotation / admin wall: layout from before #105.
+  // Rotation / admin wall (not `?mode=wall`).
   if (singleRow) {
     return (
       <div
@@ -116,25 +124,23 @@ export function RecordsWall({
   }
 
   return (
-    <div
-      className={cn(
-        'grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-4 pt-36',
-        className,
-      )}
-    >
-      {records.map((record, i) => (
-        <RecordCard
-          key={record.game.id}
-          record={record}
-          showGameQr={showGameQr}
-          linkToGame={false}
-          className={cn(
-            'col-span-2 row-span-2',
-            COLUMN_START[cells[i].column],
-            ROW_START[cells[i].row],
-          )}
-        />
-      ))}
+    <div className={cn('flex min-h-0 flex-1 flex-col', className)}>
+      <div className={ROTATION_TOP_BAND} aria-hidden="true" />
+      <div className="grid min-h-0 flex-1 grid-cols-6 grid-rows-4 gap-x-10 gap-y-10 pb-4">
+        {records.map((record, i) => (
+          <RecordCard
+            key={record.game.id}
+            record={record}
+            showGameQr={showGameQr}
+            linkToGame={false}
+            className={cn(
+              'col-span-2 row-span-2',
+              COLUMN_START[cells[i].column],
+              ROW_START[cells[i].row],
+            )}
+          />
+        ))}
+      </div>
     </div>
   )
 }
