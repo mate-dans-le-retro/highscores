@@ -18,6 +18,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as AdminAccountRouteImport } from './routes/admin/account'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as ApiKeepaliveRouteImport } from './routes/api/keepalive'
 import { Route as AdminGamesIndexRouteImport } from './routes/admin/games/index'
 import { Route as AdminGamesGameIdRouteImport } from './routes/admin/games/$gameId'
 
@@ -66,6 +67,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiKeepaliveRoute = ApiKeepaliveRouteImport.update({
+  id: '/api/keepalive',
+  path: '/api/keepalive',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminGamesIndexRoute = AdminGamesIndexRouteImport.update({
   id: '/games/',
   path: '/games/',
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/keepalive': typeof ApiKeepaliveRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games/': typeof AdminGamesIndexRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/keepalive': typeof ApiKeepaliveRoute
   '/admin': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games': typeof AdminGamesIndexRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/admin/account': typeof AdminAccountRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/api/keepalive': typeof ApiKeepaliveRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/games/$gameId': typeof AdminGamesGameIdRoute
   '/admin/games/': typeof AdminGamesIndexRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
+    | '/api/keepalive'
     | '/admin/'
     | '/admin/games/$gameId'
     | '/admin/games/'
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
+    | '/api/keepalive'
     | '/admin'
     | '/admin/games/$gameId'
     | '/admin/games'
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/admin/account'
     | '/admin/settings'
     | '/admin/users'
+    | '/api/keepalive'
     | '/admin/'
     | '/admin/games/$gameId'
     | '/admin/games/'
@@ -163,6 +175,7 @@ export interface RootRouteChildren {
   DevRoute: typeof DevRoute
   ScoreRoute: typeof ScoreRoute
   ScoresRoute: typeof ScoresRoute
+  ApiKeepaliveRoute: typeof ApiKeepaliveRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -230,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/keepalive': {
+      id: '/api/keepalive'
+      path: '/api/keepalive'
+      fullPath: '/api/keepalive'
+      preLoaderRoute: typeof ApiKeepaliveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/games/': {
       id: '/admin/games/'
       path: '/games'
@@ -273,6 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   DevRoute: DevRoute,
   ScoreRoute: ScoreRoute,
   ScoresRoute: ScoresRoute,
+  ApiKeepaliveRoute: ApiKeepaliveRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

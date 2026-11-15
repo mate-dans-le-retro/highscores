@@ -16,12 +16,13 @@ The app is a server-rendered TanStack Start app deployed on Vercel. Pages talk d
 
 ## Routes
 
-| Route     | Theme             | Role                                |
-| --------- | ----------------- | ----------------------------------- |
-| `/`       | scene             | Projected public screen             |
-| `/scores` | none              | Redirects to `/`                    |
-| `/score`  | arcade            | Player form (QR code on the screen) |
-| `/admin`  | console (default) | Volunteer admin, reached by its URL |
+| Route            | Theme             | Role                                                           |
+| ---------------- | ----------------- | -------------------------------------------------------------- |
+| `/`              | scene             | Projected public screen                                        |
+| `/scores`        | none              | Redirects to `/`                                               |
+| `/score`         | arcade            | Player form (QR code on the screen)                            |
+| `/admin`         | console (default) | Volunteer admin, reached by its URL                            |
+| `/api/keepalive` | none              | Public GET for Home Assistant: anon select on `games`, no auth |
 
 The admin (client-rendered, `ssr: false`) has four pages: `/admin` (submissions queue), `/admin/games` (games, order, display), `/admin/games/$gameId` (ranking of the current event, scores by hand, archiving) and `/admin/settings` (screen, submissions, QR code, event name). Its data access is in `src/lib/admin.ts`, straight to Supabase with the volunteer's session. Volunteers can switch the admin to a dark look (`arcade` tokens) via the same Moon / Sun ghost toggle as Tournois; the choice is stored in `localStorage` (`mdlr-admin-theme`).
 
